@@ -26,6 +26,8 @@ logs/
 # Generated search feeds & results
 jobs_feed.json
 search_results.md
+test_regression.py
+
 
 
 # IDE & Editor files
