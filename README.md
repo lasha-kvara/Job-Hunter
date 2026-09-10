@@ -41,8 +41,8 @@ python -m venv .venv
 # On macOS/Linux:
 source .venv/bin/activate
 
-# Install dependencies
-pip install -r "Linkedin Agent/requirements.txt"
+# Install all dependencies (Multi-Source Scraper, Playwright, Pandas)
+pip install -r requirements.txt
 
 # Install Playwright browser binaries
 playwright install
@@ -74,19 +74,33 @@ Open `candidate-profile.md` in any text editor and specify:
 
 ### Step 4: Run the Agent
 
-#### Option A: Headed Browser Auto-Apply
+#### Option A: Multi-Source Vacancy Aggregator (NEW)
+Instant multi-platform vacancy discovery across LinkedIn, Indeed, Glassdoor, ZipRecruiter, Google Jobs, and Jobs.ge with automatic candidate fit scoring (0-100%):
+```bash
+# Search for remote QA Automation roles
+python search_jobs.py --query "QA Automation Engineer" --remote
+
+# Search for Senior SDET with minimum 60% fit score
+python search_jobs.py --query "Senior SDET" --min-score 60
+
+# Filter specific sources
+python search_jobs.py --query "Playwright QA" --sources indeed linkedin jobs_ge
+```
+Results are automatically deduplicated, stripped of URL tracking parameters, and exported to `search_results.md` and `Job Hunter Agent/jobs_feed.json`.
+
+#### Option B: Headed Browser Auto-Apply
 Watch the agent search and process vacancies live on screen:
 ```bash
 python headed_apply.py
 ```
 
-#### Option B: LinkedIn Interactive CLI
+#### Option C: LinkedIn Interactive CLI
 Manage recruiters, screen candidates, and track job pipelines:
 ```bash
 python "Linkedin Agent/run.py"
 ```
 
-#### Option C: Connect to Your Existing Logged-in Browser (CDP Mode)
+#### Option D: Connect to Your Existing Logged-in Browser (CDP Mode)
 If you are already logged into job platforms (like LinkedIn) and want to avoid logging in again:
 1. Start your browser in remote debugging mode:
    - **Windows:** Double-click `Linkedin Agent/start_browser.bat`

@@ -1,0 +1,99 @@
+import re
+import requests
+import urllib3
+from bs4 import BeautifulSoup
+from typing import List
+from ..models import JobPost
+
+# Suppress insecure SSL warnings for environments lacking local CA certs
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
+class JobsGeProvider:
+    """
+    Scrapes IT, Software Engineering and QA vacancies directly from jobs.ge.
+    """
+
+    BASE_URL = "https://jobs.ge"
+    HEADERS = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/122.0.0.0 Safari/537.36"
+        ),
+        "Accept-Language": "en-US,en;q=0.9,ka;q=0.8",
+    }
+
+    @classmethod
+    def search(cls, query: str = "", max_results: int = 20) -> List[JobPost]:
+        """
+        Scrapes jobs.ge IT category (cid=6) and filters by query keyword.
+        """
+        jobs: List[JobPost] = []
+        try:
+            # IT & Software category
+            url = f"{cls.BASE_URL}/en/?cid=6"
+            resp = requests.get(
+                url,
+                headers=cls.HEADERS,
+                timeout=12,
+                verify=False
+            )
+            if resp.status_code != 200:
+                return jobs
+
+            soup = BeautifulSoup(resp.text, "html.parser")
+            query_tokens = [q.lower() for q in query.split() if len(q) > 1]
+
+            # Find all table rows
+            rows = soup.find_all("tr")
+
+            for row in rows:
+                if len(jobs) >= max_results:
+                    break
+
+                # Look for job link: /en/?view=jobs&id=...
+                job_link = row.find("a", href=lambda h: h and "view=jobs&id=" in h)
+                if not job_link:
+                    continue
+
+                title = job_link.text.strip()
+                if not title:
+                    continue
+
+                href = job_link.get("href", "")
+                if href.startswith("/"):
+                    job_url = f"{cls.BASE_URL}{href}"
+                else:
+                    job_url = f"{cls.BASE_URL}/{href}"
+
+                # Look for company link: /en/?view=client&client=...
+                company_link = row.find("a", href=lambda h: h and "view=client" in h)
+                company = company_link.text.strip() if company_link and company_link.text.strip() else "Jobs.ge Employer"
+
+                # If query specified, check for match in title
+                if query_tokens:
+                    title_lower = title.lower()
+                    # Check if any token matches (e.g. "qa" or "automation" or "test" or "sdet")
+                    matched = any(token in title_lower for token in query_tokens)
+                    if not matched:
+                        continue
+
+                # Check remote tag or description
+                is_remote = bool(re.search(r'remote', title, re.IGNORECASE))
+
+                post = JobPost(
+                    title=title,
+                    company=company,
+                    job_url=job_url,
+                    source="jobs_ge",
+                    location="Georgia (Tbilisi / Remote)",
+                    is_remote=is_remote,
+                    description=f"{title} vacancy at {company} listed on Jobs.ge IT section."
+                )
+                jobs.append(post)
+
+        except Exception as e:
+            pass
+
+        return jobs

@@ -23,6 +23,11 @@ LinkedInAgent_Profile/
 *.log
 logs/
 
+# Generated search feeds & results
+jobs_feed.json
+search_results.md
+
+
 # IDE & Editor files
 .vscode/
 .idea/
