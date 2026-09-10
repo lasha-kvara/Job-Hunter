@@ -59,8 +59,11 @@ class AggregatorEngine:
         if include_jobs_ge or "jobs_ge" in target_sources:
             print("🇬🇪 Searching on: JOBS.GE (local / regional tech vacancies)...")
             found_jobs_ge = JobsGeProvider.search(query=query, max_results=results_per_source)
+            if is_remote:
+                found_jobs_ge = [job for job in found_jobs_ge if job.is_remote]
             all_jobs.extend(found_jobs_ge)
             print(f"  -> Found {len(found_jobs_ge)} raw listings from Jobs.ge.")
+
 
         print(f"\n📊 Total raw listings before deduplication: {len(all_jobs)}")
 

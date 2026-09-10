@@ -1,12 +1,18 @@
 import re
+import logging
 import requests
-import urllib3
 from bs4 import BeautifulSoup
 from typing import List
 from ..models import JobPost
 
-# Suppress insecure SSL warnings for environments lacking local CA certs
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+logger = logging.getLogger(__name__)
+
+# Use native system certificate store (Windows/macOS) for secure TLS verification
+try:
+    import truststore
+    truststore.inject_into_ssl()
+except ImportError:
+    pass
 
 
 class JobsGeProvider:
@@ -37,10 +43,12 @@ class JobsGeProvider:
                 url,
                 headers=cls.HEADERS,
                 timeout=12,
-                verify=False
+                verify=True
             )
             if resp.status_code != 200:
+                logger.warning(f"Jobs.ge returned non-200 status: {resp.status_code}")
                 return jobs
+
 
             soup = BeautifulSoup(resp.text, "html.parser")
             query_tokens = [q.lower() for q in query.split() if len(q) > 1]
@@ -94,6 +102,7 @@ class JobsGeProvider:
                 jobs.append(post)
 
         except Exception as e:
-            pass
+            logger.warning(f"Jobs.ge search failed: {e}")
 
         return jobs
+

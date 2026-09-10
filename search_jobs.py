@@ -65,9 +65,10 @@ def main():
         help="Filter out jobs with fit score below this threshold (0-100)"
     )
     parser.add_argument(
-        "--no-remote",
-        action="store_true",
-        help="Disable remote-only filtering"
+        "--remote",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Filter for remote-only positions (use --no-remote to include on-site)"
     )
     parser.add_argument(
         "--export-md",
@@ -86,6 +87,7 @@ def main():
     print(f"🌐 Sources:      {', '.join(args.sources)}")
     print(f"⏱️  Max Age:      {args.hours} hours")
     print(f"🎯 Min Score:    {args.min_score}%")
+    print(f"🏠 Remote Only:  {args.remote}")
     print("=" * 65 + "\n")
 
     engine = AggregatorEngine(output_dir=PROJECT_ROOT / "Job Hunter Agent")
@@ -95,10 +97,11 @@ def main():
         sources=args.sources,
         results_per_source=args.limit,
         hours_old=args.hours,
-        is_remote=not args.no_remote,
+        is_remote=args.remote,
         min_fit_score=args.min_score,
         include_jobs_ge="jobs_ge" in args.sources
     )
+
 
     if not jobs:
         print("\n❌ No jobs found matching the criteria.")

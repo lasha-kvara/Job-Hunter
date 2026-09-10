@@ -3,6 +3,8 @@ python-jobspy>=1.1.80
 pandas>=2.0.0
 beautifulsoup4>=4.12.0
 requests>=2.31.0
+truststore>=0.9.0
+
 
 # Headed Browser Automation & Form Filling
 playwright>=1.40.0

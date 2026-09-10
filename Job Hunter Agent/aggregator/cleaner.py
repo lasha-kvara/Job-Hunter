@@ -15,8 +15,9 @@ TRACKING_PARAMS = {
     # Ad trackers
     "fbclid", "gclid", "msclkid", "mc_cid", "mc_eid", "_hsenc", "_hsmi",
     "vero_id", "vero_conv", "nr_email_referer", "rb_clickid", "s_cid", "mkt_tok",
-    "twclid", "yclid", "igshid", "spJobID", "spReportId",
+    "twclid", "yclid", "igshid", "spjobid", "spreportid",
 }
+
 
 
 def clean_job_url(raw_url: str) -> str:
