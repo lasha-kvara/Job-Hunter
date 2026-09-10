@@ -1,0 +1,49 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Browser profiles & session data
+LinkedInAgent_Profile/
+*.session
+*.cookies
+
+# Logs
+*.log
+logs/
+
+# IDE & Editor files
+.vscode/
+.idea/
+
+# Operating System files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# Personal candidate profile, reports & pipelines (keep local only)
+*candidate-profile.md
+!*candidate-profile.template.md
+*job-applications-report.md
+!*job-applications-report.template.md
+*linkedin-pipeline.md
+!*linkedin-pipeline.template.md
+
+# Antigravity local assistant configuration & scratch scripts
+.agents/
+add_jobs.py
+
+

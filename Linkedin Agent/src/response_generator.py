@@ -1,0 +1,172 @@
+"""
+Response Generator: Generates accurate, bilingual, friendly-professional candidate replies.
+Strictly grounded in candidate-profile.md facts.
+"""
+import os
+import re
+import warnings
+from typing import Dict, Any, Optional, Tuple
+import sys
+from pathlib import Path
+
+warnings.filterwarnings("ignore", category=FutureWarning)
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import config
+from src.profile_manager import CandidateProfile
+
+HAS_NEW_GENAI = False
+HAS_LEGACY_GENAI = False
+
+try:
+    from google import genai
+    from google.genai import types
+    HAS_NEW_GENAI = True
+except ImportError:
+    try:
+        import google.generativeai as legacy_genai
+        HAS_LEGACY_GENAI = True
+    except ImportError:
+        pass
+
+class ResponseGenerator:
+    def __init__(self, profile: Optional[CandidateProfile] = None):
+        self.profile = profile or CandidateProfile()
+        self.api_key = config.GEMINI_API_KEY
+        self.client = None
+        self.legacy_model = None
+
+        if self.api_key:
+            if HAS_NEW_GENAI:
+                try:
+                    self.client = genai.Client(api_key=self.api_key)
+                except Exception:
+                    self.client = None
+            elif HAS_LEGACY_GENAI:
+                try:
+                    legacy_genai.configure(api_key=self.api_key)
+                    self.legacy_model = legacy_genai.GenerativeModel(config.DEFAULT_MODEL)
+                except Exception:
+                    self.legacy_model = None
+
+    def detect_language(self, text: str) -> str:
+        """Detects whether text is Georgian or English/Other."""
+        # Check for Georgian Unicode block: \u10A0-\u10FF
+        if re.search(r"[\u10A0-\u10FF]", text):
+            return "ka"
+        return "en"
+
+    def draft_template_response(self, intent: str, contact_name: str = "", role_or_details: str = "", language: str = "en") -> str:
+        """Fallback template-based response adhering strictly to persona."""
+        name = contact_name or "there"
+
+        if intent == "initial_reply":
+            if language == "ka":
+                role_str = f"{role_or_details}-ს" if role_or_details else "ვაკანსიის"
+                return f"გამარჯობა {name}, მადლობა დაინტერესებისთვის! სიამოვნებით გავეცნობი {role_str} პოზიციის დეტალებს. თუ შეგიძლიათ გამიზიაროთ გუნდისა და პროექტის შესახებ დამატებითი ინფორმაცია. სიამოვნებით გავისაუბრებთ. პატივისცემით, ლაშა"
+            else:
+                role_str = role_or_details or "the role"
+                return f"Hello {name}, thanks for reaching out! I'm interested in the {role_str} opportunity. Could you share more details about the role and the team? I'd be happy to schedule an introductory call. Best, Lasha"
+
+        elif intent == "propose_time":
+            if language == "ka":
+                return f"გამარჯობა {name}, შემიძლია შემოგთავაზოთ {role_or_details or 'ორშაბათს 17:00-ზე ან სამშაბათს 17:00-ზე'} (თბილისის დროით, GMT+4). რომელი დრო იქნება თქვენთვის უფრო მოსახერხებელი?"
+            else:
+                return f"Hello {name}, I'm available on {role_or_details or 'Monday at 17:00 and Tuesday at 17:00'} (GMT+4 / Georgia time). Which time works best for your schedule?"
+
+        elif intent == "confirm_interview":
+            if language == "ka":
+                return f"{role_or_details or 'შეთანხმებული დრო'} (თბილისის დროით) ჩემთვის სრულად მისაღებია. შევხვდებით გასაუბრებაზე!"
+            else:
+                return f"{role_or_details or 'The proposed time'} (GMT+4) works perfectly for me. Looking forward to our discussion!"
+
+        elif intent == "salary_expectation":
+            if language == "ka":
+                return "ჩემი 7+-წლიანი SDET გამოცდილებიდან და ავტომატიზაციის ფრეიმვორკების არქიტექტურიდან გამომდინარე, ჩემი მინიმალური სახელფასო მოლოდინია $4,500 USD/თვეში (net). სიამოვნებით განვიხილავ დეტალებს მას შემდეგ, რაც უკეთ გავეცნობით პროექტის მასშტაბს."
+            else:
+                return "Based on my 7+ years of SDET experience and multi-platform automation expertise, I am targeting at least $4,500 USD/month. Happy to discuss further once we explore the technical requirements and project scope in detail."
+
+        elif intent == "follow_up":
+            if language == "ka":
+                return f"გამარჯობა {name}, უბრალოდ შეგახსენებთ თავს — ხომ არ გაქვთ რაიმე სიახლე პროცესთან დაკავშირებით? მადლობა!"
+            else:
+                return f"Hi {name}, just following up to check if there are any updates regarding our discussion. Thanks!"
+
+        # Default short reply
+        if language == "ka":
+            return f"გამარჯობა {name}, მადლობა შეტყობინებისთვის! დეტალებს გავეცნობი და მალე დაგიბრუნდებით. პატივისცემით, ლაშა"
+        else:
+            return f"Hello {name}, thanks for your message! I will review the details and get back to you shortly. Best, Lasha"
+
+    def draft_llm_response(self, hr_message: str, contact_name: str = "", context: str = "") -> Tuple[str, bool]:
+        """
+        Uses Gemini to generate a grounded response.
+        Returns (draft_message, requires_user_confirmation).
+        """
+        language = self.detect_language(hr_message)
+        requires_user_confirmation = False
+
+        # Safety / keyword check for unconfirmed items
+        if any(w in hr_message.lower() for w in ["salary", "rate", "compensation", "ხელფას", "ანაზღაურებ"]):
+            requires_user_confirmation = True
+        if any(w in hr_message.lower() for w in ["interview", "call", "schedule", "time", "შეხვედრ", "გასაუბრებ", "საათ"]):
+            requires_user_confirmation = True
+
+        if not self.client and not self.legacy_model:
+            # Use template engine
+            if any(w in hr_message.lower() for w in ["salary", "rate", "compensation", "ხელფას", "ანაზღაურებ"]):
+                return self.draft_template_response("salary_expectation", contact_name, language=language), True
+            if any(w in hr_message.lower() for w in ["interview", "call", "schedule", "time", "შეხვედრ", "გასაუბრებ", "საათ", "დრო"]):
+                return self.draft_template_response("propose_time", contact_name, language=language), True
+            return self.draft_template_response("initial_reply", contact_name, language=language), requires_user_confirmation
+
+        system_instruction = f"""You are representing candidate Lasha Kvaratskhelia in LinkedIn conversations with HR/Recruiters.
+Candidate Profile (Single Source of Truth):
+{self.profile.get_full_context_prompt()}
+
+Rules:
+1. Tone: Friendly-professional, concise, warm, respectful.
+2. Language: Respond in { 'Georgian' if language == 'ka' else 'English' }.
+3. NEVER invent facts, skills, companies, or salary not present in profile.
+4. If salary is asked: state minimum $4500 USD/month.
+5. If interview time is asked: propose availability in GMT+4 (Georgia time).
+6. Keep length short (2-4 sentences). Do not write essays.
+"""
+
+        prompt = f"""Recruiter / HR Message:
+\"{hr_message}\"
+
+Contact Name: {contact_name or 'Recruiter'}
+Additional Context: {context or 'None'}
+
+Draft the exact response message to be sent to this recruiter:"""
+
+        try:
+            if self.client:
+                response = self.client.models.generate_content(
+                    model=config.DEFAULT_MODEL,
+                    contents=f"{system_instruction}\n\n{prompt}"
+                )
+                text = response.text.strip()
+                return text, requires_user_confirmation
+            elif self.legacy_model:
+                response = self.legacy_model.generate_content(
+                    f"{system_instruction}\n\n{prompt}"
+                )
+                text = response.text.strip()
+                return text, requires_user_confirmation
+        except Exception as e:
+            # Fallback to template
+            return self.draft_template_response("initial_reply", contact_name, language=language), requires_user_confirmation
+
+        return self.draft_template_response("initial_reply", contact_name, language=language), requires_user_confirmation
+
+if __name__ == "__main__":
+    generator = ResponseGenerator()
+    msg_en = "Hi Lasha, we saw your profile and have a Senior SDET opening. Are you open to discussing it?"
+    draft_en, req_en = generator.draft_llm_response(msg_en, contact_name="Sarah")
+    print(f"EN Draft (Requires approval: {req_en}):\n{draft_en}\n")
+
+    msg_ka = "გამარჯობა ლაშა, მაინტერესებს თქვენი სახელფასო მოლოდინი ამ პოზიციაზე."
+    draft_ka, req_ka = generator.draft_llm_response(msg_ka, contact_name="მარიამი")
+    print(f"KA Draft (Requires approval: {req_ka}):\n{draft_ka}\n")
