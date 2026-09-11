@@ -71,6 +71,18 @@ Open `Linkedin Agent/candidate-profile.md` in any editor and specify:
 
 > 🛡️ **Privacy Guarantee:** `candidate-profile.md`, `job-applications-report.md`, and `linkedin-pipeline.md` are strictly git-ignored. Your personal contact details and private application histories will never be committed or uploaded to Git.
 
+### 4. (Optional) Configure Environment Variables
+If you want to use Google Gemini for AI-assisted recruiter message drafting or customize browser ports, copy `.env.example` to `.env`:
+
+```bash
+# Windows:
+copy .env.example .env
+
+# Linux / macOS:
+cp .env.example .env
+```
+Open `.env` and configure your optional `GEMINI_API_KEY` (free from [Google AI Studio](https://aistudio.google.com/)). Without an API key, all features work 100% locally with built-in templates.
+
 ---
 
 ## 🤖 Mode 1: Running with Google Antigravity
@@ -132,11 +144,25 @@ python search_jobs.py --query "Playwright Automation" --sources indeed linkedin 
 python search_jobs.py --query "SDET" --no-remote --sources jobs_ge indeed
 ```
 
-**Key Features:**
-- **URL Sanitization:** Automatically strips 40+ tracking parameters (`utm_*`, `refId`, `trackingId`, `gh_src`, etc.).
+#### CLI Parameters Reference:
+
+| Option | Short | Type / Choices | Default | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `--query` | `-q` | `str` | `"QA Automation Engineer"` | Job title or technical search terms (e.g. `SDET`, `Playwright`) |
+| `--location` | `-l` | `str` | `None` | Target location. Defaults to `Remote` if `--remote`, or all locations if `--no-remote` |
+| `--country` | | `str` | `"USA"` | Target country for Indeed / Glassdoor searches |
+| `--sources` | `-s` | `indeed`, `linkedin`, `google`, `glassdoor`, `zip_recruiter`, `jobs_ge` | All sources | One or more space-separated platforms to scrape |
+| `--limit` | `-n` | `int` | `10` | Maximum raw listings requested per platform |
+| `--hours` | | `int` | `72` | Filter listings published within the last N hours |
+| `--min-score`| | `int (0–100)` | `0` | Exclude listings with fit score below this threshold |
+| `--remote` / `--no-remote` | | `flag` | `--remote` | Toggle remote-only vs. on-site/hybrid positions |
+
+**Key Features & Outputs:**
+- **URL Sanitization:** Automatically strips 40+ tracking parameters (`utm_*`, `refId`, `trackingId`, `gh_src`, etc.) to provide direct application links.
 - **Smart Deduplication:** Groups listings across platforms by normalized company + title + location signatures.
-- **Dynamic Fit Scoring:** Automatically scores jobs (0–100%) based on target roles and skills in `candidate-profile.md`.
-- **Outputs:** Saves feed to `Job Hunter Agent/jobs_feed.json` and exports a clean Markdown table to `search_results.md`.
+- **Dynamic Fit Scoring:** Automatically scores jobs (0–100%) against target roles, technical skills, and seniority preferences from `candidate-profile.md`.
+- **Generated Report (`search_results.md`):** Produces a ready-to-read Markdown table with fit rankings, direct sanitized links, location, salary, and matching skill justifications.
+- **Structured JSON Feed (`Job Hunter Agent/jobs_feed.json`):** Saves complete metadata for every discovered post for automation pipelines or custom post-processing.
 
 ---
 
@@ -190,8 +216,11 @@ Avoid logging in repeatedly or triggering bot challenges by attaching to your ex
 ```text
 Job-Hunter/
 ├── README.md                                 # Comprehensive guide & setup manual
+├── LICENSE                                   # MIT License
+├── .env.example                              # Environment configuration template
 ├── requirements.txt                          # Unified Python dependencies
 ├── search_jobs.py                            # Multi-source vacancy aggregator CLI
+├── test_regression.py                        # Full regression & unit test suite
 ├── headed_apply.py                           # Standalone Headed Playwright job apply runner
 ├── run_headed.py                             # Quick demo script for visual browsing
 ├── .gitignore                                # Strict privacy boundary for local files
@@ -211,7 +240,6 @@ Job-Hunter/
 │               └── references/
 │                   ├── pacing-rules.md
 │                   └── templates.md
-
 │
 ├── Job Hunter Agent/
 │   ├── aggregator/                           # Multi-source scraper engine
@@ -240,6 +268,24 @@ Job-Hunter/
 
 ---
 
+## 🧪 Verification & Automated Tests
+
+To ensure all scrapers, scoring algorithms, and LinkedIn agent components operate reliably:
+
+```bash
+# Run the full regression test suite
+python test_regression.py
+```
+
+This automated suite verifies:
+- **LinkedIn Agent core:** Profile loading, pipeline state machine, grounded response generation.
+- **Aggregator URL sanitizer:** Stripping 40+ tracking parameters (`utm_*`, `refId`, `trackingId`, `spJobID`, etc.).
+- **Candidate fit scorer:** Weighted matching, seniority adjustments, and low-fit penalties.
+- **Jobs.ge provider:** Resilient HTML scraping, TLS certificate validation with `truststore`, and concurrent detail enrichment.
+- **Script syntax & compilation:** Validates runner scripts before execution.
+
+---
+
 ## 🔒 Privacy & Safety Guidelines
 
 - **Local-First & Zero Data Harvesting:** No personal tracking or telemetry databases are used. Your candidate profile, submitted application logs, and pipeline records remain strictly on your local disk.
@@ -247,7 +293,6 @@ Job-Hunter/
 - **Git-Ignored Files:** Your actual `candidate-profile.md`, submitted applications report, and pipeline tracker remain on your local disk only.
 - **Honeypot Protection:** Bypasses hidden honeypot buttons on platforms like Indeed SmartApply.
 - **Safe File Uploads:** Uploads PDFs directly to `input[type="file"]` without opening operating system file dialogs.
-
 
 ---
 
