@@ -95,9 +95,10 @@ pip install -r requirements.txt
 Linkedin Agent\start_browser.bat
 
 # Linux / macOS:
-google-chrome --remote-debugging-port=9222 --user-data-dir="/tmp/chrome_profile"
+export CDP_PORT="${CDP_PORT:-9222}" # set this to the value configured in .env
+google-chrome --remote-debugging-port="$CDP_PORT" --user-data-dir="/tmp/chrome_profile"
 ```
-*ეს გახსნის Chrome-ს ან Brave-ს `9222` პორტზე, სადაც თქვენი LinkedIn პროფილი ავტორიზებულია.*
+*ეს გახსნის Chrome-ს ან Brave-ს კონფიგურირებულ (ნაგულისხმევად 9222) პორტზე, სადაც თქვენი LinkedIn პროფილი ავტორიზებულია.*
 
 #### ნაბიჯი 3: გაუშვით აგენტი
 ```bash

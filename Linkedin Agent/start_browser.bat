@@ -4,7 +4,6 @@ setlocal enabledelayedexpansion
 set "PORT=9222"
 if exist "%~dp0..\.env" for /f "usebackq tokens=1,* delims==" %%A in ("%~dp0..\.env") do if "%%A"=="CDP_PORT" set "PORT=%%B"
 if defined CDP_PORT set "PORT=%CDP_PORT%"
-if not "%~1"=="" set "PORT=%~1"
 
 title LinkedIn Agent - Chrome/Brave Launcher (Port %PORT%)
 echo ======================================================================

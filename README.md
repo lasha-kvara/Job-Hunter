@@ -161,8 +161,8 @@ python search_jobs.py --query "SDET" --no-remote --sources jobs_ge indeed
 - **URL Sanitization:** Automatically strips 40+ tracking parameters (`utm_*`, `refId`, `trackingId`, `gh_src`, etc.) to provide direct application links.
 - **Smart Deduplication:** Groups listings across platforms by normalized company + title + location signatures.
 - **Dynamic Fit Scoring:** Automatically scores jobs (0–100%) against target roles, technical skills, and job-title seniority signals.
-- **Generated Report (`search_results.md`):** Produces a ready-to-read Markdown table with fit rankings, direct sanitized links, location, salary, and matching skill justifications.
-- **Structured JSON Feed (`Job Hunter Agent/jobs_feed.json`):** Saves complete metadata for every discovered post for automation pipelines or custom post-processing.
+- **Generated Report (`search_results.md`):** Produces a ready-to-read Markdown table with fit rankings, direct sanitized links, location, salary, and source metadata.
+- **Structured JSON Feed (`Job Hunter Agent/jobs_feed.json`):** Saves complete metadata for every post that passes the configured search and fit-score filters for automation pipelines or custom post-processing.
 
 ---
 
@@ -201,13 +201,14 @@ Avoid logging in repeatedly or triggering bot challenges by attaching to your ex
    - **Windows:** Double-click `Linkedin Agent/start_browser.bat`
    - **Linux / macOS:**
      ```bash
-     google-chrome --remote-debugging-port=9222 --user-data-dir="/tmp/chrome_profile"
+     export CDP_PORT="${CDP_PORT:-9222}" # use the value configured in .env
+     google-chrome --remote-debugging-port="$CDP_PORT" --user-data-dir="/tmp/chrome_profile"
      ```
 2. **Run your script or agent:**
    ```bash
    python "Linkedin Agent/run.py"
    ```
-   The engine attaches to port `9222` and operates inside your logged-in browser session.
+   The engine attaches to the configured port (default `9222`) and operates inside your logged-in browser session.
 
 ---
 

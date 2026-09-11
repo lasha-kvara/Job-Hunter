@@ -80,7 +80,7 @@ class ResponseGenerator:
                 role_or_details and (
                     (tz and tz.lower() in details_lower)
                     or "timezone" in details_lower
-                    or re.search(r"\b(?:utc|gmt|est|edt|pst|pdt|cst|cdt|cet|cest|get)(?:[+-]\d+(?::\d{2})?)?\b", details_lower)
+                    or re.search(r"\b(?:utc|gmt|est|edt|pst|pdt|cst|cdt|cet|cest)(?:[+-]\d+(?::\d{2})?)?\b", details_lower)
                 )
             )
             tz_str = "" if has_timezone else (f" ({tz})" if tz else " ([Timezone])")
@@ -96,7 +96,7 @@ class ResponseGenerator:
                 role_or_details and (
                     (tz and tz.lower() in details_lower)
                     or "timezone" in details_lower
-                    or re.search(r"\b(?:utc|gmt|est|edt|pst|pdt|cst|cdt|cet|cest|get)(?:[+-]\d+(?::\d{2})?)?\b", details_lower)
+                    or re.search(r"\b(?:utc|gmt|est|edt|pst|pdt|cst|cdt|cet|cest)(?:[+-]\d+(?::\d{2})?)?\b", details_lower)
                 )
             )
             tz_str = "" if has_timezone else (f" ({tz})" if tz else " ([Timezone])")
