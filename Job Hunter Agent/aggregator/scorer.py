@@ -141,13 +141,15 @@ class CandidateScorer:
                                 if len(item) > 1:
                                     parsed_keywords[item] = weight
 
-            except Exception:
-                pass
+                profile_read_success = True
+            except Exception as e:
+                logger.warning(f"Could not read or parse candidate profile at {profile_path}: {e}. Falling back to default criteria.")
+                profile_read_success = False
 
         # Strict candidate profile grounding:
-        # If a candidate profile exists, score strictly against parsed profile keywords and target roles.
-        # Fall back to default SDET qualifications ONLY when no candidate profile file exists.
-        if profile_path and profile_path.exists():
+        # If a candidate profile exists and was read successfully, score strictly against parsed profile criteria.
+        # Fall back to default SDET qualifications if no profile file exists or reading/parsing failed.
+        if profile_path and profile_path.exists() and profile_read_success:
             keywords = parsed_keywords
             target_roles = list(set(parsed_roles))
         else:

@@ -153,7 +153,8 @@ class JobsGeProvider:
                     matching_candidates.append(cand)
                     if len(matching_candidates) >= max_results:
                         break
-                elif query_tokens and any(token in row_text.lower() for token in query_tokens):
+                else:
+                    # Collect a bounded set of non-title matches to check their full announcement text
                     if len(secondary_candidates) < max_results:
                         secondary_candidates.append(cand)
 
@@ -161,9 +162,11 @@ class JobsGeProvider:
             if not candidates_to_enrich:
                 return []
 
-            # Concurrently enrich candidate descriptions using bounded ThreadPoolExecutor
+            # Concurrently enrich candidate descriptions using thread-safe worker sessions
             def enrich(cand):
-                desc = cls._fetch_description(cand["job_url"], session)
+                with requests.Session() as worker_session:
+                    worker_session.headers.update(cls.HEADERS)
+                    desc = cls._fetch_description(cand["job_url"], worker_session)
                 if not desc:
                     desc = f"{cand['title']} vacancy at {cand['company']} listed on Jobs.ge IT section."
                 return cand, desc

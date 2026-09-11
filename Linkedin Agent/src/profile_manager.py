@@ -111,8 +111,15 @@ class CandidateProfile:
             "portfolio": ""
         }
 
+    def get_section(self, name: str) -> str:
+        """Returns the raw content of a section matching name (case-insensitive)."""
+        for sec_name, content in self.sections.items():
+            if name.lower() in sec_name.lower():
+                return content
+        return ""
+
     def get_cv_file_path(self) -> str:
-        """Dynamically parses CV/Resume file path from candidate profile, with fallback."""
+        """Dynamically parses CV/Resume file path from candidate profile."""
         cv_match = re.search(r"ALWAYS upload the CV from:\s*[`'\"]?([^`'\"\n\r]+)[`'\"]?", self.raw_content, re.IGNORECASE)
         if cv_match:
             candidate_path = cv_match.group(1).strip()
@@ -127,7 +134,11 @@ class CandidateProfile:
                 candidate_path = path_match.group(1).strip()
                 if candidate_path and not candidate_path.startswith("path/to") and not candidate_path.startswith("["):
                     return candidate_path
-        return config.DEFAULT_CV_PATH
+
+        raise ValueError(
+            "CV file path is not configured in candidate-profile.md. "
+            "Please update the 'ALWAYS upload the CV from: ...' line with the path to your CV PDF before applying."
+        )
 
     def get_full_context_prompt(self) -> str:
         """Returns the formatted profile for feeding to LLM prompts."""

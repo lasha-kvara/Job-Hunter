@@ -1,6 +1,6 @@
 # 🎯 Job-Hunter — Autonomous Job Search & Application Agent
 
-An open-source, dual-mode job search and application engine built with **Python**, **Playwright**, and **AI Agent Skills**. Designed for software engineers, SDETs, and QA Automation professionals to discover, filter, score, and apply to vacancies across multiple platforms with zero personal data leaks.
+An open-source, dual-mode job search and application engine built with **Python**, **Playwright**, and **AI Agent Skills**. Designed for software engineers, SDETs, and QA Automation professionals to discover, filter, score, and apply to vacancies across multiple platforms with a local-by-default, privacy-first architecture (zero external telemetry and explicit opt-in for optional cloud LLM APIs).
 
 ---
 
