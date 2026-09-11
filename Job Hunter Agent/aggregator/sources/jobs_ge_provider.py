@@ -84,7 +84,7 @@ class JobsGeProvider:
                     pub_date_str = tds[-2].text.strip()
 
                 # Filter by hours_old if requested
-                if hours_old and pub_date_str:
+                if hours_old is not None and pub_date_str:
                     try:
                         dt = datetime.strptime(f"{pub_date_str} {now.year}", "%d %B %Y")
                         if dt > now + timedelta(days=2):
