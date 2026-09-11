@@ -37,8 +37,15 @@ def main():
     )
     parser.add_argument(
         "--location", "-l",
-        default="Remote",
-        help="Target location (default: 'Remote')"
+        type=str,
+        default=None,
+        help="Target location (default: 'Remote' if --remote, or all locations if --no-remote)"
+    )
+    parser.add_argument(
+        "--country",
+        type=str,
+        default="USA",
+        help="Country for Indeed search (default: 'USA')"
     )
     parser.add_argument(
         "--sources", "-s",
@@ -79,11 +86,14 @@ def main():
 
     args = parser.parse_args()
 
+    # Determine location: if not specified, use "Remote" for remote searches or "" for on-site
+    resolved_location = args.location if args.location is not None else ("Remote" if args.remote else "")
+
     print("=" * 65)
     print("🚀 JOB-HUNTER: MULTI-SOURCE JOB AGGREGATOR")
     print("=" * 65)
     print(f"📌 Query:        {args.query}")
-    print(f"📍 Location:     {args.location}")
+    print(f"📍 Location:     {resolved_location or 'All / Any'}")
     print(f"🌐 Sources:      {', '.join(args.sources)}")
     print(f"⏱️  Max Age:      {args.hours} hours")
     print(f"🎯 Min Score:    {args.min_score}%")
@@ -93,14 +103,16 @@ def main():
     engine = AggregatorEngine(output_dir=PROJECT_ROOT / "Job Hunter Agent")
     jobs = engine.search(
         query=args.query,
-        location=args.location,
+        location=resolved_location,
         sources=args.sources,
         results_per_source=args.limit,
         hours_old=args.hours,
+        country_indeed=args.country,
         is_remote=args.remote,
         min_fit_score=args.min_score,
         include_jobs_ge="jobs_ge" in args.sources
     )
+
 
 
     if not jobs:

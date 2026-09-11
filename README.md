@@ -15,7 +15,8 @@ Job-Hunter is engineered to work in **two distinct modes**:
 | **Vacancy Discovery** | Autonomous multi-platform aggregation | `python search_jobs.py --query ...` |
 | **CV / Profile Fit** | Evaluated against your profile facts | Weighted keyword scoring (0–100%) |
 | **Form Filling** | Autonomous dynamic DOM analysis in Headed mode | Automated script actions in Headed mode |
-| **2FA / Captcha** | Intelligent pause-and-prompt / email tab check | Visual browser pauses for user entry |
+| **2FA / Captcha** | Pauses and prompts the user; never accesses email or credentials | Visual browser pauses for user entry |
+
 | **LinkedIn Recruiter** | AI drafts context-aware replies & tracks stages | Interactive terminal CLI menu |
 
 ---
@@ -111,7 +112,8 @@ You can now speak directly to the agent in English or Georgian:
 You do **not** need Antigravity, Docker, or paid AI tokens to run Job-Hunter. All tools run directly from your command line:
 
 ### 1. Multi-Source Vacancy Aggregator (`search_jobs.py`)
-Search across **LinkedIn, Indeed, Glassdoor, ZipRecruiter, Google Jobs**, and **Jobs.ge** concurrently:
+Search across **LinkedIn, Indeed, Glassdoor, ZipRecruiter, Google Jobs**, and **Jobs.ge**; the aggregator cleans and merges results from these sources:
+
 
 ```bash
 # Search for remote QA Automation positions
@@ -237,10 +239,12 @@ Job-Hunter/
 
 ## 🔒 Privacy & Safety Guidelines
 
-- **Zero Data Harvesting:** No personal data is transmitted to third-party databases.
+- **Local-First & Zero Data Harvesting:** No personal tracking or telemetry databases are used. Your candidate profile, submitted application logs, and pipeline records remain strictly on your local disk.
+- **Optional Cloud AI Integration:** If you choose to configure `GEMINI_API_KEY` for LLM-powered response generation in `Linkedin Agent`, message prompts containing relevant profile context are sent directly to Google's Gemini API using your own API key. Without an API key, the agent operates 100% locally with zero external transmission using built-in templates.
 - **Git-Ignored Files:** Your actual `candidate-profile.md`, submitted applications report, and pipeline tracker remain on your local disk only.
 - **Honeypot Protection:** Bypasses hidden honeypot buttons on platforms like Indeed SmartApply.
 - **Safe File Uploads:** Uploads PDFs directly to `input[type="file"]` without opening operating system file dialogs.
+
 
 ---
 

@@ -27,9 +27,11 @@ class JobPost:
 
     def __post_init__(self):
         if not self.id:
-            # Generate deterministic content hash from canonical company + title
-            key = f"{self.company.lower().strip()}||{self.title.lower().strip()}"
+            # Generate deterministic content hash from canonical company + title + location
+            key = f"{self.company.lower().strip()}||{self.title.lower().strip()}||{self.location.lower().strip()}"
             self.id = hashlib.sha256(key.encode("utf-8")).hexdigest()[:12]
+
+
 
     @property
     def salary_str(self) -> str:

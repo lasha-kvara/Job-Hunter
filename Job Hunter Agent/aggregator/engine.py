@@ -29,13 +29,14 @@ class AggregatorEngine:
         sources: Optional[List[str]] = None,
         results_per_source: int = 15,
         hours_old: int = 72,
+        country_indeed: str = "USA",
         is_remote: bool = True,
         min_fit_score: int = 0,
         include_jobs_ge: bool = True,
     ) -> List[JobPost]:
         """
         Executes search across all requested platforms, cleans, deduplicates,
-        and scores results against the SDET candidate profile.
+        and scores results against the configured candidate profile.
         """
         all_jobs: List[JobPost] = []
         target_sources = sources or ["indeed", "linkedin", "google", "glassdoor", "zip_recruiter"]
@@ -50,9 +51,11 @@ class AggregatorEngine:
                 sites=jobspy_sources,
                 results_wanted=results_per_source,
                 hours_old=hours_old,
+                country_indeed=country_indeed,
                 is_remote=is_remote,
             )
             all_jobs.extend(found_jobspy)
+
             print(f"  -> Found {len(found_jobspy)} raw listings from JobSpy sources.")
 
         # 2. Local Jobs.ge Search

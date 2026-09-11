@@ -1,7 +1,8 @@
 import re
 import os
 from pathlib import Path
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Optional
+
 from .models import JobPost
 
 
@@ -68,39 +69,34 @@ class CandidateScorer:
     _cached_target_roles = None
 
     @classmethod
-    def _resolve_profile_path(cls) -> Path:
-        """Finds candidate-profile.md in common repository locations."""
+    def _resolve_profile_path(cls) -> Optional[Path]:
+        """Finds active candidate-profile.md in common repository locations (never uses template)."""
         candidates = [
             Path("Linkedin Agent/candidate-profile.md"),
             Path(__file__).resolve().parent.parent.parent / "Linkedin Agent" / "candidate-profile.md",
             Path("candidate-profile.md"),
-            Path(__file__).resolve().parent.parent.parent / "Linkedin Agent" / "candidate-profile.template.md",
         ]
         for p in candidates:
             if p.exists():
                 return p
-        return candidates[0]
+        return None
 
     @classmethod
     def load_profile_criteria(cls) -> Tuple[dict, List[str]]:
         """
         Parses candidate-profile.md for target roles and technical skills.
         Returns a tuple of (core_keywords_dict, target_roles_list).
+        Initializes purely from the profile if available, falling back to
+        defaults only when no profile is configured.
         """
         if cls._cached_keywords is not None and cls._cached_target_roles is not None:
             return cls._cached_keywords, cls._cached_target_roles
 
         profile_path = cls._resolve_profile_path()
-        keywords = dict(cls.DEFAULT_CORE_KEYWORDS)
-        target_roles = [
-            "sdet",
-            "qa automation",
-            "automation engineer",
-            "test automation",
-            "software development engineer in test",
-        ]
+        parsed_keywords: Dict[str, int] = {}
+        parsed_roles: List[str] = []
 
-        if profile_path.exists():
+        if profile_path and profile_path.exists():
             try:
                 with open(profile_path, "r", encoding="utf-8") as f:
                     content = f.read()
@@ -108,13 +104,20 @@ class CandidateScorer:
                 # 1. Parse target roles
                 roles_match = re.search(r"##\s+Target\s+roles\s*\n(.*?)(?=\n##|\Z)", content, re.DOTALL | re.IGNORECASE)
                 if roles_match:
-                    parsed_roles = []
                     for line in roles_match.group(1).splitlines():
                         line = line.strip().lstrip("-* ").lower()
-                        if line and not line.startswith("["):
-                            parsed_roles.append(line)
-                    if parsed_roles:
-                        target_roles = parsed_roles
+                        # Skip empty lines or placeholder template lines like [Role Name]
+                        if not line or line.startswith("["):
+                            continue
+                        # Extract abbreviations/acronyms in parentheses (e.g. "Software Development Engineer in Test (SDET)")
+                        acronyms = re.findall(r"\((.*?)\)", line)
+                        clean_line = re.sub(r"\(.*?\)", "", line).strip()
+                        if clean_line:
+                            parsed_roles.append(clean_line)
+                        for acr in acronyms:
+                            acr = acr.strip()
+                            if len(acr) > 1:
+                                parsed_roles.append(acr)
 
                 # 2. Parse skills
                 skills_match = re.search(r"##\s+Skills\s*\n(.*?)(?=\n##|\Z)", content, re.DOTALL | re.IGNORECASE)
@@ -123,24 +126,44 @@ class CandidateScorer:
                         line = line.strip()
                         if not line or line.startswith("#"):
                             continue
-                        # e.g. - **Languages:** Python, TypeScript, Java
                         parts = line.split(":", 1)
                         if len(parts) == 2:
                             category = parts[0].lower()
-                            items_str = parts[1].replace("[", "").replace("]", "")
+                            items_str = parts[1].strip()
+                            # Skip placeholder template lines like [e.g. Python, TypeScript] or [Your skills]
+                            if items_str.startswith("[") or "e.g." in items_str.lower():
+                                continue
                             items = [it.strip().lower() for it in items_str.split(",") if it.strip()]
-                            
                             weight = 15 if any(c in category for c in ["framework", "language", "core"]) else 10
                             for item in items:
-                                if len(item) > 1 and not item.startswith("e.g."):
-                                    keywords[item] = weight
+                                if len(item) > 1:
+                                    parsed_keywords[item] = weight
 
             except Exception:
                 pass
 
+        # If a candidate profile was found with skills, use those!
+        # Otherwise, fall back to default SDET qualifications.
+        if parsed_keywords:
+            keywords = parsed_keywords
+        else:
+            keywords = dict(cls.DEFAULT_CORE_KEYWORDS)
+
+        if parsed_roles:
+            target_roles = list(set(parsed_roles))
+        else:
+            target_roles = [
+                "sdet",
+                "qa automation",
+                "automation engineer",
+                "test automation",
+                "software development engineer in test",
+            ]
+
         cls._cached_keywords = keywords
         cls._cached_target_roles = target_roles
         return keywords, target_roles
+
 
 
     @classmethod

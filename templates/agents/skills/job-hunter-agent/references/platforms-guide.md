@@ -26,4 +26,5 @@ This guide outlines how the **Job Hunter & Auto-Apply Agent** interacts with sup
 - **Workable & SmartRecruiters:** Standard field mappings.
 
 ### C. Multi-Source Aggregator Platforms
-- Indeed, Glassdoor, ZipRecruiter, Google Jobs — queried concurrently via the built-in aggregator engine.
+- Indeed, Glassdoor, ZipRecruiter, Google Jobs — scraped and aggregated via the unified aggregator engine.
+

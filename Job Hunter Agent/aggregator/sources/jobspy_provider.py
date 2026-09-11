@@ -51,20 +51,37 @@ class JobSpyProvider:
             if df is None or df.empty:
                 return []
 
+            import pandas as pd
+
+            def clean_str(val, default="") -> str:
+                if val is None or (isinstance(val, float) and pd.isna(val)):
+                    return default
+                s = str(val).strip()
+                return default if s.lower() == "nan" else s
+
+            def clean_bool(val, default=False) -> bool:
+                if val is None or (isinstance(val, float) and pd.isna(val)):
+                    return default
+                if isinstance(val, bool):
+                    return val
+                if isinstance(val, str):
+                    return val.lower() in ("true", "1", "yes")
+                return bool(val)
+
             # Convert dataframe rows to JobPost objects
             for _, row in df.iterrows():
                 try:
-                    title = str(row.get("title", "") or "").strip()
-                    company = str(row.get("company", "") or "").strip()
-                    job_url = str(row.get("job_url", "") or "").strip()
-                    source = str(row.get("site", "") or "jobspy").lower()
+                    title = clean_str(row.get("title"))
+                    company = clean_str(row.get("company"), default="Employer")
+                    job_url = clean_str(row.get("job_url"))
+                    source = clean_str(row.get("site"), default="jobspy").lower()
 
                     if not title or not job_url:
                         continue
 
                     # Parse numbers safely
                     salary_min = None
-                    if "min_amount" in row and row["min_amount"] is not None:
+                    if "min_amount" in row and not pd.isna(row["min_amount"]):
                         try:
                             val = float(row["min_amount"])
                             if val > 0:
@@ -73,7 +90,7 @@ class JobSpyProvider:
                             pass
 
                     salary_max = None
-                    if "max_amount" in row and row["max_amount"] is not None:
+                    if "max_amount" in row and not pd.isna(row["max_amount"]):
                         try:
                             val = float(row["max_amount"])
                             if val > 0:
@@ -86,17 +103,18 @@ class JobSpyProvider:
                         company=company,
                         job_url=job_url,
                         source=source,
-                        location=str(row.get("location", "") or location),
-                        date_posted=str(row.get("date_posted", "") or ""),
+                        location=clean_str(row.get("location"), default=location),
+                        date_posted=clean_str(row.get("date_posted")),
                         salary_min=salary_min,
                         salary_max=salary_max,
-                        salary_currency=str(row.get("currency", "USD") or "USD"),
-                        salary_period=str(row.get("interval", "yearly") or "yearly"),
-                        job_type=str(row.get("job_type", "") or ""),
-                        is_remote=bool(row.get("is_remote", is_remote)),
-                        description=str(row.get("description", "") or "")[:2000],  # keep preview
+                        salary_currency=clean_str(row.get("currency"), default="USD"),
+                        salary_period=clean_str(row.get("interval"), default="yearly"),
+                        job_type=clean_str(row.get("job_type")),
+                        is_remote=clean_bool(row.get("is_remote"), default=is_remote),
+                        description=clean_str(row.get("description"))[:2000],  # keep preview
                     )
                     posts.append(job_post)
+
                 except Exception as row_err:
                     logger.debug(f"Error parsing job row: {row_err}")
                     continue
