@@ -52,10 +52,12 @@ def show_banner(profile: Optional[CandidateProfile] = None):
     primary_role = roles[0] if roles else "Job-Seeker"
     candidate_label = f"{name} ({primary_role})"
     if HAS_RICH:
+        from rich.markup import escape
+        safe_label = escape(candidate_label)
         banner = f"""
 [bold cyan]╔══════════════════════════════════════════════════════════════════════╗
 ║                    💼 LINKEDIN JOB-SEEKER AGENT                     ║
-║              Candidate: [bold yellow]{candidate_label:^45}[/bold yellow] ║
+║              Candidate: [bold yellow]{safe_label:^45}[/bold yellow] ║
 ╚══════════════════════════════════════════════════════════════════════╝[/bold cyan]
         """
         console.print(banner)

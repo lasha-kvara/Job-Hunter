@@ -74,18 +74,20 @@ class ResponseGenerator:
                 return f"Hello {name}, thanks for reaching out! I'm interested in the {role_str} opportunity. Could you share more details about the role and the team? I'd be happy to schedule an introductory call. {signoff_en}"
 
         elif intent == "propose_time":
-            tz = self.profile.get_preferences().get("timezone", "UTC")
+            tz = self.profile.get_preferences().get("timezone", "")
+            tz_str = f" ({tz})" if tz else ""
             if language == "ka":
-                return f"გამარჯობა {name}, შემიძლია შემოგთავაზოთ {role_or_details or 'ორშაბათს 17:00-ზე ან სამშაბათს 17:00-ზე'} ({tz}). რომელი დრო იქნება თქვენთვის უფრო მოსახერხებელი?"
+                return f"გამარჯობა {name}, შემიძლია შემოგთავაზოთ {role_or_details or 'ორშაბათს 17:00-ზე ან სამშაბათს 17:00-ზე'}{tz_str}. რომელი დრო იქნება თქვენთვის უფრო მოსახერხებელი?"
             else:
-                return f"Hello {name}, I'm available on {role_or_details or 'Monday at 17:00 and Tuesday at 17:00'} ({tz}). Which time works best for your schedule?"
+                return f"Hello {name}, I'm available on {role_or_details or 'Monday at 17:00 and Tuesday at 17:00'}{tz_str}. Which time works best for your schedule?"
 
         elif intent == "confirm_interview":
-            tz = self.profile.get_preferences().get("timezone", "UTC")
+            tz = self.profile.get_preferences().get("timezone", "")
+            tz_str = f" ({tz})" if tz else ""
             if language == "ka":
-                return f"{role_or_details or 'შეთანხმებული დრო'} ({tz}) ჩემთვის სრულად მისაღებია. შევხვდებით გასაუბრებაზე!"
+                return f"{role_or_details or 'შეთანხმებული დრო'}{tz_str} ჩემთვის სრულად მისაღებია. შევხვდებით გასაუბრებაზე!"
             else:
-                return f"{role_or_details or 'The proposed time'} ({tz}) works perfectly for me. Looking forward to our discussion!"
+                return f"{role_or_details or 'The proposed time'}{tz_str} works perfectly for me. Looking forward to our discussion!"
 
         elif intent == "salary_expectation":
             if salary_str:
@@ -135,8 +137,9 @@ class ResponseGenerator:
 
         candidate_name = self.profile.get_candidate_name()
         salary_str = self.profile.get_salary_expectation()
-        tz = self.profile.get_preferences().get("timezone", "UTC")
+        tz = self.profile.get_preferences().get("timezone", "")
         salary_rule = f"state expectation from profile ({salary_str})" if salary_str else "state that compensation can be discussed once project scope is explored"
+        tz_rule = f"propose availability in candidate timezone ({tz})" if tz else "propose availability and confirm recruiter preferred timezone"
         system_instruction = f"""You are representing candidate {candidate_name} in LinkedIn conversations with HR/Recruiters.
 Candidate Profile (Single Source of Truth):
 {self.profile.get_full_context_prompt()}
@@ -146,7 +149,7 @@ Rules:
 2. Language: Respond in { 'Georgian' if language == 'ka' else 'English' }.
 3. NEVER invent facts, skills, companies, or salary not present in profile.
 4. If salary is asked: {salary_rule}.
-5. If interview time is asked: propose availability in {tz}.
+5. If interview time is asked: {tz_rule}.
 6. Keep length short (2-4 sentences). Do not write essays.
 """
 

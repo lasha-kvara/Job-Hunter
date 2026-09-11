@@ -125,7 +125,18 @@ try:
     assert len(deduped) == 2, f"Expected 2 deduplicated jobs, got {len(deduped)}"
     print(f"  [+] Deduplication: Successfully reduced 3 raw postings to {len(deduped)} unique.")
 
-    # 3.3 Test Candidate Scorer (High Fit)
+    # 3.3 Test Candidate Scorer (High Fit with deterministic criteria)
+    CandidateScorer._cached_keywords = {
+        "playwright": 18,
+        "selenium": 10,
+        "typescript": 12,
+        "c#": 12,
+        "k6": 12,
+        "ci/cd": 10,
+        "sdet": 20,
+    }
+    CandidateScorer._cached_target_roles = ["sdet", "qa automation", "automation engineer"]
+
     sdet_job = JobPost(
         title="Lead SDET (Playwright, C#)",
         company="Tech Leader",
@@ -151,10 +162,31 @@ try:
     assert scored_junior.fit_score < 40, f"Expected score < 40, got {scored_junior.fit_score}"
     print(f"  [+] Scorer (Demotion): Penalized junior/manual -> {scored_junior.fit_score}% ({scored_junior.fit_grade})")
 
-    # 3.5 Test Jobs.ge Live Retrieval
-    jobs_ge_res = JobsGeProvider.search("qa", max_results=3)
-    assert len(jobs_ge_res) > 0, "Jobs.ge search returned 0 results"
-    print(f"  [+] Jobs.ge Provider: Retrieved {len(jobs_ge_res)} live vacancies (Sample: '{jobs_ge_res[0].title}')")
+    # 3.5 Test Jobs.ge Provider HTML parsing (Deterministic Mock)
+    from unittest.mock import patch, MagicMock
+    import requests
+    mock_html = """
+    <html><body>
+    <table class="regularEntries">
+        <tr>
+            <td><a href="/en/?view=jobs&id=99999" class="vip">Senior QA Automation Engineer</a></td>
+            <td><a href="/en/?view=client&client=123">Bank of Georgia</a></td>
+            <td>11 Sep</td>
+            <td>11 Oct</td>
+        </tr>
+    </table>
+    </body></html>
+    """
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.text = mock_html
+
+    with patch.object(requests.Session, "get", return_value=mock_resp):
+        jobs_ge_res = JobsGeProvider.search("qa", max_results=2)
+        assert len(jobs_ge_res) >= 1, f"Expected mock job from Jobs.ge, got {len(jobs_ge_res)}"
+        assert jobs_ge_res[0].title == "Senior QA Automation Engineer"
+        assert jobs_ge_res[0].company == "Bank of Georgia"
+        print(f"  [+] Jobs.ge Provider (Deterministic Mock): Retrieved {len(jobs_ge_res)} vacancy (Sample: '{jobs_ge_res[0].title}')")
 
     # 3.6 Test AggregatorEngine output formatting
     engine = AggregatorEngine()

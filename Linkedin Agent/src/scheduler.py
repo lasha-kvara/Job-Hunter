@@ -15,27 +15,33 @@ class InterviewScheduler:
         self.profile = profile or CandidateProfile()
 
     def get_standard_slots(self, language: str = "en") -> str:
-        """Returns standard suggested interview slots in GMT+4."""
+        """Returns standard suggested interview slots in candidate timezone."""
+        tz = self.profile.get_preferences().get("timezone", "")
+        tz_str = f" ({tz})" if tz else ""
         if language == "ka":
-            return "ორშაბათს 17:00-ზე ან სამშაბათს 17:00-ზე (თბილისის დროით, GMT+4)"
-        return "Monday at 17:00 or Tuesday at 17:00 (GMT+4 / Georgia time)"
+            return f"ორშაბათს 17:00-ზე ან სამშაბათს 17:00-ზე{tz_str}"
+        return f"Monday at 17:00 or Tuesday at 17:00{tz_str}"
 
-    def format_confirmation(self, date_str: str, time_str: str, timezone: str = "GMT+4 (Georgia time)", language: str = "en") -> str:
+    def format_confirmation(self, date_str: str, time_str: str, timezone: Optional[str] = None, language: str = "en") -> str:
         """
         Formats a clear confirmation string containing weekday, date, time, and timezone.
         """
+        tz = timezone or self.profile.get_preferences().get("timezone", "")
+        tz_str = f" ({tz})" if tz else ""
         if language == "ka":
-            return f"{date_str}, {time_str} საათზე ({timezone}) ჩემთვის სრულად მისაღებია. შევხვდებით გასაუბრებაზე!"
-        return f"{date_str} at {time_str} ({timezone}) works perfectly for me. Looking forward to our call!"
+            return f"{date_str}, {time_str} საათზე{tz_str} ჩემთვის სრულად მისაღებია. შევხვდებით გასაუბრებაზე!"
+        return f"{date_str} at {time_str}{tz_str} works perfectly for me. Looking forward to our call!"
 
     def validate_slot_request(self, proposed_text: str) -> Dict[str, Any]:
         """
         Extracts details and marks that user confirmation is mandatory.
         """
+        tz = self.profile.get_preferences().get("timezone", "")
+        tz_note = f"Ensure timezone is explicitly confirmed with the recruiter (Candidate timezone: {tz})." if tz else "Ensure timezone is explicitly confirmed with the recruiter."
         return {
             "proposed_text": proposed_text,
             "requires_user_approval": True,
-            "timezone_note": "Ensure timezone is explicitly confirmed with the foreign recruiter (Tbilisi is GMT+4)."
+            "timezone_note": tz_note
         }
 
 if __name__ == "__main__":

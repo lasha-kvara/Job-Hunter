@@ -121,7 +121,7 @@ class CandidateProfile:
             "notice_period": prefs.get("notice_period", "Negotiable"),
             "work_mode": prefs.get("work_mode", "Remote / Hybrid"),
             "relocation": prefs.get("relocation", "Open to relocation"),
-            "timezone": prefs.get("timezone", "UTC"),
+            "timezone": prefs.get("timezone", ""),
             "min_salary": prefs.get("min_salary", "")
         }
 
