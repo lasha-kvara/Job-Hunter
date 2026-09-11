@@ -34,10 +34,7 @@ class JobsGeProvider:
     def _fetch_job_description(cls, job_url: str) -> str:
         """Fetches the announcement body from the listing page for richer scoring context."""
         try:
-            try:
-                resp = requests.get(job_url, headers=cls.HEADERS, timeout=8, verify=True)
-            except requests.exceptions.SSLError:
-                resp = requests.get(job_url, headers=cls.HEADERS, timeout=8, verify=False)
+            resp = requests.get(job_url, headers=cls.HEADERS, timeout=8)
             if resp.status_code == 200:
                 soup = BeautifulSoup(resp.text, "html.parser")
                 dtable = soup.find(class_="dtable")
@@ -46,7 +43,7 @@ class JobsGeProvider:
                     if "See full text of this announcement in Georgian" in text:
                         ge_url = job_url.replace("/en/", "/ge/")
                         try:
-                            ge_resp = requests.get(ge_url, headers=cls.HEADERS, timeout=8, verify=False)
+                            ge_resp = requests.get(ge_url, headers=cls.HEADERS, timeout=8)
                             if ge_resp.status_code == 200:
                                 ge_soup = BeautifulSoup(ge_resp.text, "html.parser")
                                 ge_dtable = ge_soup.find(class_="dtable")
@@ -76,20 +73,11 @@ class JobsGeProvider:
 
             # IT & Software category
             url = f"{cls.BASE_URL}/en/?cid=6"
-            try:
-                resp = requests.get(
-                    url,
-                    headers=cls.HEADERS,
-                    timeout=12,
-                    verify=True
-                )
-            except requests.exceptions.SSLError:
-                resp = requests.get(
-                    url,
-                    headers=cls.HEADERS,
-                    timeout=12,
-                    verify=False
-                )
+            resp = requests.get(
+                url,
+                headers=cls.HEADERS,
+                timeout=12,
+            )
             if resp.status_code != 200:
                 logger.warning(f"Jobs.ge returned non-200 status: {resp.status_code}")
                 return jobs

@@ -27,7 +27,8 @@ logs/
 jobs_feed.json
 search_results.md
 test_regression.py
-top_30_matching_jobs.*
+top_*_matching_jobs.*
+top_*_matched_vacancies.*
 
 
 # IDE & Editor files
