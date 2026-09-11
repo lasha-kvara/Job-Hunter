@@ -63,7 +63,7 @@ class ResponseGenerator:
         first_name = candidate_name.split()[0] if candidate_name and not candidate_name.startswith("[") else ""
         signoff_en = f"Best, {first_name}" if first_name else "Best regards"
         signoff_ka = f"პატივისცემით, {first_name}" if first_name else "პატივისცემით"
-        salary_str = self.profile.get_salary_expectation() or "$4,500 USD/month"
+        salary_str = self.profile.get_salary_expectation()
 
         if intent == "initial_reply":
             if language == "ka":
@@ -74,24 +74,30 @@ class ResponseGenerator:
                 return f"Hello {name}, thanks for reaching out! I'm interested in the {role_str} opportunity. Could you share more details about the role and the team? I'd be happy to schedule an introductory call. {signoff_en}"
 
         elif intent == "propose_time":
-            tz = self.profile.get_preferences().get("timezone", "GMT+4")
+            tz = self.profile.get_preferences().get("timezone", "UTC")
             if language == "ka":
                 return f"გამარჯობა {name}, შემიძლია შემოგთავაზოთ {role_or_details or 'ორშაბათს 17:00-ზე ან სამშაბათს 17:00-ზე'} ({tz}). რომელი დრო იქნება თქვენთვის უფრო მოსახერხებელი?"
             else:
                 return f"Hello {name}, I'm available on {role_or_details or 'Monday at 17:00 and Tuesday at 17:00'} ({tz}). Which time works best for your schedule?"
 
         elif intent == "confirm_interview":
-            tz = self.profile.get_preferences().get("timezone", "GMT+4")
+            tz = self.profile.get_preferences().get("timezone", "UTC")
             if language == "ka":
                 return f"{role_or_details or 'შეთანხმებული დრო'} ({tz}) ჩემთვის სრულად მისაღებია. შევხვდებით გასაუბრებაზე!"
             else:
                 return f"{role_or_details or 'The proposed time'} ({tz}) works perfectly for me. Looking forward to our discussion!"
 
         elif intent == "salary_expectation":
-            if language == "ka":
-                return f"ჩემი გამოცდილებიდან და ავტომატიზაციის ფრეიმვორკების არქიტექტურიდან გამომდინარე, ჩემი სახელფასო მოლოდინია {salary_str}. სიამოვნებით განვიხილავ დეტალებს მას შემდეგ, რაც უკეთ გავეცნობით პროექტის მასშტაბს."
+            if salary_str:
+                if language == "ka":
+                    return f"ჩემი გამოცდილებიდან და ტექნიკური უნარებიდან გამომდინარე, ჩემი სახელფასო მოლოდინია {salary_str}. სიამოვნებით განვიხილავ დეტალებს მას შემდეგ, რაც უკეთ გავეცნობით პროექტის მასშტაბს."
+                else:
+                    return f"Based on my experience and technical background, my compensation expectation is {salary_str}. Happy to discuss further once we explore the technical requirements and project scope in detail."
             else:
-                return f"Based on my experience and technical automation background, my compensation expectation is {salary_str}. Happy to discuss further once we explore the technical requirements and project scope in detail."
+                if language == "ka":
+                    return "სიამოვნებით განვიხილავ სახელფასო მოლოდინს მას შემდეგ, რაც უკეთ გავეცნობით პოზიციის მოთხოვნებსა და პროექტის მასშტაბს."
+                else:
+                    return "I would be happy to discuss compensation expectations once we explore the technical requirements and project scope in detail."
 
         elif intent == "follow_up":
             if language == "ka":
@@ -128,8 +134,9 @@ class ResponseGenerator:
             return self.draft_template_response("initial_reply", contact_name, language=language), requires_user_confirmation
 
         candidate_name = self.profile.get_candidate_name()
-        salary_str = self.profile.get_salary_expectation() or "$4,500 USD/month"
-        tz = self.profile.get_preferences().get("timezone", "GMT+4")
+        salary_str = self.profile.get_salary_expectation()
+        tz = self.profile.get_preferences().get("timezone", "UTC")
+        salary_rule = f"state expectation from profile ({salary_str})" if salary_str else "state that compensation can be discussed once project scope is explored"
         system_instruction = f"""You are representing candidate {candidate_name} in LinkedIn conversations with HR/Recruiters.
 Candidate Profile (Single Source of Truth):
 {self.profile.get_full_context_prompt()}
@@ -138,7 +145,7 @@ Rules:
 1. Tone: Friendly-professional, concise, warm, respectful.
 2. Language: Respond in { 'Georgian' if language == 'ka' else 'English' }.
 3. NEVER invent facts, skills, companies, or salary not present in profile.
-4. If salary is asked: state minimum expectation ({salary_str}).
+4. If salary is asked: {salary_rule}.
 5. If interview time is asked: propose availability in {tz}.
 6. Keep length short (2-4 sentences). Do not write essays.
 """

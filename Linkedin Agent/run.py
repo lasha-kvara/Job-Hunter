@@ -7,6 +7,7 @@ import argparse
 import asyncio
 import warnings
 from pathlib import Path
+from typing import Optional
 
 # Suppress future warnings from legacy SDKs
 warnings.filterwarnings("ignore")

@@ -150,7 +150,7 @@ python search_jobs.py --query "SDET" --no-remote --sources jobs_ge indeed
 | :--- | :--- | :--- | :--- | :--- |
 | `--query` | `-q` | `str` | `"QA Automation Engineer"` | Job title or technical search terms (e.g. `SDET`, `Playwright`) |
 | `--location` | `-l` | `str` | `None` | Target location. Defaults to `Remote` if `--remote`, or all locations if `--no-remote` |
-| `--country` | | `str` | `"USA"` | Target country for Indeed / Glassdoor searches |
+| `--country` | | `str` | `"USA"` | Target country for Indeed searches (default: `'USA'`) |
 | `--sources` | `-s` | `indeed`, `linkedin`, `google`, `glassdoor`, `zip_recruiter`, `jobs_ge` | All sources | One or more space-separated platforms to scrape |
 | `--limit` | `-n` | `int` | `10` | Maximum raw listings requested per platform |
 | `--hours` | | `int` | `72` | Filter listings published within the last N hours |
