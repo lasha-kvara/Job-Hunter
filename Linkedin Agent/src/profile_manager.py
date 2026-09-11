@@ -118,7 +118,7 @@ class CandidateProfile:
                 return content
         return ""
 
-    def get_cv_file_path(self) -> str:
+    def get_cv_file_path(self, strict: bool = False) -> str:
         """Dynamically parses CV/Resume file path from candidate profile."""
         cv_match = re.search(r"ALWAYS upload the CV from:\s*[`'\"]?([^`'\"\n\r]+)[`'\"]?", self.raw_content, re.IGNORECASE)
         if cv_match:
@@ -135,10 +135,12 @@ class CandidateProfile:
                 if candidate_path and not candidate_path.startswith("path/to") and not candidate_path.startswith("["):
                     return candidate_path
 
-        raise ValueError(
-            "CV file path is not configured in candidate-profile.md. "
-            "Please update the 'ALWAYS upload the CV from: ...' line with the path to your CV PDF before applying."
-        )
+        if strict:
+            raise ValueError(
+                "CV file path is not configured in candidate-profile.md. "
+                "Please update the 'ALWAYS upload the CV from: ...' line with the path to your CV PDF before applying."
+            )
+        return "[Not configured in candidate-profile.md]"
 
     def get_full_context_prompt(self) -> str:
         """Returns the formatted profile for feeding to LLM prompts."""

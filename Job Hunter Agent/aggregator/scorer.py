@@ -1,9 +1,12 @@
 import re
 import os
+import logging
 from pathlib import Path
 from typing import List, Tuple, Dict, Optional
 
 from .models import JobPost
+
+logger = logging.getLogger(__name__)
 
 
 
