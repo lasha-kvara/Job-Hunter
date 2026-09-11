@@ -1,6 +1,5 @@
 """
 LinkedIn Agent - Interactive Terminal & CLI Runner
-Candidate: Lasha Kvaratskhelia
 """
 import sys
 import os
@@ -46,18 +45,22 @@ except ImportError:
     HAS_RICH = False
     console = None
 
-def show_banner():
+def show_banner(profile: Optional[CandidateProfile] = None):
+    name = profile.get_candidate_name() if profile else "Candidate"
+    roles = profile.get_target_roles() if profile else []
+    primary_role = roles[0] if roles else "Job-Seeker"
+    candidate_label = f"{name} ({primary_role})"
     if HAS_RICH:
-        banner = """
+        banner = f"""
 [bold cyan]╔══════════════════════════════════════════════════════════════════════╗
 ║                    💼 LINKEDIN JOB-SEEKER AGENT                     ║
-║              Candidate: [bold yellow]Lasha Kvaratskhelia (Senior SDET)[/bold yellow]               ║
+║              Candidate: [bold yellow]{candidate_label:^45}[/bold yellow] ║
 ╚══════════════════════════════════════════════════════════════════════╝[/bold cyan]
         """
         console.print(banner)
     else:
         print("=" * 60)
-        print("LinkedIn Job-Seeker Agent - Lasha Kvaratskhelia (Senior SDET)")
+        print(f"LinkedIn Job-Seeker Agent - {candidate_label}")
         print("=" * 60)
 
 def show_pipeline_summary(tracker: PipelineTracker):
@@ -167,7 +170,7 @@ def handle_draft_response(generator: ResponseGenerator):
 def handle_update_status(tracker: PipelineTracker):
     if HAS_RICH:
         console.print("\n[bold cyan]🔄 საუბრის სტატუსის განახლება[/bold cyan]")
-        search_term = Prompt.ask("კომპანიის ან კონტაქტის სახელი (მაგ. Astra Tech, EPAM, Limestone)")
+        search_term = Prompt.ask("კომპანიის ან კონტაქტის სახელი (მაგ. TechCorp, Acme, GlobalTech)")
         status_options = ["waiting", "pending-user", "scheduled", "in-progress", "closed"]
         new_status = Prompt.ask(f"ახალი სტატუსი ({'/'.join(status_options)})", choices=status_options, default="waiting")
     else:
@@ -193,7 +196,7 @@ def interactive_menu():
     scheduler = InterviewScheduler(profile)
 
     while True:
-        show_banner()
+        show_banner(profile)
         show_pipeline_summary(tracker)
 
         if HAS_RICH:

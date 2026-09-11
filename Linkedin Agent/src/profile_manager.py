@@ -1,5 +1,5 @@
 """
-Profile Manager: Single Source of Truth for Candidate Facts (Lasha Kvaratskhelia)
+Profile Manager: Single Source of Truth for Candidate Facts
 """
 import re
 from pathlib import Path
