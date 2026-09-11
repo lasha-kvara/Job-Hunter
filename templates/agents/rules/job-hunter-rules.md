@@ -40,9 +40,10 @@ These behavioral constraints and filtering policies govern all job search, scrap
   2. `Linkedin Agent/linkedin-pipeline.md`
 - If the company or jobId already exists, skip it to avoid duplicate submissions.
 
-## 7. Screening Answers & Factual Grounding
-- Form values (years of experience, languages, frameworks, education) must strictly match `candidate-profile.md`.
-- Never overstate or invent non-existent experience.
+## 7. Dynamic AI Reasoning & Factual Grounding (CORE INVARIANT)
+- **AI Model as the Primary Brain:** Every form field, prompt, custom screening question, dropdown, or interactive element encountered on a page MUST be dynamically evaluated and answered by the AI model in real time.
+- **No Static/Hardcoded Answer Tables:** Never rely on static question-answer lookup dictionaries or rigid heuristics. Browser automation tools (Playwright/CDP) serve as the sensory eyes and hands, while the AI model is the active brain analyzing the live page context at every step.
+- **Zero Hallucination:** Form values (years of experience, languages, frameworks, education) must strictly match `candidate-profile.md`. Never overstate or invent non-existent experience.
 
 ## 8. Detailed Reporting
 - Every processed or submitted job must be logged into `job-applications-report.md` with full details:
