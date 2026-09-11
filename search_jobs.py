@@ -137,7 +137,7 @@ def main():
     md_path = PROJECT_ROOT / args.export_md
     with open(md_path, "w", encoding="utf-8") as f:
         f.write(f"# Vacancy Search Results: {args.query}\n\n")
-        f.write(f"*Location: {args.location} | Found: {len(jobs)} jobs*\n\n")
+        f.write(f"*Location: {resolved_location or 'All / Any'} | Found: {len(jobs)} jobs*\n\n")
         f.write(md_content)
 
     print("\n" + "=" * 65)

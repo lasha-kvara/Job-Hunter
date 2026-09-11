@@ -142,16 +142,14 @@ class CandidateScorer:
             except Exception:
                 pass
 
-        # If a candidate profile was found with skills, use those!
-        # Otherwise, fall back to default SDET qualifications.
-        if parsed_keywords:
+        # Strict candidate profile grounding:
+        # If a candidate profile exists, score strictly against parsed profile keywords and target roles.
+        # Fall back to default SDET qualifications ONLY when no candidate profile file exists.
+        if profile_path and profile_path.exists():
             keywords = parsed_keywords
-        else:
-            keywords = dict(cls.DEFAULT_CORE_KEYWORDS)
-
-        if parsed_roles:
             target_roles = list(set(parsed_roles))
         else:
+            keywords = dict(cls.DEFAULT_CORE_KEYWORDS)
             target_roles = [
                 "sdet",
                 "qa automation",
