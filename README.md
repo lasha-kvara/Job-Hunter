@@ -160,7 +160,7 @@ python search_jobs.py --query "SDET" --no-remote --sources jobs_ge indeed
 **Key Features & Outputs:**
 - **URL Sanitization:** Automatically strips 40+ tracking parameters (`utm_*`, `refId`, `trackingId`, `gh_src`, etc.) to provide direct application links.
 - **Smart Deduplication:** Groups listings across platforms by normalized company + title + location signatures.
-- **Dynamic Fit Scoring:** Automatically scores jobs (0–100%) against target roles, technical skills, and seniority preferences from `candidate-profile.md`.
+- **Dynamic Fit Scoring:** Automatically scores jobs (0–100%) against target roles, technical skills, and job-title seniority signals.
 - **Generated Report (`search_results.md`):** Produces a ready-to-read Markdown table with fit rankings, direct sanitized links, location, salary, and matching skill justifications.
 - **Structured JSON Feed (`Job Hunter Agent/jobs_feed.json`):** Saves complete metadata for every discovered post for automation pipelines or custom post-processing.
 

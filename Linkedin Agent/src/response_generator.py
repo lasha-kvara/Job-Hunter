@@ -75,10 +75,15 @@ class ResponseGenerator:
 
         elif intent == "propose_time":
             tz = self.profile.get_preferences().get("timezone", "").strip()
-            if role_or_details and any(k in role_or_details for k in ["(", "timezone", "UTC", "GMT"]):
-                tz_str = ""
-            else:
-                tz_str = f" ({tz})" if tz else " ([Timezone])"
+            details_lower = role_or_details.lower() if role_or_details else ""
+            has_timezone = bool(
+                role_or_details and (
+                    (tz and tz.lower() in details_lower)
+                    or "timezone" in details_lower
+                    or re.search(r"\b(?:utc|gmt|est|edt|pst|pdt|cst|cdt|cet|cest|get)(?:[+-]\d+(?::\d{2})?)?\b", details_lower)
+                )
+            )
+            tz_str = "" if has_timezone else (f" ({tz})" if tz else " ([Timezone])")
             if language == "ka":
                 return f"გამარჯობა {name}, შემიძლია შემოგთავაზოთ {role_or_details or 'ორშაბათს 17:00-ზე ან სამშაბათს 17:00-ზე'}{tz_str}. რომელი დრო იქნება თქვენთვის უფრო მოსახერხებელი?"
             else:
@@ -86,10 +91,15 @@ class ResponseGenerator:
 
         elif intent == "confirm_interview":
             tz = self.profile.get_preferences().get("timezone", "").strip()
-            if role_or_details and any(k in role_or_details for k in ["(", "timezone", "UTC", "GMT"]):
-                tz_str = ""
-            else:
-                tz_str = f" ({tz})" if tz else " ([Timezone])"
+            details_lower = role_or_details.lower() if role_or_details else ""
+            has_timezone = bool(
+                role_or_details and (
+                    (tz and tz.lower() in details_lower)
+                    or "timezone" in details_lower
+                    or re.search(r"\b(?:utc|gmt|est|edt|pst|pdt|cst|cdt|cet|cest|get)(?:[+-]\d+(?::\d{2})?)?\b", details_lower)
+                )
+            )
+            tz_str = "" if has_timezone else (f" ({tz})" if tz else " ([Timezone])")
             if language == "ka":
                 return f"{role_or_details or 'შეთანხმებული დრო'}{tz_str} ჩემთვის სრულად მისაღებია. შევხვდებით გასაუბრებაზე!"
             else:
