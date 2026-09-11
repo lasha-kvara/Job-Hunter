@@ -115,7 +115,7 @@ When session starts or user asks to "check messages":
 
 ## Environment
 
-- Browser: Playwright MCP via `--cdp-endpoint http://localhost:9222 --shared-browser-context`. If unavailable, tell the user to start Brave with `--remote-debugging-port=9222`.
+- Browser: Playwright MCP via `--cdp-endpoint http://localhost:9222 --shared-browser-context` (or configured `CDP_PORT` if overridden). If unavailable, tell the user to start Chrome/Brave with `--remote-debugging-port=9222` (or configured `CDP_PORT`).
 - Messaging UI: compose textbox labeled "Write a message…", Send button is disabled until text is entered.
 
 ## Human-like browsing — pacing rules

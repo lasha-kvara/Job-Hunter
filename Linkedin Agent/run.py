@@ -101,9 +101,9 @@ def show_profile_facts(profile: CandidateProfile):
 async def run_browser_check():
     controller = LinkedInBrowserController()
     if HAS_RICH:
-        console.print("[yellow]🌐 ვუკავშირდებით Chrome/Brave-ს CDP პორტზე (9222)...[/yellow]")
+        console.print(f"[yellow]🌐 ვუკავშირდებით Chrome/Brave-ს CDP პორტზე ({config.CDP_PORT})...[/yellow]")
     else:
-        print("Connecting to browser on port 9222...")
+        print(f"Connecting to browser on port {config.CDP_PORT}...")
 
     try:
         await controller.connect()
@@ -143,7 +143,7 @@ async def run_browser_check():
     except Exception as e:
         if HAS_RICH:
             console.print(f"[bold red]❌ შეცდომა:[/bold red] {e}")
-            console.print("[yellow]💡 რჩევა: დარწმუნდით, რომ გაშვებულია `start_browser.bat` ან ბრაუზერი `--remote-debugging-port=9222`-ით.[/yellow]")
+            console.print(f"[yellow]💡 რჩევა: დარწმუნდით, რომ გაშვებულია `start_browser.bat` ან ბრაუზერი `--remote-debugging-port={config.CDP_PORT}`-ით.[/yellow]")
         else:
             print(f"Error: {e}")
     finally:
@@ -209,7 +209,7 @@ def interactive_menu():
             console.print("3. 📅 გასაუბრების დროის შეთავაზება / დადასტურება")
             console.print("4. 🔄 Pipeline-ში სტატუსის განახლება (Update Status)")
             console.print("5. 👤 კანდიდატის ფაქტებისა და მონაცემების ნახვა")
-            console.print("6. 🌐 Chrome / Brave-ის გაშვება დებაგ რეჟიმში (Port 9222)")
+            console.print(f"6. 🌐 Chrome / Brave-ის გაშვება დებაგ რეჟიმში (Port {config.CDP_PORT})")
             console.print("0. 🚪 გასვლა (Exit)")
 
             choice = Prompt.ask("შეიყვანეთ ნომერი", choices=["0", "1", "2", "3", "4", "5", "6"], default="1")
