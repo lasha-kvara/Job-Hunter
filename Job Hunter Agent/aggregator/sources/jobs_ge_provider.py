@@ -31,27 +31,15 @@ class JobsGeProvider:
     }
 
     @classmethod
-    def _fetch_job_description(cls, job_url: str) -> str:
+    def _fetch_description(cls, job_url: str, session: requests.Session) -> str:
         """Fetches the announcement body from the listing page for richer scoring context."""
         try:
-            resp = requests.get(job_url, headers=cls.HEADERS, timeout=8)
+            resp = session.get(job_url, timeout=5)
             if resp.status_code == 200:
                 soup = BeautifulSoup(resp.text, "html.parser")
                 dtable = soup.find(class_="dtable")
                 if dtable:
-                    text = dtable.get_text(" ", strip=True)
-                    if "See full text of this announcement in Georgian" in text:
-                        ge_url = job_url.replace("/en/", "/ge/")
-                        try:
-                            ge_resp = requests.get(ge_url, headers=cls.HEADERS, timeout=8)
-                            if ge_resp.status_code == 200:
-                                ge_soup = BeautifulSoup(ge_resp.text, "html.parser")
-                                ge_dtable = ge_soup.find(class_="dtable")
-                                if ge_dtable:
-                                    text = f"{text}\n{ge_dtable.get_text(' ', strip=True)}"
-                        except Exception:
-                            pass
-                    return text
+                    return dtable.get_text(" ", strip=True)
         except Exception:
             pass
         return ""
@@ -65,17 +53,21 @@ class JobsGeProvider:
         is_remote: bool = False,
     ) -> List[JobPost]:
         """
-        Scrapes jobs.ge IT category (cid=6), parses posting dates, and filters by query and age.
+        Scrapes jobs.ge IT category (cid=6), parses posting dates, filters by query and age,
+        and concurrently enriches listings with full announcement descriptions.
         """
         jobs: List[JobPost] = []
         try:
             from datetime import datetime, timedelta
+            from concurrent.futures import ThreadPoolExecutor
 
             # IT & Software category
             url = f"{cls.BASE_URL}/en/?cid=6"
-            resp = requests.get(
+            session = requests.Session()
+            session.headers.update(cls.HEADERS)
+
+            resp = session.get(
                 url,
-                headers=cls.HEADERS,
                 timeout=12,
             )
             if resp.status_code != 200:
@@ -88,11 +80,10 @@ class JobsGeProvider:
 
             # Find all table rows
             rows = soup.find_all("tr")
+            matching_candidates = []
+            secondary_candidates = []
 
             for row in rows:
-                if len(jobs) >= max_results:
-                    break
-
                 # Look for job link: /en/?view=jobs&id=...
                 job_link = row.find("a", href=lambda h: h and "view=jobs&id=" in h)
                 if not job_link:
@@ -135,36 +126,70 @@ class JobsGeProvider:
                     if age_hours > hours_old:
                         continue
 
-                # Look for company link: /en/?view=client&client=...
-                company_link = row.find("a", href=lambda h: h and "view=client" in h)
-                company = company_link.text.strip() if company_link and company_link.text.strip() else "Jobs.ge Employer"
-
-                # If query specified, check for match in title (match all query tokens or full phrase)
-                if query_tokens:
-                    title_lower = title.lower()
-                    matched = (query.lower() in title_lower) or all(token in title_lower for token in query_tokens)
-                    if not matched:
-                        continue
-
                 # Check remote tag in entire row text (title + tags + metadata)
                 row_text = row.get_text(" ", strip=True)
                 has_remote = bool(re.search(r'\bremote\b', row_text, re.IGNORECASE))
                 if is_remote and not has_remote:
                     continue
 
-                # Fetch real announcement details from detail page for accurate scoring
-                desc = cls._fetch_job_description(job_url)
+                # Look for company link: /en/?view=client&client=...
+                company_link = row.find("a", href=lambda h: h and "view=client" in h)
+                company = company_link.text.strip() if company_link and company_link.text.strip() else "Jobs.ge Employer"
+
+                # Check if title directly matches query
+                title_lower = title.lower()
+                title_matched = not query_tokens or (query.lower() in title_lower) or all(token in title_lower for token in query_tokens)
+
+                cand = {
+                    "title": title,
+                    "company": company,
+                    "job_url": job_url,
+                    "pub_date_str": pub_date_str,
+                    "has_remote": has_remote,
+                    "title_matched": title_matched,
+                }
+
+                if title_matched:
+                    matching_candidates.append(cand)
+                    if len(matching_candidates) >= max_results:
+                        break
+                elif query_tokens and any(token in row_text.lower() for token in query_tokens):
+                    if len(secondary_candidates) < max_results:
+                        secondary_candidates.append(cand)
+
+            candidates_to_enrich = (matching_candidates + secondary_candidates)[:max_results * 2]
+            if not candidates_to_enrich:
+                return []
+
+            # Concurrently enrich candidate descriptions using bounded ThreadPoolExecutor
+            def enrich(cand):
+                desc = cls._fetch_description(cand["job_url"], session)
                 if not desc:
-                    desc = f"{title} vacancy at {company} listed on Jobs.ge IT section."
+                    desc = f"{cand['title']} vacancy at {cand['company']} listed on Jobs.ge IT section."
+                return cand, desc
+
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                enriched_results = list(executor.map(enrich, candidates_to_enrich))
+
+            for cand, desc in enriched_results:
+                if len(jobs) >= max_results:
+                    break
+
+                # Query matching: check title OR fetched description
+                if query_tokens and not cand["title_matched"]:
+                    full_text = f"{cand['title']} {desc}".lower()
+                    matched = (query.lower() in full_text) or all(token in full_text for token in query_tokens)
+                    if not matched:
+                        continue
 
                 post = JobPost(
-                    title=title,
-                    company=company,
-                    job_url=job_url,
+                    title=cand["title"],
+                    company=cand["company"],
+                    job_url=cand["job_url"],
                     source="jobs_ge",
-                    location="Georgia (Tbilisi / Remote)" if has_remote else "Georgia (Tbilisi)",
-                    date_posted=pub_date_str,
-                    is_remote=has_remote,
+                    location="Georgia (Tbilisi / Remote)" if cand["has_remote"] else "Georgia (Tbilisi)",
+                    date_posted=cand["pub_date_str"],
+                    is_remote=cand["has_remote"],
                     description=desc
                 )
                 jobs.append(post)

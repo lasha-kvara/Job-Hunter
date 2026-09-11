@@ -155,9 +155,10 @@ def main():
     except Exception as e:
         print(f"\n⚠️ Could not export markdown report: {e}")
 
-    feed_path = PROJECT_ROOT / "Job Hunter Agent" / "jobs_feed.json"
-    if feed_path.exists():
+    if getattr(engine, "last_save_success", False):
         print(f"✅ Raw feed saved to:       Job Hunter Agent/jobs_feed.json")
+    else:
+        print(f"⚠️ Note: Raw feed was not saved for this run.")
     print("=" * 65)
 
 

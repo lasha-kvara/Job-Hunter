@@ -21,6 +21,7 @@ class AggregatorEngine:
     def __init__(self, output_dir: Optional[Path] = None):
         self.output_dir = output_dir or Path(__file__).parent.parent
         self.feed_file = self.output_dir / "jobs_feed.json"
+        self.last_save_success: bool = False
 
     def search(
         self,
@@ -39,7 +40,12 @@ class AggregatorEngine:
         and scores results against the configured candidate profile.
         """
         all_jobs: List[JobPost] = []
-        target_sources = sources or ["indeed", "linkedin", "google", "glassdoor", "zip_recruiter"]
+        if sources is None:
+            target_sources = ["indeed", "linkedin", "google", "glassdoor", "zip_recruiter"]
+            if include_jobs_ge:
+                target_sources.append("jobs_ge")
+        else:
+            target_sources = list(sources)
 
         # 1. JobSpy Multi-Platform Scraping
         jobspy_sources = [s for s in target_sources if s in JobSpyProvider.SUPPORTED_SITES]
@@ -59,9 +65,7 @@ class AggregatorEngine:
             print(f"  -> Found {len(found_jobspy)} raw listings from JobSpy sources.")
 
         # 2. Local Jobs.ge Search
-        # Only query Jobs.ge when explicitly listed in sources, or when no source
-        # list was supplied and the include flag is True.
-        if include_jobs_ge and ("jobs_ge" in target_sources or sources is None):
+        if "jobs_ge" in target_sources:
             print("🇬🇪 Searching on: JOBS.GE (local / regional tech vacancies)...")
             found_jobs_ge = JobsGeProvider.search(
                 query=query,
@@ -71,9 +75,6 @@ class AggregatorEngine:
             )
             all_jobs.extend(found_jobs_ge)
             print(f"  -> Found {len(found_jobs_ge)} raw listings from Jobs.ge.")
-
-
-
 
         print(f"\n📊 Total raw listings before deduplication: {len(all_jobs)}")
 
@@ -90,19 +91,21 @@ class AggregatorEngine:
             print(f"🎯 Listings matching minimum fit score ({min_fit_score}%): {len(scored_jobs)}")
 
         # 6. Save Feed to JSON
-        self.save_feed(scored_jobs)
+        self.last_save_success = self.save_feed(scored_jobs)
 
         return scored_jobs
 
-    def save_feed(self, jobs: List[JobPost]) -> None:
-        """Persists jobs to jobs_feed.json."""
+    def save_feed(self, jobs: List[JobPost]) -> bool:
+        """Persists jobs to jobs_feed.json. Returns True on success, False otherwise."""
         try:
             data = [j.to_dict() for j in jobs]
             with open(self.feed_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
             print(f"💾 Feed saved to: {self.feed_file.name}")
+            return True
         except Exception as e:
             logger.error(f"Failed to save jobs feed: {e}")
+            return False
 
     @staticmethod
     def format_markdown_table(jobs: List[JobPost]) -> str:

@@ -54,19 +54,22 @@ class JobSpyProvider:
             import pandas as pd
 
             def clean_str(val, default="") -> str:
-                if val is None or (isinstance(val, float) and pd.isna(val)):
+                if val is None or pd.isna(val):
                     return default
                 s = str(val).strip()
-                return default if s.lower() == "nan" else s
+                return default if s.lower() in ("nan", "<na>", "none") else s
 
             def clean_bool(val, default=False) -> bool:
-                if val is None or (isinstance(val, float) and pd.isna(val)):
+                if val is None or pd.isna(val):
                     return default
                 if isinstance(val, bool):
                     return val
                 if isinstance(val, str):
                     return val.lower() in ("true", "1", "yes")
-                return bool(val)
+                try:
+                    return bool(val)
+                except Exception:
+                    return default
 
             # Convert dataframe rows to JobPost objects
             for _, row in df.iterrows():

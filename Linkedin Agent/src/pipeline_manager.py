@@ -159,7 +159,10 @@ class PipelineTracker:
         # Safety invariant: never write to template files to prevent personal data leaking into git
         target_file = self.file_path
         if "template" in target_file.name.lower():
-            target_file = target_file.parent / target_file.name.replace(".template", "")
+            clean_name = re.sub(r"[\._-]template(?=\.[a-zA-Z0-9]+$|$)", "", target_file.name, flags=re.IGNORECASE)
+            if clean_name.lower() == target_file.name.lower():
+                clean_name = "linkedin-pipeline.md"
+            target_file = target_file.parent / clean_name
             self.file_path = target_file
         with open(target_file, "w", encoding="utf-8") as f:
             f.write(self.raw_content)
