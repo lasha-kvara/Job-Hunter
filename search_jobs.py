@@ -26,6 +26,16 @@ sys.path.insert(0, str(PROJECT_ROOT / "Job Hunter Agent"))
 from aggregator.engine import AggregatorEngine
 
 
+def validate_min_score(val: str) -> int:
+    try:
+        score = int(val)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"Invalid integer: '{val}'")
+    if not (0 <= score <= 100):
+        raise argparse.ArgumentTypeError(f"--min-score must be between 0 and 100, got {score}")
+    return score
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Job-Hunter: Search vacancies across multiple platforms with automated fit scoring."
@@ -50,6 +60,7 @@ def main():
     parser.add_argument(
         "--sources", "-s",
         nargs="+",
+        choices=["indeed", "linkedin", "google", "glassdoor", "zip_recruiter", "jobs_ge"],
         default=["indeed", "linkedin", "google", "glassdoor", "zip_recruiter", "jobs_ge"],
         help="Platforms to search: indeed, linkedin, google, glassdoor, zip_recruiter, jobs_ge"
     )
@@ -67,7 +78,7 @@ def main():
     )
     parser.add_argument(
         "--min-score",
-        type=int,
+        type=validate_min_score,
         default=0,
         help="Filter out jobs with fit score below this threshold (0-100)"
     )
@@ -117,32 +128,36 @@ def main():
 
     if not jobs:
         print("\n❌ No jobs found matching the criteria.")
-        return
+    else:
+        print("\n" + "=" * 65)
+        print(f"🎯 TOP MATCHING VACANCIES (Found {len(jobs)} unique jobs)")
+        print("=" * 65)
 
-    print("\n" + "=" * 65)
-    print(f"🎯 TOP MATCHING VACANCIES (Found {len(jobs)} unique jobs)")
-    print("=" * 65)
+        for idx, j in enumerate(jobs[:15], 1):
+            print(f"\n[{idx}] {j.fit_grade} ({j.fit_score}%) — {j.title}")
+            print(f"    🏢 Company:  {j.company}")
+            print(f"    📍 Location: {j.location} | Source: {j.source.upper()}")
+            print(f"    💰 Salary:   {j.salary_str}")
+            if j.fit_reasons:
+                print(f"    💡 Highlights: {'; '.join(j.fit_reasons[:3])}")
+            print(f"    🔗 URL:      {j.job_url}")
 
-    for idx, j in enumerate(jobs[:15], 1):
-        print(f"\n[{idx}] {j.fit_grade} ({j.fit_score}%) — {j.title}")
-        print(f"    🏢 Company:  {j.company}")
-        print(f"    📍 Location: {j.location} | Source: {j.source.upper()}")
-        print(f"    💰 Salary:   {j.salary_str}")
-        if j.fit_reasons:
-            print(f"    💡 Highlights: {'; '.join(j.fit_reasons[:3])}")
-        print(f"    🔗 URL:      {j.job_url}")
-
-    # Export to markdown table
+    # Export to markdown table (always written so zero-result searches update stale reports)
     md_content = engine.format_markdown_table(jobs)
     md_path = PROJECT_ROOT / args.export_md
-    with open(md_path, "w", encoding="utf-8") as f:
-        f.write(f"# Vacancy Search Results: {args.query}\n\n")
-        f.write(f"*Location: {resolved_location or 'All / Any'} | Found: {len(jobs)} jobs*\n\n")
-        f.write(md_content)
+    try:
+        with open(md_path, "w", encoding="utf-8") as f:
+            f.write(f"# Vacancy Search Results: {args.query}\n\n")
+            f.write(f"*Location: {resolved_location or 'All / Any'} | Found: {len(jobs)} jobs*\n\n")
+            f.write(md_content)
+        print("\n" + "=" * 65)
+        print(f"✅ Full report exported to: {md_path.name}")
+    except Exception as e:
+        print(f"\n⚠️ Could not export markdown report: {e}")
 
-    print("\n" + "=" * 65)
-    print(f"✅ Full report exported to: {md_path.name}")
-    print(f"✅ Raw feed saved to:       Job Hunter Agent/jobs_feed.json")
+    feed_path = PROJECT_ROOT / "Job Hunter Agent" / "jobs_feed.json"
+    if feed_path.exists():
+        print(f"✅ Raw feed saved to:       Job Hunter Agent/jobs_feed.json")
     print("=" * 65)
 
 

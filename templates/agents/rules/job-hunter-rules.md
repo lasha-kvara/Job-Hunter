@@ -30,7 +30,7 @@ These behavioral constraints and filtering policies govern all job search, scrap
 - Respect site load events and avoid clicking disabled buttons.
 
 ## 5. ATS Quirks & Anti-Honeypot Rules
-- **Indeed SmartApply:** Never click generic `button:has-text("Continue")` — Indeed renders honeypot buttons (`hp-continue-button-*`). Always use `getByTestId('continue-button')` and `getByTestId('submit-application-button')`.
+- **Indeed SmartApply:** Never click generic `button:has-text("Continue")` — Indeed renders honeypot buttons (`hp-continue-button-*`). Always use `get_by_test_id('continue-button')` and `get_by_test_id('submit-application-button')`.
 - **Greenhouse ATS:** For location comboboxes (`react-select`), clear first, type with delay, and click `[id^="react-select-"][id$="-option-0"]`.
 - **Contextual Checkbox Analysis:** Always analyze each question and candidate fit individually before checking or unchecking options. Never make blind or automated assumptions: if none of the options apply, "None of the above" should be checked; if positive options apply, select only the matching ones and avoid contradictory combinations.
 

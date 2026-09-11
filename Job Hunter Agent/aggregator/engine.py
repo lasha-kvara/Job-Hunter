@@ -67,9 +67,8 @@ class AggregatorEngine:
                 query=query,
                 max_results=results_per_source,
                 hours_old=hours_old,
+                is_remote=is_remote,
             )
-            if is_remote:
-                found_jobs_ge = [job for job in found_jobs_ge if job.is_remote]
             all_jobs.extend(found_jobs_ge)
             print(f"  -> Found {len(found_jobs_ge)} raw listings from Jobs.ge.")
 

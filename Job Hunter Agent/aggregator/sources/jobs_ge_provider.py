@@ -31,7 +31,42 @@ class JobsGeProvider:
     }
 
     @classmethod
-    def search(cls, query: str = "", max_results: int = 20, hours_old: Optional[int] = None) -> List[JobPost]:
+    def _fetch_job_description(cls, job_url: str) -> str:
+        """Fetches the announcement body from the listing page for richer scoring context."""
+        try:
+            try:
+                resp = requests.get(job_url, headers=cls.HEADERS, timeout=8, verify=True)
+            except requests.exceptions.SSLError:
+                resp = requests.get(job_url, headers=cls.HEADERS, timeout=8, verify=False)
+            if resp.status_code == 200:
+                soup = BeautifulSoup(resp.text, "html.parser")
+                dtable = soup.find(class_="dtable")
+                if dtable:
+                    text = dtable.get_text(" ", strip=True)
+                    if "See full text of this announcement in Georgian" in text:
+                        ge_url = job_url.replace("/en/", "/ge/")
+                        try:
+                            ge_resp = requests.get(ge_url, headers=cls.HEADERS, timeout=8, verify=False)
+                            if ge_resp.status_code == 200:
+                                ge_soup = BeautifulSoup(ge_resp.text, "html.parser")
+                                ge_dtable = ge_soup.find(class_="dtable")
+                                if ge_dtable:
+                                    text = f"{text}\n{ge_dtable.get_text(' ', strip=True)}"
+                        except Exception:
+                            pass
+                    return text
+        except Exception:
+            pass
+        return ""
+
+    @classmethod
+    def search(
+        cls,
+        query: str = "",
+        max_results: int = 20,
+        hours_old: Optional[int] = None,
+        is_remote: bool = False,
+    ) -> List[JobPost]:
         """
         Scrapes jobs.ge IT category (cid=6), parses posting dates, and filters by query and age.
         """
@@ -41,12 +76,20 @@ class JobsGeProvider:
 
             # IT & Software category
             url = f"{cls.BASE_URL}/en/?cid=6"
-            resp = requests.get(
-                url,
-                headers=cls.HEADERS,
-                timeout=12,
-                verify=True
-            )
+            try:
+                resp = requests.get(
+                    url,
+                    headers=cls.HEADERS,
+                    timeout=12,
+                    verify=True
+                )
+            except requests.exceptions.SSLError:
+                resp = requests.get(
+                    url,
+                    headers=cls.HEADERS,
+                    timeout=12,
+                    verify=False
+                )
             if resp.status_code != 200:
                 logger.warning(f"Jobs.ge returned non-200 status: {resp.status_code}")
                 return jobs
@@ -83,45 +126,60 @@ class JobsGeProvider:
                 if len(tds) >= 5:
                     pub_date_str = tds[-2].text.strip()
 
-                # Filter by hours_old if requested
-                if hours_old is not None and pub_date_str:
-                    try:
-                        dt = datetime.strptime(f"{pub_date_str} {now.year}", "%d %B %Y")
-                        if dt > now + timedelta(days=2):
-                            dt = dt.replace(year=now.year - 1)
-                        age_hours = (now - dt).total_seconds() / 3600
-                        if age_hours > hours_old:
-                            continue
-                    except Exception:
-                        pass
+                # Filter by hours_old if requested (strict date parsing)
+                if hours_old is not None:
+                    if not pub_date_str:
+                        continue
+                    parsed_dt = None
+                    for fmt in ["%d %B %Y", "%d %b %Y", "%d/%m/%Y", "%Y-%m-%d"]:
+                        try:
+                            date_to_parse = f"{pub_date_str} {now.year}" if len(pub_date_str.split()) == 2 and "%Y" in fmt else pub_date_str
+                            parsed_dt = datetime.strptime(date_to_parse, fmt)
+                            break
+                        except Exception:
+                            pass
+                    if parsed_dt is None:
+                        # Skip undated or unrecognized date formats when time filter is requested
+                        continue
+                    if parsed_dt > now + timedelta(days=2):
+                        parsed_dt = parsed_dt.replace(year=now.year - 1)
+                    age_hours = (now - parsed_dt).total_seconds() / 3600
+                    if age_hours > hours_old:
+                        continue
 
                 # Look for company link: /en/?view=client&client=...
                 company_link = row.find("a", href=lambda h: h and "view=client" in h)
                 company = company_link.text.strip() if company_link and company_link.text.strip() else "Jobs.ge Employer"
 
-                # If query specified, check for match in title
+                # If query specified, check for match in title (match all query tokens or full phrase)
                 if query_tokens:
                     title_lower = title.lower()
-                    matched = any(token in title_lower for token in query_tokens)
+                    matched = (query.lower() in title_lower) or all(token in title_lower for token in query_tokens)
                     if not matched:
                         continue
 
                 # Check remote tag in entire row text (title + tags + metadata)
                 row_text = row.get_text(" ", strip=True)
-                is_remote = bool(re.search(r'\bremote\b', row_text, re.IGNORECASE))
+                has_remote = bool(re.search(r'\bremote\b', row_text, re.IGNORECASE))
+                if is_remote and not has_remote:
+                    continue
+
+                # Fetch real announcement details from detail page for accurate scoring
+                desc = cls._fetch_job_description(job_url)
+                if not desc:
+                    desc = f"{title} vacancy at {company} listed on Jobs.ge IT section."
 
                 post = JobPost(
                     title=title,
                     company=company,
                     job_url=job_url,
                     source="jobs_ge",
-                    location="Georgia (Tbilisi / Remote)" if is_remote else "Georgia (Tbilisi)",
+                    location="Georgia (Tbilisi / Remote)" if has_remote else "Georgia (Tbilisi)",
                     date_posted=pub_date_str,
-                    is_remote=is_remote,
-                    description=f"{title} vacancy at {company} listed on Jobs.ge IT section."
+                    is_remote=has_remote,
+                    description=desc
                 )
                 jobs.append(post)
-
 
         except Exception as e:
             logger.warning(f"Jobs.ge search failed: {e}")

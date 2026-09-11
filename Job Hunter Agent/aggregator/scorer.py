@@ -123,17 +123,19 @@ class CandidateScorer:
                 skills_match = re.search(r"##\s+Skills\s*\n(.*?)(?=\n##|\Z)", content, re.DOTALL | re.IGNORECASE)
                 if skills_match:
                     for line in skills_match.group(1).splitlines():
-                        line = line.strip()
+                        line = line.strip().lstrip("-* ")
                         if not line or line.startswith("#"):
                             continue
-                        parts = line.split(":", 1)
+                        # Strip markdown bold/italic markers before splitting
+                        clean_line = line.replace("**", "").replace("*", "").strip()
+                        parts = clean_line.split(":", 1)
                         if len(parts) == 2:
-                            category = parts[0].lower()
+                            category = parts[0].strip().lower()
                             items_str = parts[1].strip()
                             # Skip placeholder template lines like [e.g. Python, TypeScript] or [Your skills]
                             if items_str.startswith("[") or "e.g." in items_str.lower():
                                 continue
-                            items = [it.strip().lower() for it in items_str.split(",") if it.strip()]
+                            items = [it.strip().lower().strip("`*[] ") for it in items_str.split(",") if it.strip()]
                             weight = 15 if any(c in category for c in ["framework", "language", "core"]) else 10
                             for item in items:
                                 if len(item) > 1:
@@ -210,7 +212,12 @@ class CandidateScorer:
             reasons.append(f"Matched tech stack: {top_tech}")
 
         # 4. Remote preference
-        if job.is_remote or "remote" in text_to_search:
+        has_negative_remote = bool(re.search(
+            r'\b(?:not\s+remote|no\s+remote|non-remote|not\s+available\s+for\s+remote|remote\s+work\s+is\s+not\s+available|no\s+remote\s+option)\b',
+            text_to_search,
+            re.IGNORECASE
+        ))
+        if job.is_remote or (re.search(r'\b(?:remote|telecommute|work\s+from\s+home|wfh)\b', text_to_search, re.IGNORECASE) and not has_negative_remote):
             score += 10
             reasons.append("Remote friendly (+10)")
 
