@@ -1,154 +1,248 @@
-# 🎯 Job-Hunter — Automated Job Search & Application Agent
+# 🎯 Job-Hunter — Autonomous Job Search & Application Agent
 
-An open-source, autonomous AI-assisted agent built with **Python** and **Playwright** designed for searching, analyzing, and applying to tech jobs (QA Automation, SDET, Software Engineering) across multiple platforms.
-
----
-
-## 🌟 Key Highlights
-
-- 👁️ **Visual Headed Mode (Real-Time)**: Unlike black-box headless bots, Job-Hunter runs in a visible browser so you can watch every action (searching, scrolling, filling forms, attaching CVs) in real-time.
-- 🔓 **100% Standalone (No Antigravity Required)**: Anyone with Python can clone and run this project immediately. It does not require Antigravity or any proprietary tools.
-- 🛡️ **Privacy & Security First**: All profiles, credentials, and application histories stay strictly on your local machine. No tracking, no data harvesting.
-- 🤖 **Human-Like Pacing**: Includes realistic browsing pauses, random delays, and smooth interactions to keep accounts safe.
-- 🔌 **Chrome CDP Integration**: Connect directly to your existing, already-logged-in browser session via Chrome DevTools Protocol (`--remote-debugging-port=9222`) without sharing passwords or 2FA codes.
+An open-source, dual-mode job search and application engine built with **Python**, **Playwright**, and **AI Agent Skills**. Designed for software engineers, SDETs, and QA Automation professionals to discover, filter, score, and apply to vacancies across multiple platforms with zero personal data leaks.
 
 ---
 
-## 🚀 Quick Start Guide
+## 🌟 Two Ways to Use Job-Hunter
 
-### Prerequisites
-- **Python 3.10+** installed ([python.org](https://www.python.org/))
-- **Google Chrome** or Chromium browser
+Job-Hunter is engineered to work in **two distinct modes**:
+
+| Feature | 🤖 Mode 1: AI Agent Mode (Google Antigravity) | 💻 Mode 2: Standalone Mode (Pure Python CLI) |
+| :--- | :--- | :--- |
+| **Prerequisites** | Google Antigravity IDE + Python 3.10+ | Python 3.10+ only (No AI required) |
+| **Interaction** | Natural language conversational prompts | Terminal CLI commands & scripts |
+| **Vacancy Discovery** | Autonomous multi-platform aggregation | `python search_jobs.py --query ...` |
+| **CV / Profile Fit** | Evaluated against your profile facts | Weighted keyword scoring (0–100%) |
+| **Form Filling** | Autonomous dynamic DOM analysis in Headed mode | Automated script actions in Headed mode |
+| **2FA / Captcha** | Intelligent pause-and-prompt / email tab check | Visual browser pauses for user entry |
+| **LinkedIn Recruiter** | AI drafts context-aware replies & tracks stages | Interactive terminal CLI menu |
 
 ---
 
-### Step 1: Clone the Repository
+## 🚀 Quick Start: Installation (Common to Both Modes)
+
+### 1. Clone the Repository
 ```bash
 git clone https://github.com/lasha-kvara/Job-Hunter.git
 cd Job-Hunter
 ```
 
----
-
-### Step 2: Install Dependencies
-Create a virtual environment (recommended) and install the required packages:
-
+### 2. Create Virtual Environment & Install Dependencies
 ```bash
-# Optional: create & activate virtual environment
+# Create and activate virtual environment
 python -m venv .venv
+
 # On Windows:
 .venv\Scripts\activate
-# On macOS/Linux:
+
+# On Linux / macOS:
 source .venv/bin/activate
 
-# Install all dependencies (Multi-Source Scraper, Playwright, Pandas)
+# Install all dependencies
 pip install -r requirements.txt
 
-# Install Playwright browser binaries
+# Install Playwright browser engines
 playwright install
 ```
 
----
-
-### Step 3: Configure Your Candidate Profile
-Copy the provided template and fill in your own information:
+### 3. Set Up Your Personal Candidate Profile
+Copy the profile template to your active profile:
 
 ```bash
-# Windows (PowerShell / CMD):
+# Windows:
 copy "Linkedin Agent\candidate-profile.template.md" "Linkedin Agent\candidate-profile.md"
 
 # Linux / macOS:
 cp "Linkedin Agent/candidate-profile.template.md" "Linkedin Agent/candidate-profile.md"
 ```
 
-Open `candidate-profile.md` in any text editor and specify:
-- Your target roles (e.g. `QA Automation Engineer`, `Senior SDET`)
-- Skills and tech stack (e.g. `Playwright`, `Selenium`, `Python`, `TypeScript`, `CI/CD`)
-- Professional experience & projects
-- Contact details (Phone, Email, LinkedIn, GitHub)
-- Path to your CV/Resume PDF file
+Open `Linkedin Agent/candidate-profile.md` in any editor and specify:
+- **Full Name, Email, Phone, Location, Timezone**
+- **Target Roles** (e.g. `QA Automation Engineer`, `Senior SDET`, `Backend Developer`)
+- **Core Skills & Frameworks** (e.g. `Playwright`, `TypeScript`, `Python`, `C#`, `Selenium`)
+- **Years of Experience & Past Projects**
+- **Absolute Path to your CV/Resume PDF**
+- **Salary Expectations**
 
-> 💡 *Note: `candidate-profile.md` is automatically git-ignored so your private personal data will never be committed or pushed.*
+> 🛡️ **Privacy Guarantee:** `candidate-profile.md`, `job-applications-report.md`, and `linkedin-pipeline.md` are strictly git-ignored. Your personal contact details and private application histories will never be committed or uploaded to Git.
 
 ---
 
-### Step 4: Run the Agent
+## 🤖 Mode 1: Running with Google Antigravity
 
-#### Option A: Multi-Source Vacancy Aggregator (NEW)
-Instant multi-platform vacancy discovery across LinkedIn, Indeed, Glassdoor, ZipRecruiter, Google Jobs, and Jobs.ge with automatic candidate fit scoring (0-100%):
+If you use **Google Antigravity** (or an agentic workspace supporting `.agents/` skills and rules), follow these steps to unlock full autonomous capabilities:
+
+### Step 1: Initialize Agent Skills & Rules
+Copy the included templates into your local `.agents/` workspace directory:
+
 ```bash
-# Search for remote QA Automation roles
+# Windows (PowerShell / CMD):
+xcopy /E /I "templates\agents" ".agents"
+
+# Linux / macOS:
+cp -r templates/agents/* .agents/
+```
+
+This installs:
+- **`job-hunter-agent` skill:** Autonomous vacancy discovery, location/visa filtering, dynamic form filling, and 2FA handling.
+- **`linkedin-agent` skill:** Recruiter conversation management, interview scheduling, and pipeline progression.
+- **`job-hunter-rules` & `linkedin-rules`:** Strict invariants enforcing **ZERO hallucination** (the agent only uses facts from your `candidate-profile.md`), anti-bot human pacing, and safe file uploads.
+
+### Step 2: Open Workspace in Antigravity
+Open the `Job-Hunter` directory in Google Antigravity. The AI assistant will automatically recognize the registered skills.
+
+### Step 3: Use Natural Language Prompts
+You can now speak directly to the agent in English or Georgian:
+
+- **Search & Aggregation:**
+  > *"Find all remote Senior SDET and QA Automation openings matching my profile across LinkedIn, Indeed, and Google Jobs."*
+- **Visual Application (Headed Mode):**
+  > *"Launch a visible browser and apply to the top 3 matching vacancies. Stop and ask me if an SMS 2FA code is needed."*
+- **LinkedIn Messaging:**
+  > *"Check my LinkedIn messages via Chrome CDP. Update the opportunity pipeline and draft polite replies to new recruiters."*
+- **Assessment Tests:**
+  > *"Solve the problem-solving and QA technical assessment on this BairesDev tab."*
+
+---
+
+## 💻 Mode 2: Running Standalone (Without Antigravity)
+
+You do **not** need Antigravity, Docker, or paid AI tokens to run Job-Hunter. All tools run directly from your command line:
+
+### 1. Multi-Source Vacancy Aggregator (`search_jobs.py`)
+Search across **LinkedIn, Indeed, Glassdoor, ZipRecruiter, Google Jobs**, and **Jobs.ge** concurrently:
+
+```bash
+# Search for remote QA Automation positions
 python search_jobs.py --query "QA Automation Engineer" --remote
 
-# Search for Senior SDET with minimum 60% fit score
+# Search for Senior SDET with minimum 60% candidate fit score
 python search_jobs.py --query "Senior SDET" --min-score 60
 
 # Filter specific sources
-python search_jobs.py --query "Playwright QA" --sources indeed linkedin jobs_ge
-```
-Results are automatically deduplicated, stripped of URL tracking parameters, and exported to `search_results.md` and `Job Hunter Agent/jobs_feed.json`.
+python search_jobs.py --query "Playwright Automation" --sources indeed linkedin google
 
-#### Option B: Headed Browser Auto-Apply
-Watch the agent search and process vacancies live on screen:
+# Search local/on-site positions as well
+python search_jobs.py --query "SDET" --no-remote --sources jobs_ge indeed
+```
+
+**Key Features:**
+- **URL Sanitization:** Automatically strips 40+ tracking parameters (`utm_*`, `refId`, `trackingId`, `gh_src`, etc.).
+- **Smart Deduplication:** Groups listings across platforms by normalized company + title signatures.
+- **Candidate Fit Scoring:** Automatically scores jobs from 0% to 100% against your profile skills.
+- **Outputs:** Saves feed to `Job Hunter Agent/jobs_feed.json` and exports a clean Markdown table to `search_results.md`.
+
+---
+
+### 2. Headed Browser Auto-Apply (`headed_apply.py`)
+Watch the agent interact with job boards live in a visible browser window:
+
 ```bash
 python headed_apply.py
 ```
 
-#### Option C: LinkedIn Interactive CLI
-Manage recruiters, screen candidates, and track job pipelines:
+- Renders real-time browser actions (scrolling, clicking, filling form inputs).
+- Attaches your local CV file directly via DOM file input setters without triggering freezing Win32/OS dialogs.
+- Includes human-like delays (50–120ms per keypress, natural reading pauses).
+
+---
+
+### 3. LinkedIn Recruiter & Pipeline Manager (`Linkedin Agent/run.py`)
+An interactive terminal CLI for managing recruiter outreach:
+
 ```bash
 python "Linkedin Agent/run.py"
 ```
 
-#### Option D: Connect to Your Existing Logged-in Browser (CDP Mode)
-If you are already logged into job platforms (like LinkedIn) and want to avoid logging in again:
-1. Start your browser in remote debugging mode:
-   - **Windows:** Double-click `Linkedin Agent/start_browser.bat`
-   - **macOS / Linux:**
-     ```bash
-     google-chrome --remote-debugging-port=9222 --user-data-dir="/tmp/chrome_profile"
-     ```
-2. Run the agent:
-   ```bash
-   python "Linkedin Agent/run.py"
-   ```
-   The agent will automatically attach to your existing browser session.
+**Features:**
+- View active opportunities grouped by stage (`Initial Contact`, `Waiting for Reply`, `Interview Scheduled`).
+- Generate grounded replies in English and Georgian.
+- Track interview availability and propose dates in your timezone.
 
 ---
 
-## 📂 Project Structure
+### 4. Connect to Your Existing Browser Session (CDP Mode)
+Avoid logging in repeatedly or triggering bot challenges by attaching to your existing Chrome profile:
+
+1. **Launch Chrome in Remote Debugging Mode:**
+   - **Windows:** Double-click `Linkedin Agent/start_browser.bat`
+   - **Linux / macOS:**
+     ```bash
+     google-chrome --remote-debugging-port=9222 --user-data-dir="/tmp/chrome_profile"
+     ```
+2. **Run your script or agent:**
+   ```bash
+   python "Linkedin Agent/run.py"
+   ```
+   The engine attaches to port `9222` and operates inside your logged-in browser session.
+
+---
+
+## 📂 Repository Structure
 
 ```text
 Job-Hunter/
-├── README.md                                 # Main documentation & setup guide
-├── .gitignore                                # Keeps personal profiles & secrets local
+├── README.md                                 # Comprehensive guide & setup manual
+├── requirements.txt                          # Unified Python dependencies
+├── search_jobs.py                            # Multi-source vacancy aggregator CLI
 ├── headed_apply.py                           # Standalone Headed Playwright job apply runner
 ├── run_headed.py                             # Quick demo script for visual browsing
+├── .gitignore                                # Strict privacy boundary for local files
+│
+├── templates/                                # Ready-to-use anonymized templates
+│   └── agents/                               # Antigravity skill & rule templates
+│       ├── rules/
+│       │   ├── job-hunter-rules.template.md
+│       │   └── linkedin-rules.template.md
+│       └── skills/
+│           ├── job-hunter-agent/
+│           │   ├── SKILL.template.md
+│           │   └── references/
+│           │       ├── platforms-guide.md
+│           │       └── screening-answers.template.md
+│           └── linkedin-agent/
+│               ├── SKILL.template.md
+│               └── references/
+│                   ├── pacing-rules.md
+│                   └── templates.md
+│
 ├── Job Hunter Agent/
-│   └── job-applications-report.template.md  # Template for tracking submitted applications
+│   ├── aggregator/                           # Multi-source scraper engine
+│   │   ├── cleaner.py                        # Tracking parameter stripper & deduplicator
+│   │   ├── engine.py                         # Unified search orchestrator
+│   │   ├── models.py                         # Standardized JobPost dataclass
+│   │   ├── scorer.py                         # Candidate profile fit scoring engine
+│   │   └── sources/
+│   │       ├── jobspy_provider.py            # Indeed, LinkedIn, Glassdoor, ZipRecruiter, Google
+│   │       └── jobs_ge_provider.py           # Local Jobs.ge scraper with secure TLS
+│   └── job-applications-report.template.md  # Template for submitted application logs
+│
 └── Linkedin Agent/
-    ├── candidate-profile.template.md         # Anonymized candidate profile template
-    ├── linkedin-pipeline.template.md         # Active conversation & pipeline tracker
-    ├── config.py                             # Global configuration and path resolver
-    ├── requirements.txt                      # Python library dependencies
-    ├── run.py                                # Interactive CLI for agent management
-    ├── start_browser.bat                     # Windows shortcut for Chrome CDP debug session
+    ├── candidate-profile.template.md         # Anonymized candidate facts template
+    ├── linkedin-pipeline.template.md         # Anonymized pipeline tracker template
+    ├── config.py                             # Path resolution & environment config
+    ├── run.py                                # Interactive terminal management CLI
+    ├── start_browser.bat                     # Windows shortcut for Chrome CDP session
     └── src/
-        ├── browser_controller.py             # Playwright browser engine & human-like actions
-        ├── pipeline_manager.py               # Application pipeline state manager
-        ├── profile_manager.py                # Candidate facts parser & single source of truth
-        ├── response_generator.py             # Context-aware messaging generator
-        └── scheduler.py                      # Background scheduler & monitoring loop
+        ├── browser_controller.py             # Playwright engine with human-like pacing
+        ├── pipeline_manager.py               # Application stage tracker
+        ├── profile_manager.py                # Candidate profile parser
+        ├── response_generator.py             # Context-aware messaging engine
+        └── scheduler.py                      # Availability & interview slot validator
 ```
 
 ---
 
-## 🔒 Privacy & Git Safety
-- Personal files (`candidate-profile.md`, `job-applications-report.md`, `linkedin-pipeline.md`) are ignored by Git.
-- No personal contact numbers, emails, or credentials are tracked in this repository.
-- Anyone can clone this repository, customize their own profile, and run it independently.
+## 🔒 Privacy & Safety Guidelines
+
+- **Zero Data Harvesting:** No personal data is transmitted to third-party databases.
+- **Git-Ignored Files:** Your actual `candidate-profile.md`, submitted applications report, and pipeline tracker remain on your local disk only.
+- **Honeypot Protection:** Bypasses hidden honeypot buttons on platforms like Indeed SmartApply.
+- **Safe File Uploads:** Uploads PDFs directly to `input[type="file"]` without opening operating system file dialogs.
 
 ---
 
 ## 📄 License
+
 This project is open-source and available under the [MIT License](LICENSE).
