@@ -74,16 +74,22 @@ class ResponseGenerator:
                 return f"Hello {name}, thanks for reaching out! I'm interested in the {role_str} opportunity. Could you share more details about the role and the team? I'd be happy to schedule an introductory call. {signoff_en}"
 
         elif intent == "propose_time":
-            tz = self.profile.get_preferences().get("timezone", "")
-            tz_str = f" ({tz})" if tz else ""
+            tz = self.profile.get_preferences().get("timezone", "").strip()
+            if role_or_details and any(k in role_or_details for k in ["(", "timezone", "UTC", "GMT"]):
+                tz_str = ""
+            else:
+                tz_str = f" ({tz})" if tz else " ([Timezone])"
             if language == "ka":
                 return f"გამარჯობა {name}, შემიძლია შემოგთავაზოთ {role_or_details or 'ორშაბათს 17:00-ზე ან სამშაბათს 17:00-ზე'}{tz_str}. რომელი დრო იქნება თქვენთვის უფრო მოსახერხებელი?"
             else:
                 return f"Hello {name}, I'm available on {role_or_details or 'Monday at 17:00 and Tuesday at 17:00'}{tz_str}. Which time works best for your schedule?"
 
         elif intent == "confirm_interview":
-            tz = self.profile.get_preferences().get("timezone", "")
-            tz_str = f" ({tz})" if tz else ""
+            tz = self.profile.get_preferences().get("timezone", "").strip()
+            if role_or_details and any(k in role_or_details for k in ["(", "timezone", "UTC", "GMT"]):
+                tz_str = ""
+            else:
+                tz_str = f" ({tz})" if tz else " ([Timezone])"
             if language == "ka":
                 return f"{role_or_details or 'შეთანხმებული დრო'}{tz_str} ჩემთვის სრულად მისაღებია. შევხვდებით გასაუბრებაზე!"
             else:

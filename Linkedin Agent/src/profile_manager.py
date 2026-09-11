@@ -77,8 +77,14 @@ class CandidateProfile:
                     if l.strip()
                 ]
                 for l in clean_lines:
-                    if l and not l.startswith("[") and "amount" not in l.lower():
-                        return l
+                    if l and not l.startswith("[") and "amount" not in l.lower() and not l.lower().startswith("disclose"):
+                        # Normalize prefixes (e.g., Minimum, Target, Expected, At least, Around)
+                        val = re.sub(r"^(?:minimum|target|expected|approx(?:\.|\w*)|around|at least)\s*:?\s*", "", l, flags=re.IGNORECASE).strip()
+                        # Remove trailing parenthetical remarks like (or gross annual) or (gross)
+                        val = re.sub(r"\s*\([^)]*(?:annual|gross|net|negotiable)[^)]*\)", "", val, flags=re.IGNORECASE).strip()
+                        val = val.rstrip(".").strip()
+                        if val:
+                            return val
         return ""
 
     def get_experience_summary(self) -> str:

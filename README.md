@@ -270,7 +270,7 @@ Job-Hunter/
 
 ## 🧪 Verification & Automated Tests
 
-To ensure all scrapers, scoring algorithms, and LinkedIn agent components operate reliably:
+To ensure multi-source aggregation pipelines, scoring algorithms, runner scripts, and LinkedIn agent components operate reliably:
 
 ```bash
 # Run the full regression test suite

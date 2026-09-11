@@ -1,7 +1,13 @@
 @echo off
-title LinkedIn Agent - Chrome/Brave Launcher (Port 9222)
+setlocal enabledelayedexpansion
+
+set PORT=9222
+if defined CDP_PORT set PORT=%CDP_PORT%
+if not "%~1"=="" set PORT=%~1
+
+title LinkedIn Agent - Chrome/Brave Launcher (Port %PORT%)
 echo ======================================================================
-echo Starting Browser with Remote Debugging Port 9222 for LinkedIn Agent...
+echo Starting Browser with Remote Debugging Port %PORT% for LinkedIn Agent...
 echo ======================================================================
 
 set CHROME_PATH1="C:\Program Files\Google\Chrome\Application\chrome.exe"
@@ -32,14 +38,14 @@ if exist %BRAVE_PATH1% (
 if %TARGET_EXE%=="" (
     echo [ERROR] Could not find Chrome or Brave executable automatically.
     echo Please start Chrome or Brave from command line with:
-    echo chrome.exe --remote-debugging-port=9222
+    echo chrome.exe --remote-debugging-port=%PORT%
     pause
     exit /b 1
 )
 
 set PROFILE_DIR="%LOCALAPPDATA%\LinkedInAgent_Profile"
 
-echo Launching browser with --remote-debugging-port=9222 and persistent profile...
-start "" %TARGET_EXE% --remote-debugging-port=9222 --user-data-dir=%PROFILE_DIR% "https://www.linkedin.com/feed/"
+echo Launching browser with --remote-debugging-port=%PORT% and persistent profile...
+start "" %TARGET_EXE% --remote-debugging-port=%PORT% --user-data-dir=%PROFILE_DIR% "https://www.linkedin.com/feed/"
 echo Browser started with persistent profile at %PROFILE_DIR%!
 echo Your LinkedIn session will remain logged in across sessions.

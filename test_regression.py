@@ -53,12 +53,21 @@ try:
         language="en"
     )
     assert len(generated) > 20, "Response generator produced empty response"
-    print(f"  [+] ResponseGenerator: Generated valid response ({len(generated)} chars): '{generated[:50]}...'")
+    # 1.4 Test InterviewScheduler & Salary normalization
+    scheduler = InterviewScheduler(profile)
+    standard_proposal = scheduler.get_standard_slots("en")
+    assert "(" in standard_proposal and ")" in standard_proposal, "Proposal must contain timezone specification"
+    confirmation = scheduler.format_confirmation("Thursday, Aug 27", "16:00")
+    assert "(" in confirmation and ")" in confirmation, "Confirmation must contain timezone specification"
+    salary = profile.get_salary_expectation()
+    assert "*" not in salary and "_" not in salary and "`" not in salary, "Salary contains markdown"
+    assert not salary.lower().startswith("minimum"), "Salary should be normalized without leading Minimum label"
+    print(f"  [+] InterviewScheduler & Salary: Proposal valid, normalized salary: '{salary}'")
 
     print("  => ALL EXISTING LINKEDIN AGENT TESTS PASSED!")
 
 except Exception as e:
-    print(f"  ❌ FAILED in Linkedin Agent: {e}")
+    print(f"  ❌ FAILED in LinkedIn Agent tests: {e}")
     import traceback
     traceback.print_exc()
     sys.exit(1)
@@ -74,9 +83,9 @@ try:
 
     for script_name in ["headed_apply.py", "run_headed.py", "Linkedin Agent/run.py"]:
         script_path = PROJECT_ROOT / script_name
-        if script_path.exists():
-            py_compile.compile(str(script_path), doraise=True)
-            print(f"  [+] {script_name}: Syntax and compilation verified OK.")
+        assert script_path.is_file(), f"Required runner script not found: {script_name}"
+        py_compile.compile(str(script_path), doraise=True)
+        print(f"  [+] {script_name}: Syntax and compilation verified OK.")
 
     print("  => ALL EXISTING RUNNER SCRIPTS PASSED!")
 
