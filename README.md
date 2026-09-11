@@ -47,15 +47,19 @@ pip install -r requirements.txt
 playwright install
 ```
 
-### 3. Set Up Your Personal Candidate Profile
-Copy the profile template to your active profile:
+### 3. Initialize Your Local Profiles & Trackers
+Copy the provided templates to your local, git-ignored active files:
 
 ```bash
 # Windows:
 copy "Linkedin Agent\candidate-profile.template.md" "Linkedin Agent\candidate-profile.md"
+copy "Linkedin Agent\linkedin-pipeline.template.md" "Linkedin Agent\linkedin-pipeline.md"
+copy "Job Hunter Agent\job-applications-report.template.md" "Job Hunter Agent\job-applications-report.md"
 
 # Linux / macOS:
 cp "Linkedin Agent/candidate-profile.template.md" "Linkedin Agent/candidate-profile.md"
+cp "Linkedin Agent/linkedin-pipeline.template.md" "Linkedin Agent/linkedin-pipeline.md"
+cp "Job Hunter Agent/job-applications-report.template.md" "Job Hunter Agent/job-applications-report.md"
 ```
 
 Open `Linkedin Agent/candidate-profile.md` in any editor and specify:

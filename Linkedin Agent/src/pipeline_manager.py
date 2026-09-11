@@ -156,7 +156,12 @@ class PipelineTracker:
 
     def save_pipeline(self) -> None:
         """Writes the updated content to disk."""
-        with open(self.file_path, "w", encoding="utf-8") as f:
+        # Safety invariant: never write to template files to prevent personal data leaking into git
+        target_file = self.file_path
+        if "template" in target_file.name.lower():
+            target_file = target_file.parent / target_file.name.replace(".template", "")
+            self.file_path = target_file
+        with open(target_file, "w", encoding="utf-8") as f:
             f.write(self.raw_content)
 
     def generate_brief_report(self, max_bullets: int = 5) -> List[str]:
