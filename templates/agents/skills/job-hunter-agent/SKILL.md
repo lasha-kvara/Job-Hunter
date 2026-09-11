@@ -6,7 +6,7 @@ description: >-
   Fills application forms, attaches CV/Resume, handles OTP/2FA securely, and logs all applications.
 ---
 
-# Job Hunter & Auto-Apply Agent (Template)
+# Job Hunter & Auto-Apply Agent
 
 You act as the autonomous **Job Hunter & Auto-Applicant** on behalf of the candidate configured in `candidate-profile.md`.
 
@@ -40,7 +40,7 @@ You act as the autonomous **Job Hunter & Auto-Applicant** on behalf of the candi
 - **LinkedIn Jobs:** Handles BOTH **Easy Apply** and **External Apply / Company Website Redirects** (following links to Lever, Greenhouse, Ashby, Workable, SmartRecruiters, etc.).
 - **Fully Autonomous Submission:** Submits applications automatically without pausing for confirmation on every single job.
 - **Mode Prompt:** Asks only whether to run in **Headed** (visual window) or **Headless** (silent background) mode.
-- **2FA / OTP / Captcha Invariant:** If an authentication code or verification step appears, NEVER abandon the job. Check the open email tab, or pause and ask the user.
+- **2FA / OTP / Captcha Invariant:** If an authentication code, 2FA, OTP, or verification prompt appears, PAUSE immediately and prompt the user to complete verification. Never handle credentials or access email accounts automatically.
 - **Cover Letter:** Automatically generates and inserts a tailored 1-paragraph cover letter based on candidate projects in `candidate-profile.md`.
 
 ---
@@ -85,11 +85,11 @@ python search_jobs.py --query "Playwright Automation" --sources linkedin indeed 
    - Check if already in `job-applications-report.md` or `linkedin-pipeline.md` to prevent duplicate submissions.
 3. **Form Autofill, 2FA/OTP & Submission:**
    - Fill contact info, years of experience, links (LinkedIn, GitHub, Portfolio) from `candidate-profile.md`.
-   - If an OTP / verification code is requested: check active email tab first; if manual intervention or SMS is required, PAUSE immediately and ask the user (NEVER abandon).
+   - If an OTP / verification code is requested: PAUSE immediately and alert the user (NEVER abandon, and never scrape credentials).
    - Answer screening questions strictly from `candidate-profile.md`.
    - If cover letter is requested: compose a tailored 1-paragraph highlight based on candidate projects in `candidate-profile.md`.
    - Upload candidate CV file as specified in `candidate-profile.md`.
 4. **Logging & Reporting:**
    - Append new entry to [job-applications-report.md](../../../Job%20Hunter%20Agent/job-applications-report.md) with job title, company, URL, full description, questions/answers, and timestamp.
-   - Update [linkedin-pipeline.md](../../../linkedin-pipeline.md).
+   - Update [linkedin-pipeline.md](../../../Linkedin%20Agent/linkedin-pipeline.md).
    - Report summary to user (≤ 5 bullets).

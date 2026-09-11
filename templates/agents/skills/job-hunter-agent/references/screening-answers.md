@@ -1,4 +1,4 @@
-# Standard Screening Answers & Cover Letter Templates (Template)
+# Standard Screening Answers & Cover Letter Templates
 
 All answers are derived strictly from your configured `candidate-profile.md`.
 
@@ -11,10 +11,10 @@ All answers are derived strictly from your configured `candidate-profile.md`.
 | **Total Years of Experience in QA / Testing** | `[Years from profile]` | Read from candidate-profile.md |
 | **Years of Test Automation Experience** | `[Years from profile]` | Read from candidate-profile.md |
 | **Primary Languages & Frameworks** | `[Core skills from profile]` | Frameworks & languages from profile |
-| **Notice Period / Earliest Start Date** | `1 month` (or `30 days`) | Standard notice |
+| **Notice Period / Earliest Start Date** | `[Notice period from profile]` | Read from candidate-profile.md |
 | **Current Location / City** | `[City, Country from profile]` | Timezone as defined in profile |
-| **Work Authorization (US/EU)** | `Require sponsorship` (unless remote contractor) | Confirm per country |
-| **Willing to Relocate** | `Yes, willing to relocate` | Destinations confirmed with user |
+| **Work Authorization (US/EU)** | `[Work authorization from profile]` | Confirm per country and candidate-profile.md |
+| **Willing to Relocate** | `[Relocation preference from profile]` | Confirm destinations with user |
 | **Expected Salary (Foreign Remote/Relocation)** | `[Salary from profile]` | Disclose only when required |
 | **Expected Salary (Local)** | `[Local salary from profile]` | Local standard |
 

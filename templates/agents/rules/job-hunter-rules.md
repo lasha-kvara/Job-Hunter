@@ -1,4 +1,4 @@
-# Job Hunter & Auto-Apply Workspace Rules (Template)
+# Job Hunter & Auto-Apply Workspace Rules
 
 These behavioral constraints and filtering policies govern all job search, scraping, and application activities.
 
@@ -6,12 +6,15 @@ These behavioral constraints and filtering policies govern all job search, scrap
 - **Single Source of Truth:** `Linkedin Agent/candidate-profile.md` (or your local candidate profile).
 - **Full Name, Email, Phone, Location:** MUST be dynamically read from `candidate-profile.md`.
 - **NEVER** guess, invent, or use dummy contact information or emails.
-- **QA Experience & Skills:** Factual statements (years, frameworks, languages) must match `candidate-profile.md` 1:1.
+- **Experience & Skills:** Factual statements (years, frameworks, languages) must match `candidate-profile.md` 1:1.
 
-## 2. Never Abandon on 2FA / OTP / Captcha / Blocker (CRITICAL USER INVARIANT)
-- **NEVER skip, abandon, or surrender** a job application when an authentication code, 2FA, OTP, CAPTCHA, or verification prompt appears.
-- **Step 1 (Check Active Email Tab):** If the verification code is sent to the candidate's email (as defined in `candidate-profile.md`) and an email tab is already open in the browser session, switch to that tab to fetch the verification code autonomously.
-- **Step 2 (Pause & Prompt User):** If the code/CAPTCHA cannot be resolved autonomously (e.g., SMS 2FA, manual image captcha, account password approval): **IMMEDIATELY PAUSE** execution. Alert the user with the exact requirement and **STOP** until the user confirms or provides the code. Never switch to another job application without resolving or user instruction.
+## 2. 2FA / OTP / Captcha Policy - Strict Manual Pause Rule (CRITICAL)
+- **NEVER handle, scrape, or input passwords, 2FA codes, or credentials in automated scripts.**
+- If an authentication code, 2FA prompt, SMS verification, OTP, or CAPTCHA appears:
+  - **IMMEDIATELY PAUSE execution.**
+  - Alert the user with the exact verification required.
+  - **STOP and wait** until the user completes the challenge manually and gives confirmation to proceed.
+  - **NEVER abandon** the application, and never attempt to access or scrape email inboxes for verification codes.
 
 ## 3. File Upload Rule - NEVER Trigger OS File Dialog (CRITICAL)
 - **NEVER** click visual "Upload CV" / "Choose File" buttons using mouse/pixel clicks! Doing so triggers the native OS file picker dialog which freezes browser automation.
@@ -29,13 +32,13 @@ These behavioral constraints and filtering policies govern all job search, scrap
 ## 5. ATS Quirks & Anti-Honeypot Rules
 - **Indeed SmartApply:** Never click generic `button:has-text("Continue")` — Indeed renders honeypot buttons (`hp-continue-button-*`). Always use `getByTestId('continue-button')` and `getByTestId('submit-application-button')`.
 - **Greenhouse ATS:** For location comboboxes (`react-select`), clear first, type with delay, and click `#react-select-*-option-0`.
-- **Contextual Checkbox Analysis:** Always analyze each question and candidate fit individually before checking or unchecking options. Never make blind or automated assumptions: if none of the options apply, "None of the above" should be checked; if positive options apply, select only the matching ones and avoid contradictory combinations (e.g. checking both positive skills and "None of the above").
+- **Contextual Checkbox Analysis:** Always analyze each question and candidate fit individually before checking or unchecking options. Never make blind or automated assumptions: if none of the options apply, "None of the above" should be checked; if positive options apply, select only the matching ones and avoid contradictory combinations.
 
 ## 6. Duplicate Application Prevention
 - Before submitting any application, cross-check:
   1. `Job Hunter Agent/job-applications-report.md`
-  2. `linkedin-pipeline.md`
-- If the company or jobId already exists, skip it to avoid spamming the employer.
+  2. `Linkedin Agent/linkedin-pipeline.md`
+- If the company or jobId already exists, skip it to avoid duplicate submissions.
 
 ## 7. Screening Answers & Factual Grounding
 - Form values (years of experience, languages, frameworks, education) must strictly match `candidate-profile.md`.

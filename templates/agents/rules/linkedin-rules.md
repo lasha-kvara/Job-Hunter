@@ -1,4 +1,4 @@
-# LinkedIn Agent Workspace Rules (Template)
+# LinkedIn Agent Workspace Rules
 
 These behavioral constraints and guidelines are active for all LinkedIn-related tasks and conversations.
 

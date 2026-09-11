@@ -60,13 +60,16 @@ class AggregatorEngine:
         # list was supplied and the include flag is True.
         if include_jobs_ge and ("jobs_ge" in target_sources or sources is None):
             print("🇬🇪 Searching on: JOBS.GE (local / regional tech vacancies)...")
-            found_jobs_ge = JobsGeProvider.search(query=query, max_results=results_per_source)
-            # TODO: Jobs.ge does not expose machine-parseable dates; add hours_old
-            # filtering once date extraction from detail pages is implemented.
+            found_jobs_ge = JobsGeProvider.search(
+                query=query,
+                max_results=results_per_source,
+                hours_old=hours_old,
+            )
             if is_remote:
                 found_jobs_ge = [job for job in found_jobs_ge if job.is_remote]
             all_jobs.extend(found_jobs_ge)
             print(f"  -> Found {len(found_jobs_ge)} raw listings from Jobs.ge.")
+
 
 
 

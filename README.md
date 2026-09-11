@@ -81,7 +81,7 @@ Copy the included templates into your local `.agents/` workspace directory:
 xcopy /E /I "templates\agents" ".agents"
 
 # Linux / macOS:
-cp -r templates/agents/* .agents/
+mkdir -p .agents && cp -r templates/agents/* .agents/
 ```
 
 This installs:
@@ -129,22 +129,23 @@ python search_jobs.py --query "SDET" --no-remote --sources jobs_ge indeed
 
 **Key Features:**
 - **URL Sanitization:** Automatically strips 40+ tracking parameters (`utm_*`, `refId`, `trackingId`, `gh_src`, etc.).
-- **Smart Deduplication:** Groups listings across platforms by normalized company + title signatures.
-- **Candidate Fit Scoring:** Automatically scores jobs from 0% to 100% against your profile skills.
+- **Smart Deduplication:** Groups listings across platforms by normalized company + title + location signatures.
+- **Dynamic Fit Scoring:** Automatically scores jobs (0–100%) based on target roles and skills in `candidate-profile.md`.
 - **Outputs:** Saves feed to `Job Hunter Agent/jobs_feed.json` and exports a clean Markdown table to `search_results.md`.
 
 ---
 
-### 2. Headed Browser Auto-Apply (`headed_apply.py`)
-Watch the agent interact with job boards live in a visible browser window:
+### 2. Headed Browser Visual Inspection Demo (`headed_apply.py`)
+Run an automated visual browser session to inspect vacancy listings and test human-like pacing:
 
 ```bash
 python headed_apply.py
 ```
 
-- Renders real-time browser actions (scrolling, clicking, filling form inputs).
-- Attaches your local CV file directly via DOM file input setters without triggering freezing Win32/OS dialogs.
-- Includes human-like delays (50–120ms per keypress, natural reading pauses).
+- Launches a visual browser with smooth action pacing (`slow_mo=300`) and natural reading scrolls.
+- Demonstrates real-time vacancy discovery and navigation across target listings.
+- *Note:* Full end-to-end form completion, custom question answering, and CV attachment across diverse ATS forms (Lever, Greenhouse, etc.) is handled autonomously by the AI Agent in Mode 1.
+
 
 ---
 

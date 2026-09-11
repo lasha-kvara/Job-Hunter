@@ -101,10 +101,11 @@ def deduplicate_jobs(jobs: List[JobPost]) -> List[JobPost]:
         if canonical_url and canonical_url in seen_urls:
             continue
 
-        # 2. Normalized signature
+        # 2. Normalized signature including location to prevent dropping distinct openings across offices/regions
         norm_company = normalize_string(job.company)
         norm_title = normalize_string(job.title)
-        signature = f"{norm_company}___{norm_title}"
+        norm_location = normalize_string(job.location)
+        signature = f"{norm_company}___{norm_title}___{norm_location}"
 
         if signature in seen_signatures and norm_company != "":
             continue
@@ -113,6 +114,7 @@ def deduplicate_jobs(jobs: List[JobPost]) -> List[JobPost]:
             seen_urls.add(canonical_url)
         if norm_company:
             seen_signatures.add(signature)
+
 
         unique_jobs.append(job)
 

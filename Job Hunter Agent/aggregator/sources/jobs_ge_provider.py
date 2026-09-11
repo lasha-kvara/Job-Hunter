@@ -2,7 +2,7 @@ import re
 import logging
 import requests
 from bs4 import BeautifulSoup
-from typing import List
+from typing import List, Optional
 from ..models import JobPost
 
 logger = logging.getLogger(__name__)
@@ -31,12 +31,14 @@ class JobsGeProvider:
     }
 
     @classmethod
-    def search(cls, query: str = "", max_results: int = 20) -> List[JobPost]:
+    def search(cls, query: str = "", max_results: int = 20, hours_old: Optional[int] = None) -> List[JobPost]:
         """
-        Scrapes jobs.ge IT category (cid=6) and filters by query keyword.
+        Scrapes jobs.ge IT category (cid=6), parses posting dates, and filters by query and age.
         """
         jobs: List[JobPost] = []
         try:
+            from datetime import datetime, timedelta
+
             # IT & Software category
             url = f"{cls.BASE_URL}/en/?cid=6"
             resp = requests.get(
@@ -49,9 +51,9 @@ class JobsGeProvider:
                 logger.warning(f"Jobs.ge returned non-200 status: {resp.status_code}")
                 return jobs
 
-
             soup = BeautifulSoup(resp.text, "html.parser")
             query_tokens = [q.lower() for q in query.split() if len(q) > 1]
+            now = datetime.now()
 
             # Find all table rows
             rows = soup.find_all("tr")
@@ -75,6 +77,24 @@ class JobsGeProvider:
                 else:
                     job_url = f"{cls.BASE_URL}/{href}"
 
+                # Extract date from cells (typically column -2 is published date, e.g. "11 September")
+                tds = row.find_all("td")
+                pub_date_str = ""
+                if len(tds) >= 5:
+                    pub_date_str = tds[-2].text.strip()
+
+                # Filter by hours_old if requested
+                if hours_old and pub_date_str:
+                    try:
+                        dt = datetime.strptime(f"{pub_date_str} {now.year}", "%d %B %Y")
+                        if dt > now + timedelta(days=2):
+                            dt = dt.replace(year=now.year - 1)
+                        age_hours = (now - dt).total_seconds() / 3600
+                        if age_hours > hours_old:
+                            continue
+                    except Exception:
+                        pass
+
                 # Look for company link: /en/?view=client&client=...
                 company_link = row.find("a", href=lambda h: h and "view=client" in h)
                 company = company_link.text.strip() if company_link and company_link.text.strip() else "Jobs.ge Employer"
@@ -82,7 +102,6 @@ class JobsGeProvider:
                 # If query specified, check for match in title
                 if query_tokens:
                     title_lower = title.lower()
-                    # Check if any token matches (e.g. "qa" or "automation" or "test" or "sdet")
                     matched = any(token in title_lower for token in query_tokens)
                     if not matched:
                         continue
@@ -97,10 +116,12 @@ class JobsGeProvider:
                     job_url=job_url,
                     source="jobs_ge",
                     location="Georgia (Tbilisi / Remote)" if is_remote else "Georgia (Tbilisi)",
+                    date_posted=pub_date_str,
                     is_remote=is_remote,
                     description=f"{title} vacancy at {company} listed on Jobs.ge IT section."
                 )
                 jobs.append(post)
+
 
         except Exception as e:
             logger.warning(f"Jobs.ge search failed: {e}")
