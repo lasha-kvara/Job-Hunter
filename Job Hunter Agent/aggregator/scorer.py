@@ -88,7 +88,9 @@ class CandidateScorer:
         # 3. Check core skills in description / title
         matched_skills = []
         for kw, weight in cls.CORE_KEYWORDS.items():
-            # Avoid duplicate matching if already matched in title role
+            # Skip role terms already scored in step 2
+            if role_matched and kw in {"sdet", "qa automation", "automation engineer", "test automation"}:
+                continue
             pattern = rf'(?<![a-zA-Z0-9]){re.escape(kw)}(?![a-zA-Z0-9])'
             if re.search(pattern, text_to_search):
                 score += weight

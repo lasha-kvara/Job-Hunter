@@ -87,15 +87,16 @@ class JobsGeProvider:
                     if not matched:
                         continue
 
-                # Check remote tag or description
-                is_remote = bool(re.search(r'remote', title, re.IGNORECASE))
+                # Check remote tag in entire row text (title + tags + metadata)
+                row_text = row.get_text(" ", strip=True)
+                is_remote = bool(re.search(r'\bremote\b', row_text, re.IGNORECASE))
 
                 post = JobPost(
                     title=title,
                     company=company,
                     job_url=job_url,
                     source="jobs_ge",
-                    location="Georgia (Tbilisi / Remote)",
+                    location="Georgia (Tbilisi / Remote)" if is_remote else "Georgia (Tbilisi)",
                     is_remote=is_remote,
                     description=f"{title} vacancy at {company} listed on Jobs.ge IT section."
                 )
