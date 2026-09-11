@@ -278,10 +278,10 @@ python test_regression.py
 ```
 
 This automated suite verifies:
-- **LinkedIn Agent core:** Profile loading, pipeline state machine, grounded response generation.
+- **LinkedIn Agent core:** Profile loading, pipeline listing/status filtering, and template response generation.
 - **Aggregator URL sanitizer:** Stripping 40+ tracking parameters (`utm_*`, `refId`, `trackingId`, `spJobID`, etc.).
 - **Candidate fit scorer:** Weighted matching, seniority adjustments, and low-fit penalties.
-- **Jobs.ge provider:** Resilient HTML scraping, TLS certificate validation with `truststore`, and concurrent detail enrichment.
+- **Jobs.ge provider:** Deterministic listing HTML parsing and title matching with mocked HTTP responses.
 - **Script syntax & compilation:** Validates runner scripts before execution.
 
 ---

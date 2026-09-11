@@ -72,7 +72,7 @@ class CandidateProfile:
         for sec_name, content in self.sections.items():
             if "salary" in sec_name.lower():
                 clean_lines = [
-                    re.sub(r"^[-*\s]+", "", l).strip().strip("*_` ")
+                    re.sub(r"[*_`]", "", re.sub(r"^[-*\s]+", "", l)).strip()
                     for l in content.splitlines()
                     if l.strip()
                 ]
