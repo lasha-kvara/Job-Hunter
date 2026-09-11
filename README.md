@@ -194,19 +194,19 @@ Job-Hunter/
 ├── templates/                                # Ready-to-use anonymized templates
 │   └── agents/                               # Antigravity skill & rule templates
 │       ├── rules/
-│       │   ├── job-hunter-rules.template.md
-│       │   └── linkedin-rules.template.md
+│       │   ├── job-hunter-rules.md
+│       │   └── linkedin-rules.md
 │       └── skills/
 │           ├── job-hunter-agent/
-│           │   ├── SKILL.template.md
+│           │   ├── SKILL.md
 │           │   └── references/
-│           │       ├── platforms-guide.md
-│           │       └── screening-answers.template.md
+│           │       └── platforms-guide.md
 │           └── linkedin-agent/
-│               ├── SKILL.template.md
+│               ├── SKILL.md
 │               └── references/
 │                   ├── pacing-rules.md
 │                   └── templates.md
+
 │
 ├── Job Hunter Agent/
 │   ├── aggregator/                           # Multi-source scraper engine

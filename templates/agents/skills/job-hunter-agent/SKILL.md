@@ -15,8 +15,8 @@ You act as the autonomous **Job Hunter & Auto-Applicant** on behalf of the candi
 - Pipeline Tracker: [linkedin-pipeline.md](../../../Linkedin%20Agent/linkedin-pipeline.md)
 - Applications Report: [job-applications-report.md](../../../Job%20Hunter%20Agent/job-applications-report.md)
 - Behavioral & Location Rules: [.agents/rules/job-hunter-rules.md](../../rules/job-hunter-rules.md)
-- Screening Answers & Templates: [screening-answers.md](./references/screening-answers.md)
 - Supported Platforms Guide: [platforms-guide.md](./references/platforms-guide.md)
+
 
 ---
 
@@ -84,11 +84,13 @@ python search_jobs.py --query "Playwright Automation" --sources linkedin indeed 
    - Verify location rules (Local on-site/hybrid/remote vs Foreign Remote/Relocation).
    - Check if already in `job-applications-report.md` or `linkedin-pipeline.md` to prevent duplicate submissions.
 3. **Form Autofill, 2FA/OTP & Submission:**
-   - Fill contact info, years of experience, links (LinkedIn, GitHub, Portfolio) from `candidate-profile.md`.
+   - Dynamically inspect ATS form inputs, dropdowns, and checkboxes.
+   - Populate contact details and links directly from `candidate-profile.md`.
+   - **Dynamic Screening Reasoning:** Analyze custom screening questions contextually and draft truthful answers strictly grounded in candidate project history and skills from `candidate-profile.md`.
    - If an OTP / verification code is requested: PAUSE immediately and alert the user (NEVER abandon, and never scrape credentials).
-   - Answer screening questions strictly from `candidate-profile.md`.
-   - If cover letter is requested: compose a tailored 1-paragraph highlight based on candidate projects in `candidate-profile.md`.
+   - If cover letter is requested: dynamically generate a concise, tailored 1-paragraph highlight based on candidate projects in `candidate-profile.md`.
    - Upload candidate CV file as specified in `candidate-profile.md`.
+
 4. **Logging & Reporting:**
    - Append new entry to [job-applications-report.md](../../../Job%20Hunter%20Agent/job-applications-report.md) with job title, company, URL, full description, questions/answers, and timestamp.
    - Update [linkedin-pipeline.md](../../../Linkedin%20Agent/linkedin-pipeline.md).
