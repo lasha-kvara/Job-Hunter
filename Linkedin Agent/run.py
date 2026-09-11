@@ -83,7 +83,7 @@ def show_profile_facts(profile: CandidateProfile):
         table.add_row("სამუშაო ფორმატი", profile.get_preferences().get("work_mode", "Remote / Hybrid"))
         table.add_row("რელოკაცია", profile.get_preferences().get("relocation", "Yes"))
         table.add_row("საკონტაქტო მეილი", profile.get_contacts().get("email", ""))
-        table.add_row("CV ფაილი", profile.get_cv_file_path())
+        table.add_row("CV ფაილი", profile.get_cv_file_path(strict=False))
 
         console.print(table)
     else:

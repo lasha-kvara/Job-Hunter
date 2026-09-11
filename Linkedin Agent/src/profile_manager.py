@@ -111,8 +111,36 @@ class CandidateProfile:
             "portfolio": ""
         }
 
-    def get_cv_file_path(self) -> str:
-        return config.DEFAULT_CV_PATH
+    def get_section(self, name: str) -> str:
+        """Returns the raw content of a section matching name (case-insensitive)."""
+        for sec_name, content in self.sections.items():
+            if name.lower() in sec_name.lower():
+                return content
+        return ""
+
+    def get_cv_file_path(self, strict: bool = False) -> str:
+        """Dynamically parses CV/Resume file path from candidate profile."""
+        cv_match = re.search(r"ALWAYS upload the CV from:\s*[`'\"]?([^`'\"\n\r]+)[`'\"]?", self.raw_content, re.IGNORECASE)
+        if cv_match:
+            candidate_path = cv_match.group(1).strip()
+            # Ignore template placeholders like 'path/to/your/CV.pdf'
+            if candidate_path and not candidate_path.startswith("path/to") and not candidate_path.startswith("["):
+                return candidate_path
+        # Look for any explicit path ending with .pdf under CV section
+        sec = self.get_section("cv") or self.get_section("resume")
+        if sec:
+            path_match = re.search(r"[`'\"]?([a-zA-Z]:\\[^`'\"\n\r]+\.pdf|/[^`'\"\n\r]+\.pdf)[`'\"]?", sec)
+            if path_match:
+                candidate_path = path_match.group(1).strip()
+                if candidate_path and not candidate_path.startswith("path/to") and not candidate_path.startswith("["):
+                    return candidate_path
+
+        if strict:
+            raise ValueError(
+                "CV file path is not configured in candidate-profile.md. "
+                "Please update the 'ALWAYS upload the CV from: ...' line with the path to your CV PDF before applying."
+            )
+        return "[Not configured in candidate-profile.md]"
 
     def get_full_context_prompt(self) -> str:
         """Returns the formatted profile for feeding to LLM prompts."""
