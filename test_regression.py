@@ -257,21 +257,40 @@ try:
     assert gen._is_deep_query("We need someone for our system architecture") is False
     assert gen._is_deep_query("The role includes performance testing") is False
     assert gen._is_deep_query("We are looking for someone with framework design experience") is False
+    assert gen._is_deep_query("What framework does the role use?") is False
+    assert gen._is_deep_query("How does the system design look on our project?") is False
+    assert gen._is_deep_query("What does TBC do?") is False
+
     assert gen._is_deep_query("Tell me about your system architecture experience") is True
     assert gen._is_deep_query("Walk me through your test framework architecture") is True
     assert gen._is_deep_query("How did you conduct performance testing in past roles?") is True
+    assert gen._is_deep_query("What framework did you use on previous projects?") is True
+    assert gen._is_deep_query("What was your role at TBC?") is True
     print("  [+] ResponseGenerator: Dynamic employer extraction and technical intent classification correctly separate recruiter pitches from candidate inquiries.")
 
-    # Test bounded compact context with excessively long prose
+    # Test skills extraction skips Personal Skills even when personal skills appears first in profile sections
+    prof_ps = CandidateProfile()
+    prof_ps.sections = {
+        "Personal skills (competencies)": "- Fast learner\n- Team player\n- Leadership",
+        "Skills": "- Python, Playwright, C#, Selenium",
+    }
+    compact_ps = prof_ps.get_compact_context_prompt()
+    assert "Python" in compact_ps, "Technical skills must be extracted"
+    assert "Leadership" not in compact_ps, "Personal skills section must be skipped in Key Skills"
+    print("  [+] Profile Manager: Skills extractor correctly prioritizes technical skills over personal skills.")
+
+    # Test bounded compact context with excessively long prose across ALL user-controlled fields
     prof_verbose = CandidateProfile()
     prof_verbose.sections = {
         "Summary (elevator pitch)": "A" * 2000,
+        "Target roles": "- Principal SDET Lead Specialist " * 50,
         "Skills": "Python, Java, TypeScript, Playwright, Selenium, Architecture, Docker, Kubernetes, AWS, GCP, Azure, Linux " * 50,
-        "Work preferences & logistics": "Timezone: Georgia\nNotice period: 1 month"
+        "Salary expectation": "$4500 USD per month net with additional annual bonus structure " * 20,
+        "Work preferences & logistics": "Timezone: " + "GMT+4 Georgia Tbilisi " * 20 + "\nNotice: " + "1 month notice period required " * 20 + "\nWork mode: " + "Remote / Hybrid acceptable " * 20
     }
     compact_verbose = prof_verbose.get_compact_context_prompt()
     assert len(compact_verbose) < 900, f"Compact prompt should remain bounded, got {len(compact_verbose)} chars"
-    print(f"  [+] Profile Manager: Verbose profile bounded successfully ({len(compact_verbose)} chars).")
+    print(f"  [+] Profile Manager: Verbose profile across all fields bounded successfully ({len(compact_verbose)} chars).")
 
     # Explicitly clear API client handles to test the offline template fallback path deterministically
     gen.client = None

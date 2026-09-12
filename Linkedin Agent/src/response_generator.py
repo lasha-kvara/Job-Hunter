@@ -173,7 +173,7 @@ class ResponseGenerator:
         # so routine recruiter job descriptions/pitches stay strictly in L1.
         candidate_deep_patterns = [
             r"\b(?:your|past|previous|prior)\s+(?:projects?|experience|background|history|roles?|work|metrics?|achievements?|architecture|frameworks?|system design|load test|performance test)\b",
-            r"\b(?:tell|share|describe|walk me through|what|how)\b.*\b(?:projects?|experience|background|history|framework|architecture|metrics?|achievements?|system design|load test|performance test)\b",
+            r"\b(?:tell|share|describe|walk me through|what|how)\b(?=.*\b(?:you|your|candidate|past|previous|prior)\b)(?=.*\b(?:projects?|experience|background|history|frameworks?|architecture|metrics?|achievements?|system design|load test|performance test)\b).*",
             r"\b(?:გვიამბეთ|მომიყევი|გვითხარით)\b.*\b(?:პროექტ|გამოცდილებ|ისტორი|არქიტექტურ|მეტრიკ|მიღწევ)\b",
             r"\b(?:შენი|თქვენი|წინა)\s+(?:პროექტ|გამოცდილებ|არქიტექტურ|სამუშაო|მიღწევ|მეტრიკ)\b"
         ]
@@ -199,7 +199,7 @@ class ResponseGenerator:
                             rf"\b(?:your|past|previous)\s+.*?\b{re.escape(target)}\b",
                             rf"\b{re.escape(target)}\b.*?\b(?:your|past|previous)\b",
                             rf"\b(?:at|with|for)\s+{re.escape(target)}\b.*?\b(?:work|role|project|achievement|experience|responsibilit|metric|built|lead|did|time)\b",
-                            rf"\b(?:what|how|tell|describe|share)\b.*?\b{re.escape(target)}\b",
+                            rf"\b(?:what|how|tell|describe|share)\b(?=.*\b(?:you|your|candidate|past|previous|prior)\b).*?\b{re.escape(target)}\b",
                             rf"\b(?:დროს|პერიოდში|გამოცდილება)\b.*?\b{re.escape(target)}\b"
                         ]
                         if any(re.search(p, msg) for p in historical_patterns):

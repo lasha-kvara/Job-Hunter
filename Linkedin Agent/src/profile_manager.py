@@ -223,45 +223,60 @@ class CandidateProfile:
 
         return companies
 
+    @staticmethod
+    def _bound_field(val: str, max_len: int, default: str = "") -> str:
+        s = " ".join(val.split()).strip()
+        if not s:
+            return default
+        if len(s) > max_len:
+            return s[:max_len - 3].rsplit(" ", 1)[0] + "..."
+        return s
+
     def get_compact_context_prompt(self) -> str:
         """Returns a high-density, token-efficient summary (~150-200 tokens) derived directly
         from the parsed candidate-profile.md (Single Source of Truth)."""
-        name = self.get_candidate_name()
+        name = self._bound_field(self.get_candidate_name(), 50, "Candidate")
+
         # Bound summary to preserve compact token budget (~150-200 tokens)
         summary_raw = self.get_summary().strip()
         first_para = summary_raw.split("\n\n")[0].strip()
-        if len(first_para) > 300:
-            summary = first_para[:297].rsplit(" ", 1)[0] + "..."
-        else:
-            summary = first_para or "[Not configured in candidate-profile.md]"
+        summary = self._bound_field(first_para, 250, "[Not configured in candidate-profile.md]")
 
-        roles = ", ".join(self.get_target_roles()[:3])
+        raw_roles = ", ".join(self.get_target_roles()[:3])
+        roles = self._bound_field(raw_roles, 80, "[Not configured in candidate-profile.md]")
+
         prefs = self.get_preferences()
-        salary = self.get_salary_expectation() or prefs.get("min_salary", "")
-        skills = self.get_section("skills")
+        raw_salary = self.get_salary_expectation() or prefs.get("min_salary", "")
+        salary = self._bound_field(raw_salary, 40, "[Not specified]")
+
+        # Explicitly use get_skills_summary() to skip Personal Skills (competencies)
+        skills = self.get_skills_summary()
         if skills:
             skill_lines = [line.strip("- *") for line in skills.splitlines() if line.strip().startswith(("-", "*"))]
             raw_skills = "; ".join(skill_lines[:4]) if skill_lines else " ".join(skills.split())
             clean_skills = re.sub(r"[*_`]", "", raw_skills).strip()
-            if len(clean_skills) > 200:
-                skills_summary = clean_skills[:197].rsplit(" ", 1)[0] + "..."
-            else:
-                skills_summary = clean_skills or "[Not configured in candidate-profile.md]"
+            skills_summary = self._bound_field(clean_skills, 160, "[Not configured in candidate-profile.md]")
         else:
             skills_summary = "[Not configured in candidate-profile.md]"
 
         raw_tz = prefs.get("timezone", "")
-        tz = re.sub(r";.*$", "", raw_tz).strip() if raw_tz else "Not specified"
-        notice = re.sub(r"\(.*?\)", "", prefs.get("notice_period", "Negotiable")).strip()
-        work_mode = re.sub(r"\(.*?\)", "", prefs.get("work_mode", "Remote / Hybrid")).strip()
+        clean_tz = re.sub(r";.*$", "", raw_tz).strip() if raw_tz else "Not specified"
+        tz = self._bound_field(clean_tz, 35, "Not specified")
 
-        return f"""Candidate Profile (Compact): {name}
+        clean_notice = re.sub(r"\(.*?\)", "", prefs.get("notice_period", "Negotiable")).strip()
+        notice = self._bound_field(clean_notice, 35, "Negotiable")
+
+        clean_work_mode = re.sub(r"\(.*?\)", "", prefs.get("work_mode", "Remote / Hybrid")).strip()
+        work_mode = self._bound_field(clean_work_mode, 35, "Remote / Hybrid")
+
+        prompt = f"""Candidate Profile (Compact): {name}
 Summary: {summary}
 Target Roles: {roles}
 Key Skills: {skills_summary}
 Salary Expectation: {salary}
 Timezone: {tz} | Work Mode: {work_mode} | Notice: {notice}
 Note: For deep historical project metrics or full architecture breakdowns, escalate to candidate-profile.md."""
+        return prompt[:950]
 
     def get_full_context_prompt(self) -> str:
         """Returns the formatted profile for feeding to LLM prompts."""
