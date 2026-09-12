@@ -29,5 +29,5 @@ These behavioral constraints and guidelines are active for all LinkedIn-related 
 
 ## 6. Safety & Security
 - Never handle passwords, 2FA codes, or credentials in chat or automated scripts.
-- Use existing logged-in browser session via Chrome CDP port 9222.
+- Use existing logged-in browser session via configured Chrome CDP port (default 9222).
 - Stop immediately upon encountering a CAPTCHA or unusual activity checkpoint.
