@@ -26,6 +26,8 @@ logs/
 # Generated search feeds & results
 jobs_feed.json
 search_results.md
+search_*.md
+*_results.md
 top_*_matching_jobs.*
 top_*_matched_vacancies.*
 
