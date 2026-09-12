@@ -252,6 +252,12 @@ try:
     assert gen._is_deep_query("We have a VTB position open") is False
     assert gen._is_deep_query("What did you do at TBC?") is True
     assert gen._is_deep_query("Tell me about your time at VTB") is True
+    # Test target-before-question coverage (e.g. 'At TBC, what did you do?') and Georgian ordering
+    assert gen._is_deep_query("At TBC, what did you do?") is True
+    assert gen._is_deep_query("At TBC, what was your role?") is True
+    assert gen._is_deep_query("In VTB what did you do?") is True
+    assert gen._is_deep_query("TBC-ში ყოფნის დროს რას აკეთებდით?") is True
+    assert gen._is_deep_query("TBC-ში რა იყო თქვენი როლი?") is True
 
     # Test routine recruiter pitches with technical terms (stay L1) vs candidate-directed technical inquiries (trigger L2)
     assert gen._is_deep_query("We need someone for our system architecture") is False
@@ -267,6 +273,9 @@ try:
     assert gen._is_deep_query("Your experience caught our eye for this opening.") is False
     assert gen._is_deep_query("We love your background in QA automation!") is False
     assert gen._is_deep_query("Your experience at TBC is a strong fit") is False
+    assert gen._is_deep_query("We need someone with your previous experience in automation") is False
+    assert gen._is_deep_query("We are looking for someone with your past experience") is False
+    assert gen._is_deep_query("Your previous experience in testing would be valuable") is False
 
     # Test job requirement pitches mentioning historical experience (stay L1) vs candidate inquiries (trigger L2)
     assert gen._is_deep_query("This role requires previous experience with Playwright") is False
@@ -306,6 +315,22 @@ try:
     assert "Availability:" in compact_prompt, "Compact prompt must include grounded Availability"
     assert "Relocation:" in compact_prompt, "Compact prompt must include grounded Relocation"
     print("  [+] Profile Manager: Grounded availability and relocation verified in compact prompt.")
+
+    # Test template-backed profile placeholder normalization
+    template_path = Path("Linkedin Agent/candidate-profile.template.md")
+    if template_path.exists():
+        prof_tmpl = CandidateProfile(file_path=template_path)
+        assert prof_tmpl.get_candidate_name() == "", "Template name [Full Name] must be normalized to empty"
+        assert prof_tmpl.get_summary() == "", "Template summary instruction must be normalized to empty"
+        assert prof_tmpl.get_target_roles() == [], "Template example roles must be normalized to empty"
+        assert prof_tmpl.get_salary_expectation() == "", "Template $[Amount] must be normalized to empty"
+        assert prof_tmpl.get_preferences()["notice_period"] == "", "Template notice must be normalized to empty"
+        assert prof_tmpl.get_contacts().get("email", "") == "", "Template email [Your Email] must be normalized to empty"
+        tmpl_compact = prof_tmpl.get_compact_context_prompt()
+        assert "Summary: [Not configured in candidate-profile.md]" in tmpl_compact
+        assert "Target Roles: [Not configured in candidate-profile.md]" in tmpl_compact
+        assert "Salary Expectation: [Not specified]" in tmpl_compact
+        print("  [+] Profile Manager: Template-backed profiles correctly normalize placeholders across all fields.")
 
     # Test unconfigured profile preserves explicit [Not specified] without inventing generic defaults
     prof_empty = CandidateProfile()

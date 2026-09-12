@@ -3,10 +3,10 @@
 > This file is the single source of truth for the `linkedin-agent`. Fill in your details below.
 
 ## Target roles
-- QA Automation Engineer
-- Software Development Engineer in Test (SDET)
-- Test Automation Engineer Lead
-- QA Lead
+- [e.g. QA Automation Engineer]
+- [e.g. Software Development Engineer in Test (SDET)]
+- [e.g. Test Automation Engineer Lead]
+- [e.g. QA Lead]
 
 ## CV / Resume file rules (IMPORTANT)
 - ALWAYS upload the CV from: `path/to/your/CV.pdf`

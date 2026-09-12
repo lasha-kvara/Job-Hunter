@@ -82,26 +82,31 @@ def show_pipeline_summary(tracker: PipelineTracker):
             print(f"- {b}")
 
 def show_profile_facts(profile: CandidateProfile):
+    def _val(v: Any) -> str:
+        if not v or CandidateProfile.is_placeholder(str(v)) or str(v).startswith("[Not configured"):
+            return "[არ არის მითითებული]"
+        return str(v)
+
     if HAS_RICH:
         table = Table(title="👤 კანდიდატის ძირითადი ფაქტები")
         table.add_column("პარამეტრი", style="cyan", no_wrap=True)
         table.add_column("მნიშვნელობა", style="magenta")
 
         target_roles = ", ".join(profile.get_target_roles()[:3])
-        table.add_row("კანდიდატი", profile.get_candidate_name() or "[არ არის მითითებული]")
+        table.add_row("კანდიდატი", _val(profile.get_candidate_name()))
         table.add_row("სამიზნე როლები", (target_roles + "...") if target_roles else "[არ არის მითითებული]")
-        table.add_row("ხელფასის მოლოდინი", profile.get_salary_expectation() or "[არ არის მითითებული]")
-        table.add_row("Notice Period", profile.get_preferences().get("notice_period") or "[არ არის მითითებული]")
-        table.add_row("სამუშაო ფორმატი", profile.get_preferences().get("work_mode") or "[არ არის მითითებული]")
-        table.add_row("რელოკაცია", profile.get_preferences().get("relocation") or "[არ არის მითითებული]")
-        table.add_row("საკონტაქტო მეილი", profile.get_contacts().get("email") or "[არ არის მითითებული]")
-        table.add_row("CV ფაილი", profile.get_cv_file_path(strict=False))
+        table.add_row("ხელფასის მოლოდინი", _val(profile.get_salary_expectation()))
+        table.add_row("Notice Period", _val(profile.get_preferences().get("notice_period")))
+        table.add_row("სამუშაო ფორმატი", _val(profile.get_preferences().get("work_mode")))
+        table.add_row("რელოკაცია", _val(profile.get_preferences().get("relocation")))
+        table.add_row("საკონტაქტო მეილი", _val(profile.get_contacts().get("email")))
+        table.add_row("CV ფაილი", _val(profile.get_cv_file_path(strict=False)))
 
         console.print(table)
     else:
         print("\n--- კანდიდატის ფაქტები ---")
-        print("სახელი:", profile.get_candidate_name())
-        print("ხელფასი:", profile.get_salary_expectation())
+        print("სახელი:", _val(profile.get_candidate_name()))
+        print("ხელფასი:", _val(profile.get_salary_expectation()))
         print("სამუშაო ფორმატი:", profile.get_preferences())
 
 async def run_browser_check():

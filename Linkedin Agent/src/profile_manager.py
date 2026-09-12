@@ -44,22 +44,65 @@ class CandidateProfile:
 
         self.sections = {k: "\n".join(v).strip() for k, v in section_lines.items()}
 
+    @staticmethod
+    def is_placeholder(val: str) -> bool:
+        """Determines whether a value is an unconfigured template placeholder or example instruction."""
+        if not val:
+            return True
+        s = val.strip()
+        # Direct bracketed placeholders: [Full Name], [Your Email], [e.g. ...], [Your professional summary...]
+        if s.startswith("[") and s.endswith("]"):
+            return True
+        if s.startswith("[") or s.endswith("]"):
+            return True
+        # Bracketed template tags within string: $[Amount], [e.g. ...], [Your ...], path/to/...
+        if re.search(r"(\[.*?\]|\$\[.*?\]|path/to/|e\.g\.)", s, re.IGNORECASE):
+            clean = re.sub(r"(\[.*?\]|\$\[.*?\]|usd/month|or gross annual|\(or gross annual\))", "", s, flags=re.IGNORECASE).strip()
+            if not clean or clean in {"$", "minimum", "target", "expected"}:
+                return True
+        if s.lower() in {"candidate", "[full name]", "your name", "[your name]"}:
+            return True
+        return False
+
+    @property
+    def is_template_profile(self) -> bool:
+        """Returns True if the loaded profile is the unconfigured template."""
+        if self.file_path and self.file_path.name.endswith(".template.md"):
+            return True
+        name = self.get_candidate_name()
+        if not name:
+            if "Fill in your details below" in self.raw_content or "[Full Name]" in self.raw_content:
+                return True
+        return False
+
     def get_candidate_name(self) -> str:
         m = re.search(r"^#\s+Candidate\s+Profile:\s*(.+)$", self.raw_content, re.MULTILINE)
         if m:
-            return m.group(1).strip()
-        return "Candidate"
+            val = m.group(1).strip()
+            if not self.is_placeholder(val):
+                return val
+        return ""
 
     def get_summary(self) -> str:
         for sec_name, content in self.sections.items():
             if "summary" in sec_name.lower():
-                return content
+                val = content.strip()
+                if val and not self.is_placeholder(val):
+                    return val
         return ""
 
     def get_target_roles(self) -> List[str]:
         for sec_name, content in self.sections.items():
             if "target roles" in sec_name.lower():
-                return [line.lstrip("- *").strip() for line in content.splitlines() if line.strip().startswith(("-", "*"))]
+                roles = []
+                for line in content.splitlines():
+                    if line.strip().startswith(("-", "*")):
+                        role = line.lstrip("- *").strip()
+                        if role and not self.is_placeholder(role):
+                            roles.append(role)
+                if self.is_template_profile and all("e.g." in r.lower() or self.is_placeholder(r) for r in roles):
+                    return []
+                return roles
         return []
 
     def get_salary_expectation(self) -> str:
@@ -71,13 +114,13 @@ class CandidateProfile:
                     if l.strip()
                 ]
                 for l in clean_lines:
-                    if l and not l.startswith("[") and "amount" not in l.lower() and not l.lower().startswith("disclose"):
+                    if l and not self.is_placeholder(l) and not l.lower().startswith("disclose"):
                         # Normalize prefixes (e.g., Minimum, Target, Expected, At least, Around)
                         val = re.sub(r"^(?:minimum|target|expected|approx(?:\.|\w*)|around|at least)\s*:?\s*", "", l, flags=re.IGNORECASE).strip()
                         # Remove trailing parenthetical remarks like (or gross annual) or (gross)
                         val = re.sub(r"\s*\([^)]*(?:annual|gross|net|negotiable)[^)]*\)", "", val, flags=re.IGNORECASE).strip()
                         val = val.rstrip(".").strip()
-                        if val:
+                        if val and not self.is_placeholder(val):
                             return val
         return ""
 
@@ -86,7 +129,7 @@ class CandidateProfile:
             if "availability" in sec_name.lower():
                 for line in content.splitlines():
                     clean = re.sub(r"^[-*\s]+", "", line).strip().strip("*_` ")
-                    if clean and not clean.startswith("[") and "e.g." not in clean.lower():
+                    if clean and not self.is_placeholder(clean):
                         return clean
         return ""
 
@@ -111,7 +154,7 @@ class CandidateProfile:
                         k, v = line.split(":", 1)
                         clean_k = re.sub(r"^[-*\s]+", "", k).strip().lower()
                         clean_v = v.strip().strip("*_` ")
-                        if clean_v.startswith("["):
+                        if self.is_placeholder(clean_v):
                             continue
                         if "notice" in clean_k:
                             prefs["notice_period"] = clean_v
@@ -142,14 +185,11 @@ class CandidateProfile:
                     if ":" in line:
                         k, v = line.split(":", 1)
                         clean_k = re.sub(r"^[-*\s]+", "", k).strip().lower()
-                        contacts[clean_k] = v.strip()
-        return contacts or {
-            "phone": "[Your Phone]",
-            "email": "[Your Email]",
-            "linkedin": "https://linkedin.com",
-            "github": "https://github.com",
-            "portfolio": ""
-        }
+                        clean_v = v.strip().strip("*_` ")
+                        if self.is_placeholder(clean_v):
+                            continue
+                        contacts[clean_k] = clean_v
+        return contacts
 
     def get_section(self, name: str) -> str:
         """Returns the raw content of a section matching name (case-insensitive)."""
@@ -283,7 +323,7 @@ Note: For deep historical project metrics or full architecture breakdowns, escal
 
     def get_full_context_prompt(self) -> str:
         """Returns the formatted profile for feeding to LLM prompts."""
-        name = self.get_candidate_name()
+        name = self.get_candidate_name() or "Candidate"
         return f"""
 Candidate Profile: {name}
 Single Source of Truth:
