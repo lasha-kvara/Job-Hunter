@@ -55,14 +55,17 @@ def show_banner(profile: Optional[CandidateProfile] = None):
         candidate_label = candidate_label[:42] + "..."
     if HAS_RICH:
         from rich.markup import escape
+        from rich import box
         safe_label = escape(candidate_label)
-        banner = f"""
-[bold cyan]╔══════════════════════════════════════════════════════════════════════╗
-║                    💼 LINKEDIN JOB-SEEKER AGENT                     ║
-║              Candidate: [bold yellow]{safe_label:^45}[/bold yellow] ║
-╚══════════════════════════════════════════════════════════════════════╝[/bold cyan]
-        """
-        console.print(banner)
+        console.print(
+            Panel(
+                f"[bold cyan]💼 LINKEDIN JOB-SEEKER AGENT[/bold cyan]\n[bold white]Candidate:[/bold white] [bold yellow]{safe_label}[/bold yellow]",
+                box=box.DOUBLE,
+                style="cyan",
+                expand=False,
+                padding=(0, 6)
+            )
+        )
     else:
         print("=" * 60)
         print(f"LinkedIn Job-Seeker Agent - {candidate_label}")
