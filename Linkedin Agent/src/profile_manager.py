@@ -133,9 +133,9 @@ class CandidateProfile:
             prefs["min_salary"] = salary_exp
 
         return {
-            "notice_period": prefs.get("notice_period", "Negotiable"),
-            "work_mode": prefs.get("work_mode", "Remote / Hybrid"),
-            "relocation": prefs.get("relocation", "Open to relocation"),
+            "notice_period": prefs.get("notice_period", ""),
+            "work_mode": prefs.get("work_mode", ""),
+            "relocation": prefs.get("relocation", ""),
             "timezone": prefs.get("timezone", ""),
             "min_salary": prefs.get("min_salary", "")
         }
@@ -260,19 +260,23 @@ class CandidateProfile:
             skills_summary = "[Not configured in candidate-profile.md]"
 
         raw_tz = prefs.get("timezone", "")
-        clean_tz = re.sub(r";.*$", "", raw_tz).strip() if raw_tz else "Not specified"
-        tz = self._bound_field(clean_tz, 35, "Not specified")
+        clean_tz = re.sub(r";.*$", "", raw_tz).strip() if raw_tz else ""
+        tz = self._bound_field(clean_tz, 35, "[Not specified]")
 
-        clean_notice = re.sub(r"\(.*?\)", "", prefs.get("notice_period", "Negotiable")).strip()
-        notice = self._bound_field(clean_notice, 35, "Negotiable")
+        raw_notice = prefs.get("notice_period", "")
+        clean_notice = re.sub(r"\(.*?\)", "", raw_notice).strip() if raw_notice else ""
+        notice = self._bound_field(clean_notice, 35, "[Not specified]")
 
-        clean_work_mode = re.sub(r"\(.*?\)", "", prefs.get("work_mode", "Remote / Hybrid")).strip()
-        work_mode = self._bound_field(clean_work_mode, 35, "Remote / Hybrid")
+        raw_work_mode = prefs.get("work_mode", "")
+        clean_work_mode = re.sub(r"\(.*?\)", "", raw_work_mode).strip() if raw_work_mode else ""
+        work_mode = self._bound_field(clean_work_mode, 35, "[Not specified]")
 
-        clean_reloc = re.sub(r"\(.*?\)", "", prefs.get("relocation", "Open to relocation")).strip()
-        reloc = self._bound_field(clean_reloc, 35, "Open to relocation")
+        raw_reloc = prefs.get("relocation", "")
+        clean_reloc = re.sub(r"\(.*?\)", "", raw_reloc).strip() if raw_reloc else ""
+        reloc = self._bound_field(clean_reloc, 35, "[Not specified]")
 
-        avail = self._bound_field(self.get_availability(), 35, "Flexible with advance notice")
+        raw_avail = self.get_availability().strip()
+        avail = self._bound_field(raw_avail, 35, "[Not specified]")
 
         prompt = f"""Candidate Profile (Compact): {name}
 Summary: {summary}

@@ -268,6 +268,12 @@ try:
     assert gen._is_deep_query("We love your background in QA automation!") is False
     assert gen._is_deep_query("Your experience at TBC is a strong fit") is False
 
+    # Test job requirement pitches mentioning historical experience (stay L1) vs candidate inquiries (trigger L2)
+    assert gen._is_deep_query("This role requires previous experience with Playwright") is False
+    assert gen._is_deep_query("Looking for an engineer with prior experience in automation") is False
+    assert gen._is_deep_query("The position expects past experience in load testing") is False
+    assert gen._is_deep_query("Previous experience with C# is preferred") is False
+
     # Test possessive recruiter job pitches (stay L1) vs candidate historical inquiries (trigger L2)
     assert gen._is_deep_query("Your role will include system architecture") is False
     assert gen._is_deep_query("In this position, your work will focus on performance testing") is False
@@ -300,6 +306,18 @@ try:
     assert "Availability:" in compact_prompt, "Compact prompt must include grounded Availability"
     assert "Relocation:" in compact_prompt, "Compact prompt must include grounded Relocation"
     print("  [+] Profile Manager: Grounded availability and relocation verified in compact prompt.")
+
+    # Test unconfigured profile preserves explicit [Not specified] without inventing generic defaults
+    prof_empty = CandidateProfile()
+    prof_empty.sections = {}
+    empty_prefs = prof_empty.get_preferences()
+    assert empty_prefs["notice_period"] == "", "Unconfigured notice must be empty in preferences"
+    assert empty_prefs["relocation"] == "", "Unconfigured relocation must be empty in preferences"
+    empty_compact = prof_empty.get_compact_context_prompt()
+    assert "Relocation: [Not specified]" in empty_compact, "Unconfigured relocation must render as [Not specified]"
+    assert "Notice: [Not specified]" in empty_compact, "Unconfigured notice must render as [Not specified]"
+    assert "Availability: [Not specified]" in empty_compact, "Unconfigured availability must render as [Not specified]"
+    print("  [+] Profile Manager: Unconfigured profiles preserve explicit [Not specified] grounding markers.")
 
     # Test skills extraction skips Personal Skills even when personal skills appears first in profile sections
     prof_ps = CandidateProfile()

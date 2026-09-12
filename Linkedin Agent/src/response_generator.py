@@ -172,10 +172,10 @@ class ResponseGenerator:
         # Requires candidate/inquiry cues (e.g. 'what metrics', 'tell me about your framework')
         # while keeping possessive job pitches ('your role will include...', 'your work will focus on...') strictly in L1.
         candidate_deep_patterns = [
-            # Intrinsically historical references
-            r"\b(?:past|previous|prior|former|last)\s+(?:projects?|experience|background|history|roles?|positions?|work|jobs?|architecture|frameworks?)\b",
-            # Candidate-owned history with explicit historical qualifiers
+            # Candidate-owned history with explicit historical qualifiers ('your past experience', 'your previous role')
             r"\b(?:your)\s+(?:past|previous|prior|former|last)\s+(?:roles?|positions?|work|jobs?|projects?|experience|background|history)\b",
+            # Inquiries and imperatives directed at candidate's historical experience
+            r"\b(?:tell\s*(?:me\s*about)?|share|describe|walk\s*me\s*through|explain|elaborate|what\s+was|how\s+did\s+you|can\s+you\s+(?:describe|share|detail))\b.*\b(?:your\s+)?(?:past|previous|prior|former|last)\s+(?:projects?|experience|background|history|roles?|positions?|work|jobs?|architecture|frameworks?)\b",
             # Interrogatives & imperatives directed at candidate's experience/projects
             r"\b(?:tell|share|describe|walk me through|explain|elaborate)\b(?=.*\b(?:you|your|candidate)\b)(?=.*\b(?:projects?|experience|background|history|frameworks?|architecture|metrics?|achievements?|system design|load test|performance test|roles?|work)\b).*",
             r"\b(?:what|how)\b(?=.*\b(?:did you|were your|was your|have you)\b)(?=.*\b(?:projects?|experience|background|history|frameworks?|architecture|metrics?|achievements?|system design|load test|performance test|roles?|work)\b).*",
