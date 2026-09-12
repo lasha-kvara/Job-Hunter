@@ -235,10 +235,23 @@ try:
     print(f"  [+] Profile Manager: Compact context ({len(compact_prompt)} chars) is ~{round((1 - len(compact_prompt)/len(full_prompt))*100)}% smaller than full ({len(full_prompt)} chars).")
 
     gen = ResponseGenerator(profile=prof)
+    # Test _is_deep_query intent classification (L1 vs L2)
+    assert gen._is_deep_query("tell me about your projects") is True
+    assert gen._is_deep_query("what metrics did you achieve") is True
+    assert gen._is_deep_query("describe your background") is True
+    assert gen._is_deep_query("მომიყევი თქვენს წინა პროექტებზე") is True
+    assert gen._is_deep_query("we have an exciting project and need details") is False
+    assert gen._is_deep_query("Hello, are you open to new opportunities?") is False
+    print("  [+] ResponseGenerator: Intent classification reliably separates L1 inquiries from L2 deep dives.")
+
+    # Explicitly clear API client handles to test the offline template fallback path deterministically
+    gen.client = None
+    gen.legacy_model = None
+
     # Standard greeting uses compact L1 context and template fallback
     reply_std, req_std = gen.draft_llm_response("Hello, are you open to new opportunities?", contact_name="Anna")
     assert "Anna" in reply_std, "Expected contact name in reply"
-    print("  [+] ResponseGenerator: Standard greeting successfully processed.")
+    print("  [+] ResponseGenerator: Standard greeting offline fallback successfully processed.")
 
     print("  => ALL TIERED TOKEN OPTIMIZATION TESTS PASSED!")
 

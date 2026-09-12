@@ -152,6 +152,32 @@ class ResponseGenerator:
         else:
             return f"Hello {name}, thanks for your message! I will review the details and get back to you shortly. {signoff_en}"
 
+    def _is_deep_query(self, message: str) -> bool:
+        """
+        Determines whether the recruiter message specifically asks for deep candidate
+        project details, architecture breakdowns, or past historical metrics (L2 escalation),
+        while keeping general recruiter pitches ('we have an exciting project and need details') in compact context (L1).
+        """
+        msg = message.lower()
+
+        # Explicit technical deep dive / architecture terms or past company names
+        explicit_terms = [
+            "architecture", "deep dive", "project breakdown", "framework design",
+            "load test", "performance test", "system design",
+            "tbc", "digital area", "biletebi", "optimo", "vtb",
+            "არქიტექტურა", "წინა პროექტ", "წინა სამუშაო", "მეტრიკ", "მიღწევ"
+        ]
+        if any(term in msg for term in explicit_terms):
+            return True
+
+        # Candidate project/experience inquiry patterns (targeted at candidate's work/history)
+        candidate_deep_patterns = [
+            r"\b(?:your|past|previous|prior)\s+(?:projects?|experience|background|history|roles?|work|metrics?|achievements?)\b",
+            r"\b(?:tell|share|describe|walk me through|what)\b.*\b(?:projects?|experience|background|history|framework|architecture|metrics?|achievements?)\b",
+            r"\b(?:გვიამბეთ|მომიყევი|გვითხარით)\b.*\b(?:პროექტ|გამოცდილებ|კომპანი)\b"
+        ]
+        return any(re.search(p, msg) for p in candidate_deep_patterns)
+
     def draft_llm_response(self, hr_message: str, contact_name: str = "", context: str = "") -> Tuple[str, bool]:
         """
         Uses Gemini to generate a grounded response.
@@ -189,15 +215,9 @@ class ResponseGenerator:
         tz_rule = f"propose availability in candidate timezone ({tz})" if tz else "propose availability and confirm recruiter preferred timezone"
 
         # Tiered Token Optimization: use compact context for standard recruiter chat,
-        # escalate to full context only when deep project/architecture details are queried.
-        deep_query = any(w in hr_message.lower() for w in [
-            "architecture", "deep dive", "project breakdown", "framework design",
-            "project details", "experience details", "details about your experience",
-            "tbc", "digital area", "biletebi", "optimo", "vtb",
-            "არქიტექტურა", "პროექტები", "გამოცდილების დეტალები"
-        ])
+        # escalate to full context only when deep candidate project/architecture details are queried.
         profile_context = (
-            self.profile.get_full_context_prompt() if deep_query
+            self.profile.get_full_context_prompt() if self._is_deep_query(hr_message)
             else self.profile.get_compact_context_prompt()
         )
 

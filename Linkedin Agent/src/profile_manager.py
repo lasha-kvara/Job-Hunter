@@ -207,16 +207,16 @@ class CandidateProfile:
         skills = self.get_section("skills")
         if skills:
             skill_lines = [line.strip("- *") for line in skills.splitlines() if line.strip().startswith(("-", "*"))]
-            skills_summary = "; ".join(skill_lines[:4]) if skill_lines else "QA Automation, Playwright, Selenium, C#, Python"
+            skills_summary = "; ".join(skill_lines[:4]) if skill_lines else (skills.strip() or "[Not configured in candidate-profile.md]")
         else:
-            skills_summary = "QA Automation, Playwright, Selenium, C#, Python"
+            skills_summary = "[Not configured in candidate-profile.md]"
 
         return f"""Candidate Profile (Compact): {name}
 Summary: {summary}
 Target Roles: {roles}
 Key Skills: {skills_summary}
 Salary Expectation: {salary}
-Timezone: {prefs.get('timezone', 'GMT+4')} | Work Mode: {prefs.get('work_mode', 'Remote / Hybrid')} | Notice: {prefs.get('notice_period', '1 month')}
+Timezone: {prefs.get('timezone') or 'Not specified'} | Work Mode: {prefs.get('work_mode', 'Remote / Hybrid')} | Notice: {prefs.get('notice_period', 'Negotiable')}
 Note: For deep historical project metrics or full architecture breakdowns, escalate to candidate-profile.md."""
 
     def get_full_context_prompt(self) -> str:
