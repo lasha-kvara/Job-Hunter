@@ -51,6 +51,8 @@ def show_banner(profile: Optional[CandidateProfile] = None):
     roles = profile.get_target_roles() if profile else []
     primary_role = roles[0] if roles else "Job-Seeker"
     candidate_label = f"{name} ({primary_role})"
+    if len(candidate_label) > 45:
+        candidate_label = candidate_label[:42] + "..."
     if HAS_RICH:
         from rich.markup import escape
         safe_label = escape(candidate_label)
