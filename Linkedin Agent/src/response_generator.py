@@ -70,8 +70,14 @@ class ResponseGenerator:
                 role_str = f"{role_or_details}-ს" if role_or_details else "ვაკანსიის"
                 return f"გამარჯობა {name}, მადლობა დაინტერესებისთვის! სიამოვნებით გავეცნობი {role_str} პოზიციის დეტალებს. თუ შეგიძლიათ გამიზიაროთ გუნდისა და პროექტის შესახებ დამატებითი ინფორმაცია. სიამოვნებით გავისაუბრებთ. {signoff_ka}"
             else:
-                role_str = role_or_details or "the role"
-                return f"Hello {name}, thanks for reaching out! I'm interested in the {role_str} opportunity. Could you share more details about the role and the team? I'd be happy to schedule an introductory call. {signoff_en}"
+                role_phrase = f"the {role_or_details} role" if role_or_details else "this opportunity"
+                return f"Hello {name}, thanks for reaching out! I'm interested in {role_phrase}. Could you share more details about the position and the team? I'd be happy to schedule an introductory call. {signoff_en}"
+
+        elif intent == "greeting":
+            if language == "ka":
+                return f"გამარჯობა {name}, კარგად, მადლობა! თქვენ როგორ ბრძანდებით? რით შემიძლია დაგეხმაროთ? {signoff_ka}"
+            else:
+                return f"Hello {name}, I'm doing well, thanks for asking! How are you doing? How can I help you today? {signoff_en}"
 
         elif intent == "propose_time":
             tz = self.profile.get_preferences().get("timezone", "").strip()
@@ -161,6 +167,9 @@ class ResponseGenerator:
             requires_user_confirmation = True
 
         if not self.client and not self.legacy_model:
+            # Check for casual greetings first
+            if any(w in hr_message.lower() for w in ["how are you", "how're you", "how r u", "doing well", "როგორ ხარ", "როგორ ბრძანდებით", "როგორ ხართ"]):
+                return self.draft_template_response("greeting", contact_name, language=language), False
             # Use template engine
             if any(w in hr_message.lower() for w in ["salary", "rate", "compensation", "ხელფას", "ანაზღაურებ"]):
                 return self.draft_template_response("salary_expectation", contact_name, language=language), True

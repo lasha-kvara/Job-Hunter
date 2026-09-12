@@ -155,8 +155,13 @@ async def run_browser_check():
         await controller.disconnect()
 
 def handle_draft_response(generator: ResponseGenerator):
+    has_ai = bool(generator.client or generator.legacy_model)
     if HAS_RICH:
         console.print("\n[bold cyan]✍️ პასუხის დრაფტის მომზადება[/bold cyan]")
+        if has_ai:
+            console.print(f"[dim green]🤖 AI Engine: Active ({config.DEFAULT_MODEL})[/dim green]")
+        else:
+            console.print("[dim yellow]📋 რეჟიმი: Offline შაბლონები (დინამიური AI-სთვის მიუთითეთ GEMINI_API_KEY .env-ში)[/dim yellow]")
         contact_name = Prompt.ask("რეკრუტერის სახელი (მაგ. Sarah / მარიამი)", default="")
         hr_message = Prompt.ask("შემოსული შეტყობინების ტექსტი")
     else:
