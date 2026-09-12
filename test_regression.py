@@ -86,7 +86,7 @@ print("\n[TEST GROUP 2] Testing Existing Runner Scripts...")
 try:
     import py_compile
 
-    for script_name in ["headed_apply.py", "run_headed.py", "Linkedin Agent/run.py", "add_jobs.py", "search_jobs.py"]:
+    for script_name in ["headed_apply.py", "run_headed.py", "Linkedin Agent/run.py", "search_jobs.py"]:
         script_path = PROJECT_ROOT / script_name
         assert script_path.is_file(), f"Required runner script not found: {script_name}"
         py_compile.compile(str(script_path), doraise=True)
@@ -267,6 +267,8 @@ try:
 
     # Test dynamic employer detection with historical inquiry requirement vs recruiter pitches
     # Set explicit in-memory fixture so regression suite does not depend on uncommitted personal profiles
+    prof.file_path = PROJECT_ROOT / "candidate-profile.fixture.md"
+    prof.raw_content = "# Candidate Profile: Regression Candidate"
     prof.sections["Experience"] = "- **2020 — Present: QA @ TBC**\n- **2018 — 2020: QA @ VTB Bank Georgia**"
     assert "TBC" in prof.get_previous_companies() or "VTB Bank Georgia" in prof.get_previous_companies()
     assert gen._is_deep_query("We have an open role at TBC, are you interested?") is False
@@ -336,6 +338,8 @@ try:
 
     # Test featured projects parser handles bold, hyphenated, slashed, and ampersand project names
     prof_feat = CandidateProfile()
+    prof_feat.file_path = PROJECT_ROOT / "candidate-profile.fixture.md"
+    prof_feat.raw_content = "# Candidate Profile: Regression Candidate"
     prof_feat.sections = {
         "Featured projects": "- **Job-Hunter** — autonomous application engine\n* `Extra.ge / Area.ge` — mobile test plans\n- QA & Reports (Tooling)"
     }

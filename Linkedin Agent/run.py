@@ -264,7 +264,7 @@ def interactive_menu():
                 if sh_path.exists():
                     os.system(f'bash "{sh_path}" &')
                 else:
-                    os.system(f'google-chrome --remote-debugging-port={config.CDP_PORT} &')
+                    os.system(f'google-chrome --remote-debugging-port={config.CDP_PORT} --user-data-dir="{config.USER_DATA_DIR}" &')
         elif choice == "0":
             if HAS_RICH:
                 console.print("[bold cyan]ნახვამდის! წარმატებულ გასაუბრებებს გისურვებთ! ✨[/bold cyan]")

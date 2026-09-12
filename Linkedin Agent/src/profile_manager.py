@@ -234,9 +234,6 @@ class CandidateProfile:
         Dynamically extracts candidate's previous employers and featured project names
         from Experience and Featured Projects sections in candidate-profile.md.
         """
-        if self.is_template_profile:
-            return []
-
         companies = []
         exp = self.get_experience_summary()
         if exp:
