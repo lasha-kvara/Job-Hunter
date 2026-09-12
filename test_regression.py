@@ -242,7 +242,26 @@ try:
     assert gen._is_deep_query("მომიყევი თქვენს წინა პროექტებზე") is True
     assert gen._is_deep_query("we have an exciting project and need details") is False
     assert gen._is_deep_query("Hello, are you open to new opportunities?") is False
-    print("  [+] ResponseGenerator: Intent classification reliably separates L1 inquiries from L2 deep dives.")
+
+    # Test dynamic employer detection with historical inquiry requirement vs recruiter pitches
+    assert "TBC" in prof.get_previous_companies() or "VTB Bank Georgia" in prof.get_previous_companies()
+    assert gen._is_deep_query("We have an open role at TBC, are you interested?") is False
+    assert gen._is_deep_query("Is TBC hiring right now?") is False
+    assert gen._is_deep_query("We have a VTB position open") is False
+    assert gen._is_deep_query("What did you do at TBC?") is True
+    assert gen._is_deep_query("Tell me about your time at VTB") is True
+    print("  [+] ResponseGenerator: Dynamic employer extraction correctly separates recruiter pitches from candidate historical inquiries.")
+
+    # Test bounded compact context with excessively long prose
+    prof_verbose = CandidateProfile()
+    prof_verbose.sections = {
+        "Summary (elevator pitch)": "A" * 2000,
+        "Skills": "Python, Java, TypeScript, Playwright, Selenium, Architecture, Docker, Kubernetes, AWS, GCP, Azure, Linux " * 50,
+        "Work preferences & logistics": "Timezone: Georgia\nNotice period: 1 month"
+    }
+    compact_verbose = prof_verbose.get_compact_context_prompt()
+    assert len(compact_verbose) < 900, f"Compact prompt should remain bounded, got {len(compact_verbose)} chars"
+    print(f"  [+] Profile Manager: Verbose profile bounded successfully ({len(compact_verbose)} chars).")
 
     # Explicitly clear API client handles to test the offline template fallback path deterministically
     gen.client = None

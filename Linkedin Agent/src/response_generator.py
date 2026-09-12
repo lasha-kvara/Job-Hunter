@@ -160,11 +160,10 @@ class ResponseGenerator:
         """
         msg = message.lower()
 
-        # Explicit technical deep dive / architecture terms or past company names
+        # Explicit technical deep dive / architecture terms (no hardcoded company names)
         explicit_terms = [
             "architecture", "deep dive", "project breakdown", "framework design",
             "load test", "performance test", "system design",
-            "tbc", "digital area", "biletebi", "optimo", "vtb",
             "არქიტექტურა", "წინა პროექტ", "წინა სამუშაო", "მეტრიკ", "მიღწევ"
         ]
         if any(term in msg for term in explicit_terms):
@@ -174,9 +173,37 @@ class ResponseGenerator:
         candidate_deep_patterns = [
             r"\b(?:your|past|previous|prior)\s+(?:projects?|experience|background|history|roles?|work|metrics?|achievements?)\b",
             r"\b(?:tell|share|describe|walk me through|what)\b.*\b(?:projects?|experience|background|history|framework|architecture|metrics?|achievements?)\b",
-            r"\b(?:გვიამბეთ|მომიყევი|გვითხარით)\b.*\b(?:პროექტ|გამოცდილებ|კომპანი)\b"
+            r"\b(?:გვიამბეთ|მომიყევი|გვითხარით)\b.*\b(?:პროექტ|გამოცდილებ|ისტორი)\b"
         ]
-        return any(re.search(p, msg) for p in candidate_deep_patterns)
+        if any(re.search(p, msg) for p in candidate_deep_patterns):
+            return True
+
+        # Dynamically evaluate candidate's previous companies from profile
+        # Require historical/project inquiry context to avoid false escalations on recruiter pitches
+        if hasattr(self.profile, "get_previous_companies"):
+            raw_companies = self.profile.get_previous_companies()
+            for comp in raw_companies:
+                clean = re.sub(r'[*_`]', '', comp).strip()
+                # Extract primary brand name (e.g., 'VTB' from 'VTB Bank Georgia', 'Biletebi' from 'Biletebi.ge')
+                brand = re.split(r'[\s\.]+(?:bank|georgia|group|technologies|ecosystem|ge)\b', clean, flags=re.IGNORECASE)[0].strip().lower()
+                targets = {clean.lower()}
+                if len(brand) >= 3:
+                    targets.add(brand)
+
+                for target in targets:
+                    pattern = rf"\b{re.escape(target)}\b"
+                    if re.search(pattern, msg):
+                        historical_patterns = [
+                            rf"\b(?:your|past|previous)\s+.*?\b{re.escape(target)}\b",
+                            rf"\b{re.escape(target)}\b.*?\b(?:your|past|previous)\b",
+                            rf"\b(?:at|with|for)\s+{re.escape(target)}\b.*?\b(?:work|role|project|achievement|experience|responsibilit|metric|built|lead|did|time)\b",
+                            rf"\b(?:what|how|tell|describe|share)\b.*?\b{re.escape(target)}\b",
+                            rf"\b(?:დროს|პერიოდში|გამოცდილება)\b.*?\b{re.escape(target)}\b"
+                        ]
+                        if any(re.search(p, msg) for p in historical_patterns):
+                            return True
+
+        return False
 
     def draft_llm_response(self, hr_message: str, contact_name: str = "", context: str = "") -> Tuple[str, bool]:
         """
