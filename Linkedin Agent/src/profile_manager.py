@@ -54,19 +54,13 @@ class CandidateProfile:
         for sec_name, content in self.sections.items():
             if "summary" in sec_name.lower():
                 return content
-        return "Senior SDET with 7+ years of experience bridging development and reliability."
+        return ""
 
     def get_target_roles(self) -> List[str]:
         for sec_name, content in self.sections.items():
             if "target roles" in sec_name.lower():
                 return [line.lstrip("- *").strip() for line in content.splitlines() if line.strip().startswith(("-", "*"))]
-        return [
-            "QA Automation Engineer",
-            "Software Development Engineer in Test (SDET)",
-            "Test Automation Engineer Lead",
-            "QA Lead",
-            "AI-based Automation Engineer"
-        ]
+        return []
 
     def get_salary_expectation(self) -> str:
         for sec_name, content in self.sections.items():

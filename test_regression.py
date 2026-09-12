@@ -313,11 +313,15 @@ try:
     empty_prefs = prof_empty.get_preferences()
     assert empty_prefs["notice_period"] == "", "Unconfigured notice must be empty in preferences"
     assert empty_prefs["relocation"] == "", "Unconfigured relocation must be empty in preferences"
+    assert prof_empty.get_summary() == "", "Unconfigured summary must be empty string"
+    assert prof_empty.get_target_roles() == [], "Unconfigured target roles must be empty list"
     empty_compact = prof_empty.get_compact_context_prompt()
+    assert "Summary: [Not configured in candidate-profile.md]" in empty_compact, "Unconfigured summary must render explicit fallback"
+    assert "Target Roles: [Not configured in candidate-profile.md]" in empty_compact, "Unconfigured roles must render explicit fallback"
     assert "Relocation: [Not specified]" in empty_compact, "Unconfigured relocation must render as [Not specified]"
     assert "Notice: [Not specified]" in empty_compact, "Unconfigured notice must render as [Not specified]"
     assert "Availability: [Not specified]" in empty_compact, "Unconfigured availability must render as [Not specified]"
-    print("  [+] Profile Manager: Unconfigured profiles preserve explicit [Not specified] grounding markers.")
+    print("  [+] Profile Manager: Unconfigured profiles preserve explicit [Not configured/specified] grounding markers.")
 
     # Test skills extraction skips Personal Skills even when personal skills appears first in profile sections
     prof_ps = CandidateProfile()
