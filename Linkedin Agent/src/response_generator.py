@@ -152,6 +152,61 @@ class ResponseGenerator:
         else:
             return f"Hello {name}, thanks for your message! I will review the details and get back to you shortly. {signoff_en}"
 
+    def _is_deep_query(self, message: str) -> bool:
+        """
+        Determines whether the recruiter message specifically asks for deep candidate
+        project details, architecture breakdowns, or past historical metrics (L2 escalation),
+        while keeping general recruiter pitches ('we have an exciting project and need details',
+        'we need someone for our system architecture', 'the role includes performance testing') in compact context (L1).
+        """
+        msg = message.lower()
+
+        # Unambiguous deep-dive phrases that inherently demand candidate project breakdowns
+        unambiguous_deep_dive_terms = [
+            "deep dive", "project breakdown", "წინა პროექტ", "წინა სამუშაო"
+        ]
+        if any(term in msg for term in unambiguous_deep_dive_terms):
+            return True
+
+        # Candidate-directed inquiry patterns for projects, history, or technical architecture/frameworks
+        # Requires candidate/inquiry cues (e.g. 'your architecture', 'what metrics', 'tell me about your framework')
+        # so routine recruiter job descriptions/pitches stay strictly in L1.
+        candidate_deep_patterns = [
+            r"\b(?:your|past|previous|prior)\s+(?:projects?|experience|background|history|roles?|work|metrics?|achievements?|architecture|frameworks?|system design|load test|performance test)\b",
+            r"\b(?:tell|share|describe|walk me through|what|how)\b(?=.*\b(?:you|your|candidate|past|previous|prior)\b)(?=.*\b(?:projects?|experience|background|history|frameworks?|architecture|metrics?|achievements?|system design|load test|performance test)\b).*",
+            r"\b(?:გვიამბეთ|მომიყევი|გვითხარით)\b.*\b(?:პროექტ|გამოცდილებ|ისტორი|არქიტექტურ|მეტრიკ|მიღწევ)\b",
+            r"\b(?:შენი|თქვენი|წინა)\s+(?:პროექტ|გამოცდილებ|არქიტექტურ|სამუშაო|მიღწევ|მეტრიკ)\b"
+        ]
+        if any(re.search(p, msg) for p in candidate_deep_patterns):
+            return True
+
+        # Dynamically evaluate candidate's previous companies from profile
+        # Require historical/project inquiry context to avoid false escalations on recruiter pitches
+        if hasattr(self.profile, "get_previous_companies"):
+            raw_companies = self.profile.get_previous_companies()
+            for comp in raw_companies:
+                clean = re.sub(r'[*_`]', '', comp).strip()
+                # Extract primary brand name (e.g., 'VTB' from 'VTB Bank Georgia', 'Biletebi' from 'Biletebi.ge')
+                brand = re.split(r'[\s\.]+(?:bank|georgia|group|technologies|ecosystem|ge)\b', clean, flags=re.IGNORECASE)[0].strip().lower()
+                targets = {clean.lower()}
+                if len(brand) >= 3:
+                    targets.add(brand)
+
+                for target in targets:
+                    pattern = rf"\b{re.escape(target)}\b"
+                    if re.search(pattern, msg):
+                        historical_patterns = [
+                            rf"\b(?:your|past|previous)\s+.*?\b{re.escape(target)}\b",
+                            rf"\b{re.escape(target)}\b.*?\b(?:your|past|previous)\b",
+                            rf"\b(?:at|with|for)\s+{re.escape(target)}\b.*?\b(?:work|role|project|achievement|experience|responsibilit|metric|built|lead|did|time)\b",
+                            rf"\b(?:what|how|tell|describe|share)\b(?=.*\b(?:you|your|candidate|past|previous|prior)\b).*?\b{re.escape(target)}\b",
+                            rf"\b(?:დროს|პერიოდში|გამოცდილება)\b.*?\b{re.escape(target)}\b"
+                        ]
+                        if any(re.search(p, msg) for p in historical_patterns):
+                            return True
+
+        return False
+
     def draft_llm_response(self, hr_message: str, contact_name: str = "", context: str = "") -> Tuple[str, bool]:
         """
         Uses Gemini to generate a grounded response.
@@ -187,9 +242,17 @@ class ResponseGenerator:
         tz = self.profile.get_preferences().get("timezone", "")
         salary_rule = f"state expectation from profile ({salary_str})" if salary_str else "state that compensation can be discussed once project scope is explored"
         tz_rule = f"propose availability in candidate timezone ({tz})" if tz else "propose availability and confirm recruiter preferred timezone"
+
+        # Tiered Token Optimization: use compact context for standard recruiter chat,
+        # escalate to full context only when deep candidate project/architecture details are queried.
+        profile_context = (
+            self.profile.get_full_context_prompt() if self._is_deep_query(hr_message)
+            else self.profile.get_compact_context_prompt()
+        )
+
         system_instruction = f"""You are representing candidate {candidate_name} in LinkedIn conversations with HR/Recruiters.
 Candidate Profile (Single Source of Truth):
-{self.profile.get_full_context_prompt()}
+{profile_context}
 
 Rules:
 1. Tone: Friendly-professional, concise, warm, respectful.

@@ -216,6 +216,100 @@ except Exception as e:
     traceback.print_exc()
     sys.exit(1)
 
+
+# -------------------------------------------------------------
+# 4. TEST TIERED TOKEN OPTIMIZATION (COMPACT VS FULL CONTEXT)
+# -------------------------------------------------------------
+print("\n[TEST GROUP 4] Testing Tiered Token Optimization (L1 vs L2)...")
+
+try:
+    from src.profile_manager import CandidateProfile
+    from src.response_generator import ResponseGenerator
+
+    prof = CandidateProfile()
+    compact_prompt = prof.get_compact_context_prompt()
+    full_prompt = prof.get_full_context_prompt()
+
+    assert len(compact_prompt) > 0, "Compact prompt should not be empty"
+    assert len(compact_prompt) < len(full_prompt), "Compact prompt must be significantly smaller than full prompt"
+    print(f"  [+] Profile Manager: Compact context ({len(compact_prompt)} chars) is ~{round((1 - len(compact_prompt)/len(full_prompt))*100)}% smaller than full ({len(full_prompt)} chars).")
+
+    gen = ResponseGenerator(profile=prof)
+    # Test _is_deep_query intent classification (L1 vs L2)
+    assert gen._is_deep_query("tell me about your projects") is True
+    assert gen._is_deep_query("what metrics did you achieve") is True
+    assert gen._is_deep_query("describe your background") is True
+    assert gen._is_deep_query("მომიყევი თქვენს წინა პროექტებზე") is True
+    assert gen._is_deep_query("we have an exciting project and need details") is False
+    assert gen._is_deep_query("Hello, are you open to new opportunities?") is False
+
+    # Test dynamic employer detection with historical inquiry requirement vs recruiter pitches
+    # Set explicit in-memory fixture so regression suite does not depend on uncommitted personal profiles
+    prof.sections["Experience"] = "- **2020 — Present: QA @ TBC**\n- **2018 — 2020: QA @ VTB Bank Georgia**"
+    assert "TBC" in prof.get_previous_companies() or "VTB Bank Georgia" in prof.get_previous_companies()
+    assert gen._is_deep_query("We have an open role at TBC, are you interested?") is False
+    assert gen._is_deep_query("Is TBC hiring right now?") is False
+    assert gen._is_deep_query("We have a VTB position open") is False
+    assert gen._is_deep_query("What did you do at TBC?") is True
+    assert gen._is_deep_query("Tell me about your time at VTB") is True
+
+    # Test routine recruiter pitches with technical terms (stay L1) vs candidate-directed technical inquiries (trigger L2)
+    assert gen._is_deep_query("We need someone for our system architecture") is False
+    assert gen._is_deep_query("The role includes performance testing") is False
+    assert gen._is_deep_query("We are looking for someone with framework design experience") is False
+    assert gen._is_deep_query("What framework does the role use?") is False
+    assert gen._is_deep_query("How does the system design look on our project?") is False
+    assert gen._is_deep_query("What does TBC do?") is False
+
+    assert gen._is_deep_query("Tell me about your system architecture experience") is True
+    assert gen._is_deep_query("Walk me through your test framework architecture") is True
+    assert gen._is_deep_query("How did you conduct performance testing in past roles?") is True
+    assert gen._is_deep_query("What framework did you use on previous projects?") is True
+    assert gen._is_deep_query("What was your role at TBC?") is True
+    print("  [+] ResponseGenerator: Dynamic employer extraction and technical intent classification correctly separate recruiter pitches from candidate inquiries.")
+
+    # Test skills extraction skips Personal Skills even when personal skills appears first in profile sections
+    prof_ps = CandidateProfile()
+    prof_ps.sections = {
+        "Personal skills (competencies)": "- Fast learner\n- Team player\n- Leadership",
+        "Skills": "- Python, Playwright, C#, Selenium",
+    }
+    compact_ps = prof_ps.get_compact_context_prompt()
+    assert "Python" in compact_ps, "Technical skills must be extracted"
+    assert "Leadership" not in compact_ps, "Personal skills section must be skipped in Key Skills"
+    print("  [+] Profile Manager: Skills extractor correctly prioritizes technical skills over personal skills.")
+
+    # Test bounded compact context with excessively long prose across ALL user-controlled fields
+    prof_verbose = CandidateProfile()
+    prof_verbose.sections = {
+        "Summary (elevator pitch)": "A" * 2000,
+        "Target roles": "- Principal SDET Lead Specialist " * 50,
+        "Skills": "Python, Java, TypeScript, Playwright, Selenium, Architecture, Docker, Kubernetes, AWS, GCP, Azure, Linux " * 50,
+        "Salary expectation": "$4500 USD per month net with additional annual bonus structure " * 20,
+        "Work preferences & logistics": "Timezone: " + "GMT+4 Georgia Tbilisi " * 20 + "\nNotice: " + "1 month notice period required " * 20 + "\nWork mode: " + "Remote / Hybrid acceptable " * 20
+    }
+    compact_verbose = prof_verbose.get_compact_context_prompt()
+    assert len(compact_verbose) < 900, f"Compact prompt should remain bounded, got {len(compact_verbose)} chars"
+    print(f"  [+] Profile Manager: Verbose profile across all fields bounded successfully ({len(compact_verbose)} chars).")
+
+    # Explicitly clear API client handles to test the offline template fallback path deterministically
+    gen.client = None
+    gen.legacy_model = None
+
+    # Standard greeting uses compact L1 context and template fallback
+    reply_std, req_std = gen.draft_llm_response("Hello, are you open to new opportunities?", contact_name="Anna")
+    assert "Anna" in reply_std, "Expected contact name in reply"
+    print("  [+] ResponseGenerator: Standard greeting offline fallback successfully processed.")
+
+    print("  => ALL TIERED TOKEN OPTIMIZATION TESTS PASSED!")
+
+except Exception as e:
+    print(f"  ❌ FAILED in Token Optimization: {e}")
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+
 print("\n" + "=" * 60)
 print("🎉 ALL CHECKS PASSED: OLD AND NEW COMPONENTS FUNCTION FLAWLESSLY!")
 print("=" * 60)
+
