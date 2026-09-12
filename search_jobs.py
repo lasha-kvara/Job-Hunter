@@ -31,7 +31,7 @@ try:
     from rich.table import Table
     from rich import box
     HAS_RICH = True
-    console = Console(force_terminal=True, legacy_windows=False)
+    console = Console(legacy_windows=False)
 except ImportError:
     HAS_RICH = False
     console = None
@@ -112,10 +112,11 @@ def main():
     resolved_location = args.location if args.location is not None else ("Remote" if args.remote else "")
 
     if HAS_RICH:
+        from rich.markup import escape
         banner_body = (
-            f"[bold cyan]📌 Query:[/bold cyan]        [bold white]{args.query}[/bold white]\n"
-            f"[bold cyan]📍 Location:[/bold cyan]     [white]{resolved_location or 'All / Any'}[/white]\n"
-            f"[bold cyan]🌐 Sources:[/bold cyan]      [yellow]{', '.join(args.sources)}[/yellow]\n"
+            f"[bold cyan]📌 Query:[/bold cyan]        [bold white]{escape(str(args.query))}[/bold white]\n"
+            f"[bold cyan]📍 Location:[/bold cyan]     [white]{escape(str(resolved_location or 'All / Any'))}[/white]\n"
+            f"[bold cyan]🌐 Sources:[/bold cyan]      [yellow]{escape(', '.join(args.sources))}[/yellow]\n"
             f"[bold cyan]⏱️  Max Age:[/bold cyan]      {args.hours} hours  |  "
             f"[bold cyan]🎯 Min Score:[/bold cyan] {args.min_score}%  |  "
             f"[bold cyan]🏠 Remote Only:[/bold cyan] {args.remote}"
@@ -153,32 +154,47 @@ def main():
             print("\n❌ No jobs found matching the criteria.")
     else:
         if HAS_RICH:
+            from rich.markup import escape
             table = Table(title=f"🎯 TOP MATCHING VACANCIES (Found {len(jobs)} unique jobs)", box=box.ROUNDED)
             table.add_column("#", style="dim", justify="right", no_wrap=True)
             table.add_column("Fit Rating", justify="center", no_wrap=True)
             table.add_column("Job Title", style="bold white")
             table.add_column("Company", style="cyan")
             table.add_column("Location", style="yellow")
+            table.add_column("Salary", style="green")
             table.add_column("Source", style="blue")
-            table.add_column("URL", style="underline dim")
+            table.add_column("URL", style="dim")
 
             for idx, j in enumerate(jobs[:15], 1):
                 if j.fit_score >= 80:
-                    score_markup = f"[bold green]{j.fit_score}% {j.fit_grade}[/bold green]"
+                    score_markup = f"[bold green]{j.fit_score}% {escape(j.fit_grade)}[/bold green]"
                 elif j.fit_score >= 60:
-                    score_markup = f"[bold yellow]{j.fit_score}% {j.fit_grade}[/bold yellow]"
+                    score_markup = f"[bold yellow]{j.fit_score}% {escape(j.fit_grade)}[/bold yellow]"
                 else:
-                    score_markup = f"[dim]{j.fit_score}% {j.fit_grade}[/dim]"
+                    score_markup = f"[dim]{j.fit_score}% {escape(j.fit_grade)}[/dim]"
 
-                short_url = j.job_url if len(j.job_url) <= 38 else j.job_url[:35] + "..."
+                # Show title and highlights together so matching reasons are preserved
+                title_markup = escape(j.title)
+                if j.fit_reasons:
+                    highlights = escape("; ".join(j.fit_reasons[:2]))
+                    title_markup += f"\n[dim italic]💡 {highlights}[/dim italic]"
+
+                loc_str = j.location or ("Remote" if j.is_remote else "Not specified")
+                salary_display = escape(j.salary_str) if j.salary_str else "[dim]—[/dim]"
+
+                # Clickable hyperlink retaining full target URL
+                display_url = j.job_url if len(j.job_url) <= 35 else j.job_url[:32] + "..."
+                url_markup = f"[link={escape(j.job_url)}][underline]{escape(display_url)}[/underline][/link]"
+
                 table.add_row(
                     str(idx),
                     score_markup,
-                    j.title,
-                    j.company,
-                    j.location or "Remote",
-                    j.source.upper(),
-                    short_url
+                    title_markup,
+                    escape(j.company),
+                    escape(loc_str),
+                    salary_display,
+                    escape(j.source.upper()),
+                    url_markup
                 )
             console.print("\n", table)
         else:
@@ -204,15 +220,20 @@ def main():
             f.write(f"*Location: {resolved_location or 'All / Any'} | Found: {len(jobs)} jobs*\n\n")
             f.write(md_content)
         if HAS_RICH:
-            summary_text = f"[green]✔ Full report exported to:[/green] [bold white]{md_path.name}[/bold white]\n"
+            from rich.markup import escape
+            summary_text = f"[green]✔ Full report exported to:[/green] [bold white]{escape(md_path.name)}[/bold white]\n"
             if getattr(engine, "last_save_success", False):
                 summary_text += "[green]✔ Raw feed saved to:[/green]       [bold white]Job Hunter Agent/jobs_feed.json[/bold white]"
+            else:
+                summary_text += "[bold yellow]⚠️ Note: Raw feed was not saved for this run.[/bold yellow]"
             console.print("\n", Panel(summary_text, title="[bold green]Export Complete[/bold green]", box=box.ROUNDED, expand=False))
         else:
             print("\n" + "=" * 65)
             print(f"✅ Full report exported to: {md_path.name}")
             if getattr(engine, "last_save_success", False):
                 print(f"✅ Raw feed saved to:       Job Hunter Agent/jobs_feed.json")
+            else:
+                print(f"⚠️ Note: Raw feed was not saved for this run.")
             print("=" * 65)
     except Exception as e:
         if HAS_RICH:
