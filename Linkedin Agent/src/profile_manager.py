@@ -1,6 +1,7 @@
 """
-Profile Manager: Single Source of Truth for Candidate Facts (Lasha Kvaratskhelia)
+Profile Manager: Single Source of Truth for Candidate Facts
 """
+import os
 import re
 from pathlib import Path
 from typing import Dict, Any, List, Optional
@@ -70,8 +71,30 @@ class CandidateProfile:
     def get_salary_expectation(self) -> str:
         for sec_name, content in self.sections.items():
             if "salary" in sec_name.lower():
-                return content.strip()
-        return "Competitive / Negotiable"
+                clean_lines = [
+                    re.sub(r"[*_`]", "", re.sub(r"^[-*\s]+", "", l)).strip()
+                    for l in content.splitlines()
+                    if l.strip()
+                ]
+                for l in clean_lines:
+                    if l and not l.startswith("[") and "amount" not in l.lower() and not l.lower().startswith("disclose"):
+                        # Normalize prefixes (e.g., Minimum, Target, Expected, At least, Around)
+                        val = re.sub(r"^(?:minimum|target|expected|approx(?:\.|\w*)|around|at least)\s*:?\s*", "", l, flags=re.IGNORECASE).strip()
+                        # Remove trailing parenthetical remarks like (or gross annual) or (gross)
+                        val = re.sub(r"\s*\([^)]*(?:annual|gross|net|negotiable)[^)]*\)", "", val, flags=re.IGNORECASE).strip()
+                        val = val.rstrip(".").strip()
+                        if val:
+                            return val
+        return ""
+
+    def get_availability(self) -> str:
+        for sec_name, content in self.sections.items():
+            if "availability" in sec_name.lower():
+                for line in content.splitlines():
+                    clean = re.sub(r"^[-*\s]+", "", line).strip().strip("*_` ")
+                    if clean and not clean.startswith("[") and "e.g." not in clean.lower():
+                        return clean
+        return ""
 
     def get_experience_summary(self) -> str:
         for sec_name, content in self.sections.items():
@@ -86,12 +109,35 @@ class CandidateProfile:
         return ""
 
     def get_preferences(self) -> Dict[str, str]:
+        prefs = {}
+        for sec_name, content in self.sections.items():
+            if any(k in sec_name.lower() for k in ["preference", "logistic", "work preference"]):
+                for line in content.splitlines():
+                    if ":" in line:
+                        k, v = line.split(":", 1)
+                        clean_k = re.sub(r"^[-*\s]+", "", k).strip().lower()
+                        clean_v = v.strip().strip("*_` ")
+                        if clean_v.startswith("["):
+                            continue
+                        if "notice" in clean_k:
+                            prefs["notice_period"] = clean_v
+                        elif "mode" in clean_k or "work" in clean_k:
+                            prefs["work_mode"] = clean_v
+                        elif "relocate" in clean_k or "relocation" in clean_k:
+                            prefs["relocation"] = clean_v
+                        elif "zone" in clean_k or "timezone" in clean_k:
+                            prefs["timezone"] = clean_v
+
+        salary_exp = self.get_salary_expectation()
+        if salary_exp:
+            prefs["min_salary"] = salary_exp
+
         return {
-            "notice_period": "1 month",
-            "work_mode": "Hybrid or Remote",
-            "relocation": "Yes, willing to relocate",
-            "timezone": "UTC+4",
-            "min_salary": "$4,500 USD/month"
+            "notice_period": prefs.get("notice_period", "Negotiable"),
+            "work_mode": prefs.get("work_mode", "Remote / Hybrid"),
+            "relocation": prefs.get("relocation", "Open to relocation"),
+            "timezone": prefs.get("timezone", ""),
+            "min_salary": prefs.get("min_salary", "")
         }
 
     def get_contacts(self) -> Dict[str, str]:
@@ -119,7 +165,15 @@ class CandidateProfile:
         return ""
 
     def get_cv_file_path(self, strict: bool = False) -> str:
-        """Dynamically parses CV/Resume file path from candidate profile."""
+        """Dynamically parses CV/Resume file path from env override or candidate profile."""
+        # 1. Check environment variable / config override first
+        env_cv_path = getattr(config, "DEFAULT_CV_PATH", "") or os.getenv("DEFAULT_CV_PATH", "")
+        if env_cv_path and str(env_cv_path).strip():
+            candidate_path = str(env_cv_path).strip()
+            if candidate_path and not candidate_path.startswith("path/to") and not candidate_path.startswith("["):
+                return candidate_path
+
+        # 2. Parse from candidate profile
         cv_match = re.search(r"ALWAYS upload the CV from:\s*[`'\"]?([^`'\"\n\r]+)[`'\"]?", self.raw_content, re.IGNORECASE)
         if cv_match:
             candidate_path = cv_match.group(1).strip()
@@ -137,8 +191,8 @@ class CandidateProfile:
 
         if strict:
             raise ValueError(
-                "CV file path is not configured in candidate-profile.md. "
-                "Please update the 'ALWAYS upload the CV from: ...' line with the path to your CV PDF before applying."
+                "CV file path is not configured in candidate-profile.md or DEFAULT_CV_PATH environment variable. "
+                "Please configure DEFAULT_CV_PATH in .env or update the 'ALWAYS upload the CV from: ...' line in candidate-profile.md before applying."
             )
         return "[Not configured in candidate-profile.md]"
 

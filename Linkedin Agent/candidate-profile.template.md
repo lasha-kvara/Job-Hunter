@@ -41,6 +41,9 @@
 - Willing to relocate: **[Yes / No]**
 - Time zone: [Your Timezone]
 
+## Interview availability
+- [e.g. Flexible / Weekdays after 16:00 / Ask user for current slots]
+
 ## Salary expectation
 - Minimum **$[Amount] USD/month** (or gross annual).
 

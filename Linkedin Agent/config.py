@@ -26,8 +26,8 @@ PIPELINE_FILE = (
 )
 INSTRUCTIONS_FILE = BASE_DIR / "linkedin-agent.md" if (BASE_DIR / "linkedin-agent.md").exists() else WORKSPACE_DIR / "linkedin-agent.md"
 
-# CV File location
-DEFAULT_CV_PATH = r"C:\Users\PC\OneDrive\Desktop\CV\Lasha_Kvaratskhelia_CV.pdf"
+# CV File location (dynamically resolved from candidate-profile.md, or overridden via env)
+DEFAULT_CV_PATH = os.getenv("DEFAULT_CV_PATH", "")
 
 # CDP & Browser Settings
 CDP_PORT = int(os.getenv("CDP_PORT", "9222"))

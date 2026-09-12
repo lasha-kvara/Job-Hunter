@@ -1,6 +1,6 @@
-# 💼 LinkedIn Job-Seeker Agent (Lasha Kvaratskhelia)
+# 💼 LinkedIn Job-Seeker Agent
 
-სრულყოფილი **LinkedIn Job-Seeker Agent** სისტემა **ლაშა კვარაცხელიას** (Senior SDET) საკანდიდატო პროფილის, აქტიური საუბრების (Pipeline) და რეკრუტერებთან კომუნიკაციის სამართავად.
+სრულყოფილი **LinkedIn Job-Seeker Agent** სისტემა კანდიდატის საკანდიდატო პროფილის, აქტიური საუბრების (Pipeline) და რეკრუტერებთან კომუნიკაციის სამართავად.
 
 ---
 
@@ -10,12 +10,12 @@
    - **Antigravity IDE Mode (Native Skill):** აგენტი ინტეგრირებულია პირდაპირ Antigravity-ში (`.agents/skills/linkedin-agent/`). შეგიძლიათ ჩატში პირდაპირ დაავალოთ მესიჯების გადამოწმება, პასუხის მომზადება ან pipeline-ის განახლება.
    - **Standalone Python Runner & CLI:** ინტერაქტიული ტერმინალი (`python run.py`) და Playwright CDP ბრაუზერის ავტომატიზაცია.
 2. **მკაცრი ფაქტობრივი სიზუსტე (Strict Grounding):**
-   - პასუხები ეფუძნება ექსკლუზიურად `candidate-profile.md`-ს (7+ წლიანი SDET გამოცდილება, TBC, Digital Area, VTB, C#, Python, Java, Playwright, K6).
+   - პასუხები ეფუძნება ექსკლუზიურად `candidate-profile.md`-ს (ტექნიკური უნარები, გამოცდილება, ფრეიმვორკები).
    - არასდროს იგონებს არარსებულ უნარებს ან ფაქტებს.
 3. **უსაფრთხოების & ხელფასის პოლიტიკა:**
-   - ხელფასის მოთხოვნა: მინიმუმ **$4,500 USD/თვეში** (მხოლოდ პირდაპირი კითხვის დროს).
+   - ხელფასის მოთხოვნა: მითითებული პროფილის მიხედვით (მხოლოდ პირდაპირი კითხვის დროს).
    - გასაუბრების დროის დადასტურება: **მხოლოდ მომხმარებლის წინასწარი თანხმობით**.
-   - ავთენტიფიკაცია: უკავშირდება თქვენს უკვე დალოგინებულ ბრაუზერს (CDP Port 9222) — არანაირი პაროლები ან 2FA.
+   - ავთენტიფიკაცია: უკავშირდება თქვენს უკვე დალოგინებულ ბრაუზერს (კონფიგურირებადი CDP Port, ნაგულისხმევად 9222) — არანაირი პაროლები ან 2FA.
 4. **ადამიანური ქცევის იმიტაცია (Human-like Browsing & Pacing):**
    - Feed-ზე შესვლა -> პაუზა 2–3 წმ -> Messaging-ზე გადასვლა.
    - ნელი აკრეფა (Character-by-character delay).
@@ -52,7 +52,7 @@ Agents/Linkedin And Jobs/
 │   ├── linkedin-agent.md                 # აგენტის სრული ინსტრუქცია
 │   ├── config.py                         # პარამეტრები და კონფიგურაცია
 │   ├── requirements.txt                  # Python ბიბლიოთეკები
-│   ├── start_browser.bat                 # Chrome/Brave-ის გაშვება CDP Debug რეჟიმში (Port 9222)
+│   ├── start_browser.bat                 # Chrome/Brave-ის გაშვება CDP Debug რეჟიმში (CDP Port, default 9222)
 │   ├── run.py                            # ინტერაქტიული ტერმინალის UI & CLI
 │   ├── README.md                         # დოკუმენტაცია
 │   └── src/
@@ -73,9 +73,9 @@ Agents/Linkedin And Jobs/
 ### 1. Antigravity IDE-დან (ჩატის რეჟიმი)
 უბრალოდ მიწერეთ Antigravity-ს ნებისმიერი დავალება:
 - *"შეამოწმე რა ხდება ჩემს LinkedIn Pipeline-ში"*
-- *"მომიმზადე პასუხი EPAM-ის რეკრუტერისთვის ინგლისურად"*
-- *"Tetiana-ს მივწეროთ, რომ ჩემი ხელფასის მოლოდინია $4500"*
-- *"რა სტატუსშია Astra Tech-ის გასაუბრება?"*
+- *"მომიმზადე პასუხი რეკრუტერისთვის ინგლისურად"*
+- *"მივწეროთ რეკრუტერს, რომ ჩემი ხელფასის მოლოდინია პროფილის მიხედვით"*
+- *"რა სტატუსშია TechCorp-ის გასაუბრება?"*
 
 Antigravity ავტომატურად გაააქტიურებს `linkedin-agent` skill-ს და შეასრულებს დავალებას.
 
@@ -85,32 +85,40 @@ Antigravity ავტომატურად გაააქტიურებ�
 
 #### ნაბიჯი 1: დააყენეთ ბიბლიოთეკები (თუ საჭიროა)
 ```bash
-pip install -r "c:\Users\PC\OneDrive\Desktop\Agents\Linkedin And Jobs\Linkedin Agent\requirements.txt"
+pip install -r requirements.txt
 ```
 
 #### ნაბიჯი 2: გაუშვით ბრაუზერი დებაგ რეჟიმში
 ორჯერ დააჭირეთ `start_browser.bat`-ს (ან გაუშვით ტერმინალიდან):
 ```bash
-c:\Users\PC\OneDrive\Desktop\Agents\Linkedin And Jobs\Linkedin Agent\start_browser.bat
+# Windows:
+Linkedin Agent\start_browser.bat
+
+# Linux / macOS:
+if [ -f .env ]; then
+  CDP_PORT="$(sed -n 's/^CDP_PORT=//p' .env | tail -n 1)"
+fi
+export CDP_PORT="${CDP_PORT:-9222}"
+google-chrome --remote-debugging-port="$CDP_PORT" --user-data-dir="/tmp/chrome_profile"
 ```
-*ეს გახსნის Chrome-ს ან Brave-ს `9222` პორტზე, სადაც თქვენი LinkedIn პროფილი ავტორიზებულია.*
+*ეს გახსნის Chrome-ს ან Brave-ს კონფიგურირებულ (ნაგულისხმევად 9222) პორტზე, სადაც თქვენი LinkedIn პროფილი ავტორიზებულია.*
 
 #### ნაბიჯი 3: გაუშვით აგენტი
 ```bash
-python "c:\Users\PC\OneDrive\Desktop\Agents\Linkedin And Jobs\Linkedin Agent\run.py"
+python "Linkedin Agent/run.py"
 ```
 
 გამოჩნდება ინტერაქტიული მენიუ:
 ```text
 ╔══════════════════════════════════════════════════════════════════════╗
 ║                    💼 LINKEDIN JOB-SEEKER AGENT                     ║
-║              Candidate: Lasha Kvaratskhelia (Senior SDET)            ║
+║              Candidate: [Candidate Name] (Senior SDET)               ║
 ╚══════════════════════════════════════════════════════════════════════╝
 
 📋 Pipeline-ის მოკლე ანგარიში (≤ 5 bullets)
-• 📅 Astra Tech — გასაუბრება ჩანიშნულია / დადასტურებულია.
-• ⏳ EPAM (Ketevan Gobadze) — reply when Luka/Ketevan responds with call details.
-• ⏳ Merab Enukidze — reply when Merab confirms a time.
+• 📅 TechCorp — გასაუბრება ჩანიშნულია / დადასტურებულია.
+• ⏳ GlobalTech (Jane Doe) — reply when recruiter responds with call details.
+• ⏳ Acme Solutions — reply when contact confirms a time.
 • 📊 განაცხადები: 5 LinkedIn Easy Apply და 10 Remote ATS განაცხადი აქტიურ მოლოდინშია.
 
 აირჩიეთ მოქმედება:
@@ -119,20 +127,20 @@ python "c:\Users\PC\OneDrive\Desktop\Agents\Linkedin And Jobs\Linkedin Agent\run
 3. 📅 გასაუბრების დროის შეთავაზება / დადასტურება
 4. 🔄 Pipeline-ში სტატუსის განახლება (Update Status)
 5. 👤 კანდიდატის ფაქტებისა და მონაცემების ნახვა
-6. 🌐 Chrome / Brave-ის გაშვება დებაგ რეჟიმში (Port 9222)
+6. 🌐 Chrome / Brave-ის გაშვება დებაგ რეჟიმში (Port 9222 / CDP_PORT)
 0. 🚪 გასვლა (Exit)
 ```
 
 #### CLI Command Shortcuts:
 ```bash
 # Pipeline მოკლე რეპორტის ნახვა:
-python run.py --status
+python "Linkedin Agent/run.py" --status
 
 # რეკრუტერის მესიჯზე პასუხის დრაფტის მომზადება:
-python run.py --draft "Hi Lasha, what is your salary expectation?" --name "Tetiana"
+python "Linkedin Agent/run.py" --draft "Hi, what is your salary expectation?" --name "Jane"
 
 # LinkedIn შეტყობინებების შემოწმება ბრაუზერში:
-python run.py --check-browser
+python "Linkedin Agent/run.py" --check-browser
 ```
 
 ---

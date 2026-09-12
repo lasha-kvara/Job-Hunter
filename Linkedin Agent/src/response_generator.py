@@ -59,32 +59,80 @@ class ResponseGenerator:
     def draft_template_response(self, intent: str, contact_name: str = "", role_or_details: str = "", language: str = "en") -> str:
         """Fallback template-based response adhering strictly to persona."""
         name = contact_name or "there"
+        candidate_name = self.profile.get_candidate_name()
+        first_name = candidate_name.split()[0] if candidate_name and not candidate_name.startswith("[") else ""
+        signoff_en = f"Best, {first_name}" if first_name else "Best regards"
+        signoff_ka = f"პატივისცემით, {first_name}" if first_name else "პატივისცემით"
+        salary_str = self.profile.get_salary_expectation()
 
         if intent == "initial_reply":
             if language == "ka":
                 role_str = f"{role_or_details}-ს" if role_or_details else "ვაკანსიის"
-                return f"გამარჯობა {name}, მადლობა დაინტერესებისთვის! სიამოვნებით გავეცნობი {role_str} პოზიციის დეტალებს. თუ შეგიძლიათ გამიზიაროთ გუნდისა და პროექტის შესახებ დამატებითი ინფორმაცია. სიამოვნებით გავისაუბრებთ. პატივისცემით, ლაშა"
+                return f"გამარჯობა {name}, მადლობა დაინტერესებისთვის! სიამოვნებით გავეცნობი {role_str} პოზიციის დეტალებს. თუ შეგიძლიათ გამიზიაროთ გუნდისა და პროექტის შესახებ დამატებითი ინფორმაცია. სიამოვნებით გავისაუბრებთ. {signoff_ka}"
             else:
                 role_str = role_or_details or "the role"
-                return f"Hello {name}, thanks for reaching out! I'm interested in the {role_str} opportunity. Could you share more details about the role and the team? I'd be happy to schedule an introductory call. Best, Lasha"
+                return f"Hello {name}, thanks for reaching out! I'm interested in the {role_str} opportunity. Could you share more details about the role and the team? I'd be happy to schedule an introductory call. {signoff_en}"
 
         elif intent == "propose_time":
+            tz = self.profile.get_preferences().get("timezone", "").strip()
+            details_lower = role_or_details.lower() if role_or_details else ""
+            has_timezone = bool(
+                role_or_details and (
+                    (tz and tz.lower() in details_lower)
+                    or re.search(r"\b(?:utc|gmt|est|edt|pst|pdt|cst|cdt|cet|cest)(?:[+-]\d+(?::\d{2})?)?\b", details_lower)
+                )
+            )
+            if not has_timezone and not tz:
+                return (
+                    "Please configure candidate timezone in candidate-profile.md before generating interview availability proposals."
+                    if language != "ka"
+                    else "გასაუბრების დროის შეთავაზებამდე მიუთითეთ დროის სარტყელი candidate-profile.md-ში."
+                )
+            slots = role_or_details or self.profile.get_availability()
+            if not slots or any(k in slots.lower() for k in ["flexible", "confirm", "user", "ask"]):
+                return (
+                    f"Please provide specific interview slots to propose to the recruiter (Candidate timezone: {tz})."
+                    if language != "ka"
+                    else f"გთხოვთ მიუთითოთ გასაუბრებისთვის ხელმისაწვდომი დრო რეკრუტერისთვის შესათავაზებლად (დროის სარტყელი: {tz})."
+                )
+            tz_str = "" if has_timezone else f" ({tz})"
             if language == "ka":
-                return f"გამარჯობა {name}, შემიძლია შემოგთავაზოთ {role_or_details or 'ორშაბათს 17:00-ზე ან სამშაბათს 17:00-ზე'} (თბილისის დროით, GMT+4). რომელი დრო იქნება თქვენთვის უფრო მოსახერხებელი?"
+                return f"გამარჯობა {name}, შემიძლია შემოგთავაზოთ {slots}{tz_str}. რომელი დრო იქნება თქვენთვის უფრო მოსახერხებელი?"
             else:
-                return f"Hello {name}, I'm available on {role_or_details or 'Monday at 17:00 and Tuesday at 17:00'} (GMT+4 / Georgia time). Which time works best for your schedule?"
+                return f"Hello {name}, I'm available on {slots}{tz_str}. Which time works best for your schedule?"
 
         elif intent == "confirm_interview":
+            tz = self.profile.get_preferences().get("timezone", "").strip()
+            details_lower = role_or_details.lower() if role_or_details else ""
+            has_timezone = bool(
+                role_or_details and (
+                    (tz and tz.lower() in details_lower)
+                    or re.search(r"\b(?:utc|gmt|est|edt|pst|pdt|cst|cdt|cet|cest)(?:[+-]\d+(?::\d{2})?)?\b", details_lower)
+                )
+            )
+            if not has_timezone and not tz:
+                return (
+                    "Please configure candidate timezone in candidate-profile.md or specify it before confirming the interview."
+                    if language != "ka"
+                    else "გასაუბრების დროის დადასტურებამდე მიუთითეთ დროის სარტყელი candidate-profile.md-ში."
+                )
+            tz_str = "" if has_timezone else f" ({tz})"
             if language == "ka":
-                return f"{role_or_details or 'შეთანხმებული დრო'} (თბილისის დროით) ჩემთვის სრულად მისაღებია. შევხვდებით გასაუბრებაზე!"
+                return f"{role_or_details or 'შეთანხმებული დრო'}{tz_str} ჩემთვის სრულად მისაღებია. შევხვდებით გასაუბრებაზე!"
             else:
-                return f"{role_or_details or 'The proposed time'} (GMT+4) works perfectly for me. Looking forward to our discussion!"
+                return f"{role_or_details or 'The proposed time'}{tz_str} works perfectly for me. Looking forward to our discussion!"
 
         elif intent == "salary_expectation":
-            if language == "ka":
-                return "ჩემი 7+-წლიანი SDET გამოცდილებიდან და ავტომატიზაციის ფრეიმვორკების არქიტექტურიდან გამომდინარე, ჩემი მინიმალური სახელფასო მოლოდინია $4,500 USD/თვეში (net). სიამოვნებით განვიხილავ დეტალებს მას შემდეგ, რაც უკეთ გავეცნობით პროექტის მასშტაბს."
+            if salary_str:
+                if language == "ka":
+                    return f"ჩემი გამოცდილებიდან და ტექნიკური უნარებიდან გამომდინარე, ჩემი სახელფასო მოლოდინია {salary_str}. სიამოვნებით განვიხილავ დეტალებს მას შემდეგ, რაც უკეთ გავეცნობით პროექტის მასშტაბს."
+                else:
+                    return f"Based on my experience and technical background, my compensation expectation is {salary_str}. Happy to discuss further once we explore the technical requirements and project scope in detail."
             else:
-                return "Based on my 7+ years of SDET experience and multi-platform automation expertise, I am targeting at least $4,500 USD/month. Happy to discuss further once we explore the technical requirements and project scope in detail."
+                if language == "ka":
+                    return "სიამოვნებით განვიხილავ სახელფასო მოლოდინს მას შემდეგ, რაც უკეთ გავეცნობით პოზიციის მოთხოვნებსა და პროექტის მასშტაბს."
+                else:
+                    return "I would be happy to discuss compensation expectations once we explore the technical requirements and project scope in detail."
 
         elif intent == "follow_up":
             if language == "ka":
@@ -94,9 +142,9 @@ class ResponseGenerator:
 
         # Default short reply
         if language == "ka":
-            return f"გამარჯობა {name}, მადლობა შეტყობინებისთვის! დეტალებს გავეცნობი და მალე დაგიბრუნდებით. პატივისცემით, ლაშა"
+            return f"გამარჯობა {name}, მადლობა შეტყობინებისთვის! დეტალებს გავეცნობი და მალე დაგიბრუნდებით. {signoff_ka}"
         else:
-            return f"Hello {name}, thanks for your message! I will review the details and get back to you shortly. Best, Lasha"
+            return f"Hello {name}, thanks for your message! I will review the details and get back to you shortly. {signoff_en}"
 
     def draft_llm_response(self, hr_message: str, contact_name: str = "", context: str = "") -> Tuple[str, bool]:
         """
@@ -120,7 +168,12 @@ class ResponseGenerator:
                 return self.draft_template_response("propose_time", contact_name, language=language), True
             return self.draft_template_response("initial_reply", contact_name, language=language), requires_user_confirmation
 
-        system_instruction = f"""You are representing candidate Lasha Kvaratskhelia in LinkedIn conversations with HR/Recruiters.
+        candidate_name = self.profile.get_candidate_name()
+        salary_str = self.profile.get_salary_expectation()
+        tz = self.profile.get_preferences().get("timezone", "")
+        salary_rule = f"state expectation from profile ({salary_str})" if salary_str else "state that compensation can be discussed once project scope is explored"
+        tz_rule = f"propose availability in candidate timezone ({tz})" if tz else "propose availability and confirm recruiter preferred timezone"
+        system_instruction = f"""You are representing candidate {candidate_name} in LinkedIn conversations with HR/Recruiters.
 Candidate Profile (Single Source of Truth):
 {self.profile.get_full_context_prompt()}
 
@@ -128,8 +181,8 @@ Rules:
 1. Tone: Friendly-professional, concise, warm, respectful.
 2. Language: Respond in { 'Georgian' if language == 'ka' else 'English' }.
 3. NEVER invent facts, skills, companies, or salary not present in profile.
-4. If salary is asked: state minimum $4500 USD/month.
-5. If interview time is asked: propose availability in GMT+4 (Georgia time).
+4. If salary is asked: {salary_rule}.
+5. If interview time is asked: {tz_rule}.
 6. Keep length short (2-4 sentences). Do not write essays.
 """
 
@@ -163,10 +216,10 @@ Draft the exact response message to be sent to this recruiter:"""
 
 if __name__ == "__main__":
     generator = ResponseGenerator()
-    msg_en = "Hi Lasha, we saw your profile and have a Senior SDET opening. Are you open to discussing it?"
+    msg_en = "Hi, we saw your profile and have an opening. Are you open to discussing it?"
     draft_en, req_en = generator.draft_llm_response(msg_en, contact_name="Sarah")
     print(f"EN Draft (Requires approval: {req_en}):\n{draft_en}\n")
 
-    msg_ka = "გამარჯობა ლაშა, მაინტერესებს თქვენი სახელფასო მოლოდინი ამ პოზიციაზე."
+    msg_ka = "გამარჯობა, მაინტერესებს თქვენი სახელფასო მოლოდინი ამ პოზიციაზე."
     draft_ka, req_ka = generator.draft_llm_response(msg_ka, contact_name="მარიამი")
     print(f"KA Draft (Requires approval: {req_ka}):\n{draft_ka}\n")

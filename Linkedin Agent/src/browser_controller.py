@@ -1,6 +1,6 @@
 """
 Browser Controller: Playwright CDP controller with human-like pacing and safety constraints.
-Connects to an existing Chrome/Brave session on http://localhost:9222.
+Connects to an existing Chrome/Brave session on configured CDP endpoint (default http://localhost:9222).
 """
 import time
 import asyncio

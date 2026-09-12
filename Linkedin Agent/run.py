@@ -1,6 +1,5 @@
 """
 LinkedIn Agent - Interactive Terminal & CLI Runner
-Candidate: Lasha Kvaratskhelia
 """
 import sys
 import os
@@ -8,6 +7,7 @@ import argparse
 import asyncio
 import warnings
 from pathlib import Path
+from typing import Optional
 
 # Suppress future warnings from legacy SDKs
 warnings.filterwarnings("ignore")
@@ -46,18 +46,26 @@ except ImportError:
     HAS_RICH = False
     console = None
 
-def show_banner():
+def show_banner(profile: Optional[CandidateProfile] = None):
+    name = profile.get_candidate_name() if profile else "Candidate"
+    roles = profile.get_target_roles() if profile else []
+    primary_role = roles[0] if roles else "Job-Seeker"
+    candidate_label = f"{name} ({primary_role})"
+    if len(candidate_label) > 45:
+        candidate_label = candidate_label[:42] + "..."
     if HAS_RICH:
-        banner = """
+        from rich.markup import escape
+        safe_label = escape(candidate_label)
+        banner = f"""
 [bold cyan]╔══════════════════════════════════════════════════════════════════════╗
 ║                    💼 LINKEDIN JOB-SEEKER AGENT                     ║
-║              Candidate: [bold yellow]Lasha Kvaratskhelia (Senior SDET)[/bold yellow]               ║
+║              Candidate: [bold yellow]{safe_label:^45}[/bold yellow] ║
 ╚══════════════════════════════════════════════════════════════════════╝[/bold cyan]
         """
         console.print(banner)
     else:
         print("=" * 60)
-        print("LinkedIn Job-Seeker Agent - Lasha Kvaratskhelia (Senior SDET)")
+        print(f"LinkedIn Job-Seeker Agent - {candidate_label}")
         print("=" * 60)
 
 def show_pipeline_summary(tracker: PipelineTracker):
@@ -95,9 +103,9 @@ def show_profile_facts(profile: CandidateProfile):
 async def run_browser_check():
     controller = LinkedInBrowserController()
     if HAS_RICH:
-        console.print("[yellow]🌐 ვუკავშირდებით Chrome/Brave-ს CDP პორტზე (9222)...[/yellow]")
+        console.print(f"[yellow]🌐 ვუკავშირდებით Chrome/Brave-ს CDP პორტზე ({config.CDP_PORT})...[/yellow]")
     else:
-        print("Connecting to browser on port 9222...")
+        print(f"Connecting to browser on port {config.CDP_PORT}...")
 
     try:
         await controller.connect()
@@ -137,7 +145,7 @@ async def run_browser_check():
     except Exception as e:
         if HAS_RICH:
             console.print(f"[bold red]❌ შეცდომა:[/bold red] {e}")
-            console.print("[yellow]💡 რჩევა: დარწმუნდით, რომ გაშვებულია `start_browser.bat` ან ბრაუზერი `--remote-debugging-port=9222`-ით.[/yellow]")
+            console.print(f"[yellow]💡 რჩევა: დარწმუნდით, რომ გაშვებულია `start_browser.bat` ან ბრაუზერი `--remote-debugging-port={config.CDP_PORT}`-ით.[/yellow]")
         else:
             print(f"Error: {e}")
     finally:
@@ -167,7 +175,7 @@ def handle_draft_response(generator: ResponseGenerator):
 def handle_update_status(tracker: PipelineTracker):
     if HAS_RICH:
         console.print("\n[bold cyan]🔄 საუბრის სტატუსის განახლება[/bold cyan]")
-        search_term = Prompt.ask("კომპანიის ან კონტაქტის სახელი (მაგ. Astra Tech, EPAM, Limestone)")
+        search_term = Prompt.ask("კომპანიის ან კონტაქტის სახელი (მაგ. TechCorp, Acme, GlobalTech)")
         status_options = ["waiting", "pending-user", "scheduled", "in-progress", "closed"]
         new_status = Prompt.ask(f"ახალი სტატუსი ({'/'.join(status_options)})", choices=status_options, default="waiting")
     else:
@@ -193,7 +201,7 @@ def interactive_menu():
     scheduler = InterviewScheduler(profile)
 
     while True:
-        show_banner()
+        show_banner(profile)
         show_pipeline_summary(tracker)
 
         if HAS_RICH:
@@ -203,7 +211,7 @@ def interactive_menu():
             console.print("3. 📅 გასაუბრების დროის შეთავაზება / დადასტურება")
             console.print("4. 🔄 Pipeline-ში სტატუსის განახლება (Update Status)")
             console.print("5. 👤 კანდიდატის ფაქტებისა და მონაცემების ნახვა")
-            console.print("6. 🌐 Chrome / Brave-ის გაშვება დებაგ რეჟიმში (Port 9222)")
+            console.print(f"6. 🌐 Chrome / Brave-ის გაშვება დებაგ რეჟიმში (Port {config.CDP_PORT})")
             console.print("0. 🚪 გასვლა (Exit)")
 
             choice = Prompt.ask("შეიყვანეთ ნომერი", choices=["0", "1", "2", "3", "4", "5", "6"], default="1")
