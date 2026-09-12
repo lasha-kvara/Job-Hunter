@@ -204,7 +204,7 @@ class CandidateProfile:
         env_cv_path = getattr(config, "DEFAULT_CV_PATH", "") or os.getenv("DEFAULT_CV_PATH", "")
         if env_cv_path and str(env_cv_path).strip():
             candidate_path = str(env_cv_path).strip()
-            if candidate_path and not candidate_path.startswith("path/to") and not candidate_path.startswith("["):
+            if candidate_path and not self.is_placeholder(candidate_path) and "path/to" not in candidate_path.lower() and "your/cv" not in candidate_path.lower():
                 return candidate_path
 
         # 2. Parse from candidate profile
@@ -212,7 +212,7 @@ class CandidateProfile:
         if cv_match:
             candidate_path = cv_match.group(1).strip()
             # Ignore template placeholders like 'path/to/your/CV.pdf'
-            if candidate_path and not candidate_path.startswith("path/to") and not candidate_path.startswith("["):
+            if candidate_path and not self.is_placeholder(candidate_path) and "path/to" not in candidate_path.lower() and "your/cv" not in candidate_path.lower():
                 return candidate_path
         # Look for any explicit path ending with .pdf under CV section
         sec = self.get_section("cv") or self.get_section("resume")
@@ -220,7 +220,7 @@ class CandidateProfile:
             path_match = re.search(r"[`'\"]?([a-zA-Z]:\\[^`'\"\n\r]+\.pdf|/[^`'\"\n\r]+\.pdf)[`'\"]?", sec)
             if path_match:
                 candidate_path = path_match.group(1).strip()
-                if candidate_path and not candidate_path.startswith("path/to") and not candidate_path.startswith("["):
+                if candidate_path and not self.is_placeholder(candidate_path) and "path/to" not in candidate_path.lower() and "your/cv" not in candidate_path.lower():
                     return candidate_path
 
         if strict:
@@ -286,8 +286,21 @@ class CandidateProfile:
         # Explicitly use get_skills_summary() to skip Personal Skills (competencies)
         skills = self.get_skills_summary()
         if skills:
-            skill_lines = [line.strip("- *") for line in skills.splitlines() if line.strip().startswith(("-", "*"))]
-            raw_skills = "; ".join(skill_lines[:4]) if skill_lines else " ".join(skills.split())
+            skill_lines = []
+            for line in skills.splitlines():
+                if line.strip().startswith(("-", "*")):
+                    bullet = line.strip("- *").strip()
+                    if ":" in bullet:
+                        cat, val = bullet.split(":", 1)
+                        clean_val = val.strip().strip("*_` ")
+                        if clean_val and not self.is_placeholder(clean_val):
+                            clean_cat = re.sub(r"[*_`]", "", cat).strip()
+                            skill_lines.append(f"{clean_cat}: {clean_val}")
+                    else:
+                        clean_bullet = re.sub(r"[*_`]", "", bullet).strip()
+                        if clean_bullet and not self.is_placeholder(clean_bullet):
+                            skill_lines.append(clean_bullet)
+            raw_skills = "; ".join(skill_lines[:4]) if skill_lines else ""
             clean_skills = re.sub(r"[*_`]", "", raw_skills).strip()
             skills_summary = self._bound_field(clean_skills, 140, "[Not configured in candidate-profile.md]")
         else:

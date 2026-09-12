@@ -92,6 +92,15 @@ try:
         py_compile.compile(str(script_path), doraise=True)
         print(f"  [+] {script_name}: Syntax and compilation verified OK.")
 
+    # Exercise show_profile_facts execution to guarantee no runtime NameError or type annotation issues
+    sys.path.insert(0, str(PROJECT_ROOT / "Linkedin Agent"))
+    import run as linkedin_runner
+    linkedin_runner.show_profile_facts(CandidateProfile())
+    template_path_run = PROJECT_ROOT / "Linkedin Agent" / "candidate-profile.template.md"
+    if template_path_run.exists():
+        linkedin_runner.show_profile_facts(CandidateProfile(file_path=template_path_run))
+    print("  [+] Linkedin Agent/run.py: show_profile_facts rendered configured and template profiles successfully.")
+
     print("  => ALL EXISTING RUNNER SCRIPTS PASSED!")
 
 except Exception as e:
@@ -329,6 +338,7 @@ try:
         tmpl_compact = prof_tmpl.get_compact_context_prompt()
         assert "Summary: [Not configured in candidate-profile.md]" in tmpl_compact
         assert "Target Roles: [Not configured in candidate-profile.md]" in tmpl_compact
+        assert "Key Skills: [Not configured in candidate-profile.md]" in tmpl_compact
         assert "Salary Expectation: [Not specified]" in tmpl_compact
         print("  [+] Profile Manager: Template-backed profiles correctly normalize placeholders across all fields.")
 
