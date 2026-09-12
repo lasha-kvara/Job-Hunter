@@ -17,7 +17,13 @@ class InterviewScheduler:
     def get_standard_slots(self, language: str = "en") -> str:
         """Returns standard suggested interview slots in candidate timezone."""
         tz = self.profile.get_preferences().get("timezone", "").strip()
-        tz_str = f" ({tz})" if tz else " ([Timezone])"
+        if not tz:
+            return (
+                "Please configure the candidate timezone before proposing interview slots."
+                if language != "ka"
+                else "გასაუბრების დროის შეთავაზებამდე მიუთითეთ კანდიდატის დროის სარტყელი."
+            )
+        tz_str = f" ({tz})"
         if language == "ka":
             return f"ორშაბათს 17:00-ზე ან სამშაბათს 17:00-ზე{tz_str}"
         return f"Monday at 17:00 or Tuesday at 17:00{tz_str}"
@@ -27,7 +33,13 @@ class InterviewScheduler:
         Formats a clear confirmation string containing weekday, date, time, and timezone.
         """
         tz = (timezone or self.profile.get_preferences().get("timezone", "")).strip()
-        tz_str = f" ({tz})" if tz else " ([Timezone])"
+        if not tz:
+            return (
+                "Please configure or specify the timezone before confirming the interview."
+                if language != "ka"
+                else "გასაუბრების დროის დადასტურებამდე მიუთითეთ დროის სარტყელი."
+            )
+        tz_str = f" ({tz})"
         if language == "ka":
             return f"{date_str}, {time_str} საათზე{tz_str} ჩემთვის სრულად მისაღებია. შევხვდებით გასაუბრებაზე!"
         return f"{date_str} at {time_str}{tz_str} works perfectly for me. Looking forward to our call!"

@@ -83,7 +83,13 @@ class ResponseGenerator:
                     or re.search(r"\b(?:utc|gmt|est|edt|pst|pdt|cst|cdt|cet|cest)(?:[+-]\d+(?::\d{2})?)?\b", details_lower)
                 )
             )
-            tz_str = "" if has_timezone else (f" ({tz})" if tz else " ([Timezone])")
+            if not has_timezone and not tz:
+                return (
+                    "Please configure candidate timezone in candidate-profile.md before generating interview availability proposals."
+                    if language != "ka"
+                    else "გასაუბრების დროის შეთავაზებამდე მიუთითეთ დროის სარტყელი candidate-profile.md-ში."
+                )
+            tz_str = "" if has_timezone else f" ({tz})"
             if language == "ka":
                 return f"გამარჯობა {name}, შემიძლია შემოგთავაზოთ {role_or_details or 'ორშაბათს 17:00-ზე ან სამშაბათს 17:00-ზე'}{tz_str}. რომელი დრო იქნება თქვენთვის უფრო მოსახერხებელი?"
             else:
@@ -99,7 +105,13 @@ class ResponseGenerator:
                     or re.search(r"\b(?:utc|gmt|est|edt|pst|pdt|cst|cdt|cet|cest)(?:[+-]\d+(?::\d{2})?)?\b", details_lower)
                 )
             )
-            tz_str = "" if has_timezone else (f" ({tz})" if tz else " ([Timezone])")
+            if not has_timezone and not tz:
+                return (
+                    "Please configure candidate timezone in candidate-profile.md or specify it before confirming the interview."
+                    if language != "ka"
+                    else "გასაუბრების დროის დადასტურებამდე მიუთითეთ დროის სარტყელი candidate-profile.md-ში."
+                )
+            tz_str = "" if has_timezone else f" ({tz})"
             if language == "ka":
                 return f"{role_or_details or 'შეთანხმებული დრო'}{tz_str} ჩემთვის სრულად მისაღებია. შევხვდებით გასაუბრებაზე!"
             else:
