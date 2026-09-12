@@ -302,6 +302,9 @@ try:
     assert gen._is_deep_query("Tell me about your previous role") is True
     assert gen._is_deep_query("What was your role in system design?") is True
     assert gen._is_deep_query("Tell me about your past work") is True
+    assert gen._is_deep_query("Can you provide details about the role's architecture?") is False
+    assert gen._is_deep_query("Can you provide details about your architecture?") is True
+    assert gen._is_deep_query("Could you share your project's performance testing metrics?") is True
     assert gen._is_deep_query("Can you tell me about your previous experience?") is True
     assert gen._is_deep_query("Walk me through your past projects") is True
 
@@ -329,21 +332,23 @@ try:
     print("  [+] Profile Manager: Grounded availability and relocation verified in compact prompt.")
 
     # Test template-backed profile placeholder normalization
-    template_path = Path("Linkedin Agent/candidate-profile.template.md")
-    if template_path.exists():
-        prof_tmpl = CandidateProfile(file_path=template_path)
-        assert prof_tmpl.get_candidate_name() == "", "Template name [Full Name] must be normalized to empty"
-        assert prof_tmpl.get_summary() == "", "Template summary instruction must be normalized to empty"
-        assert prof_tmpl.get_target_roles() == [], "Template example roles must be normalized to empty"
-        assert prof_tmpl.get_salary_expectation() == "", "Template $[Amount] must be normalized to empty"
-        assert prof_tmpl.get_preferences()["notice_period"] == "", "Template notice must be normalized to empty"
-        assert prof_tmpl.get_contacts().get("email", "") == "", "Template email [Your Email] must be normalized to empty"
-        tmpl_compact = prof_tmpl.get_compact_context_prompt()
-        assert "Summary: [Not configured in candidate-profile.md]" in tmpl_compact
-        assert "Target Roles: [Not configured in candidate-profile.md]" in tmpl_compact
-        assert "Key Skills: [Not configured in candidate-profile.md]" in tmpl_compact
-        assert "Salary Expectation: [Not specified]" in tmpl_compact
-        print("  [+] Profile Manager: Template-backed profiles correctly normalize placeholders across all fields.")
+    template_path = PROJECT_ROOT / "Linkedin Agent" / "candidate-profile.template.md"
+    assert template_path.is_file(), f"Required template file not found: {template_path}"
+    prof_tmpl = CandidateProfile(file_path=template_path)
+    assert prof_tmpl.get_candidate_name() == "", "Template name [Full Name] must be normalized to empty"
+    assert prof_tmpl.get_summary() == "", "Template summary instruction must be normalized to empty"
+    assert prof_tmpl.get_target_roles() == [], "Template example roles must be normalized to empty"
+    assert prof_tmpl.get_previous_companies() == [], "Template profile must not extract [Company] placeholder"
+    assert prof_tmpl.get_salary_expectation() == "", "Template $[Amount] must be normalized to empty"
+    assert prof_tmpl.get_preferences()["notice_period"] == "", "Template notice must be normalized to empty"
+    assert prof_tmpl.get_contacts().get("email", "") == "", "Template email [Your Email] must be normalized to empty"
+    tmpl_compact = prof_tmpl.get_compact_context_prompt()
+    assert "Summary: [Not configured in candidate-profile.md]" in tmpl_compact
+    assert "Target Roles: [Not configured in candidate-profile.md]" in tmpl_compact
+    assert "Key Skills: [Not configured in candidate-profile.md]" in tmpl_compact
+    assert "Salary Expectation: [Not specified]" in tmpl_compact
+    assert prof_tmpl.get_full_context_prompt() == tmpl_compact, "Template full context must match sanitized compact prompt"
+    print("  [+] Profile Manager: Template-backed profiles correctly normalize placeholders across all fields.")
 
     # Test unconfigured profile preserves explicit [Not specified] without inventing generic defaults
     prof_empty = CandidateProfile()

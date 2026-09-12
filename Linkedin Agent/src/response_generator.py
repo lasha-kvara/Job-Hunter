@@ -178,7 +178,7 @@ class ResponseGenerator:
             # Interrogatives & imperatives directed at candidate's experience/projects
             r"\b(?:tell|share|describe|walk me through|explain|elaborate)\b(?=.*\b(?:you|your|candidate)\b)(?=.*\b(?:projects?|experience|background|history|frameworks?|architecture|metrics?|achievements?|system design|load test|performance test|roles?|work)\b).*",
             r"\b(?:what|how)\b(?=.*\b(?:did you|were your|was your|have you)\b)(?=.*\b(?:projects?|experience|background|history|frameworks?|architecture|metrics?|achievements?|system design|load test|performance test|roles?|work)\b).*",
-            r"\b(?:can you|could you|would you)\b(?=.*\b(?:tell|share|describe|walk|provide|detail)\b)(?=.*\b(?:projects?|experience|background|history|frameworks?|architecture|metrics?|achievements?|system design|load test|performance test|roles?|work)\b).*",
+            r"\b(?:can\s+you|could\s+you|would\s+you)\b(?=.*\b(?:tell|share|describe|walk|provide|detail)\b)(?=.*\b(?:your|candidate(?:'s)?)\b)(?=.*\b(?:projects?|experience|background|history|frameworks?|architecture|metrics?|achievements?|system design|load test|performance test|roles?|work)\b).*",
             r"\b(?:გვიამბეთ|მომიყევი|გვითხარით|აღწერეთ|დაგვიხასიათეთ)\b.*\b(?:პროექტ|გამოცდილებ|ისტორი|არქიტექტურ|მეტრიკ|მიღწევ)\b",
             r"\b(?:რა\s+იყო|როგორი\s+იყო|შეგიძლიათ\s+გვითხრათ|გვიამბეთ|აღწერეთ)\b.*\b(?:შენი|თქვენი)\s+(?:წინა|გასულ)\s+(?:პროექტ|გამოცდილებ|არქიტექტურ|სამუშაო|მიღწევ|მეტრიკ)\b"
         ]
@@ -258,7 +258,8 @@ class ResponseGenerator:
         # Tiered Token Optimization: use compact context for standard recruiter chat,
         # escalate to full context only when deep candidate project/architecture details are queried.
         profile_context = (
-            self.profile.get_full_context_prompt() if self._is_deep_query(hr_message)
+            self.profile.get_full_context_prompt()
+            if self._is_deep_query(hr_message) and not getattr(self.profile, "is_template_profile", False)
             else self.profile.get_compact_context_prompt()
         )
 

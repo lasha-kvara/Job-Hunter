@@ -235,6 +235,9 @@ class CandidateProfile:
         Dynamically extracts candidate's previous employers and featured project names
         from Experience and Featured Projects sections in candidate-profile.md.
         """
+        if self.is_template_profile:
+            return []
+
         companies = []
         exp = self.get_experience_summary()
         if exp:
@@ -243,7 +246,7 @@ class CandidateProfile:
                 m = re.search(r'@\s+([^—–\(\n]+)', line)
                 if m:
                     comp = re.sub(r'[*_`]', '', m.group(1)).strip()
-                    if comp and comp not in companies:
+                    if comp and not self.is_placeholder(comp) and comp not in companies:
                         companies.append(comp)
 
         featured = self.get_section("featured projects")
@@ -252,7 +255,7 @@ class CandidateProfile:
                 m = re.match(r"^[-*]\s+[*_`]*(.+?)[*_`]*(?:\s+—|\s+–|\s+\(|$)", line)
                 if m:
                     comp = re.sub(r'[*_`]', '', m.group(1)).strip()
-                    if comp and comp not in companies:
+                    if comp and not self.is_placeholder(comp) and comp not in companies:
                         companies.append(comp)
 
         return companies
@@ -336,6 +339,8 @@ Note: For deep historical project metrics or full architecture breakdowns, escal
 
     def get_full_context_prompt(self) -> str:
         """Returns the formatted profile for feeding to LLM prompts."""
+        if self.is_template_profile:
+            return self.get_compact_context_prompt()
         name = self.get_candidate_name() or "Candidate"
         return f"""
 Candidate Profile: {name}
