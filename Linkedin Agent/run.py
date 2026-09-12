@@ -55,14 +55,17 @@ def show_banner(profile: Optional[CandidateProfile] = None):
         candidate_label = candidate_label[:42] + "..."
     if HAS_RICH:
         from rich.markup import escape
+        from rich import box
         safe_label = escape(candidate_label)
-        banner = f"""
-[bold cyan]╔══════════════════════════════════════════════════════════════════════╗
-║                    💼 LINKEDIN JOB-SEEKER AGENT                     ║
-║              Candidate: [bold yellow]{safe_label:^45}[/bold yellow] ║
-╚══════════════════════════════════════════════════════════════════════╝[/bold cyan]
-        """
-        console.print(banner)
+        console.print(
+            Panel(
+                f"[bold cyan]💼 LINKEDIN JOB-SEEKER AGENT[/bold cyan]\n[bold white]Candidate:[/bold white] [bold yellow]{safe_label}[/bold yellow]",
+                box=box.DOUBLE,
+                style="cyan",
+                expand=False,
+                padding=(0, 6)
+            )
+        )
     else:
         print("=" * 60)
         print(f"LinkedIn Job-Seeker Agent - {candidate_label}")
@@ -152,8 +155,13 @@ async def run_browser_check():
         await controller.disconnect()
 
 def handle_draft_response(generator: ResponseGenerator):
+    has_ai = bool(generator.client or generator.legacy_model)
     if HAS_RICH:
         console.print("\n[bold cyan]✍️ პასუხის დრაფტის მომზადება[/bold cyan]")
+        if has_ai:
+            console.print(f"[dim green]🤖 AI Engine: Active ({config.DEFAULT_MODEL})[/dim green]")
+        else:
+            console.print("[dim yellow]📋 რეჟიმი: Offline შაბლონები (დინამიური AI-სთვის მიუთითეთ GEMINI_API_KEY .env-ში)[/dim yellow]")
         contact_name = Prompt.ask("რეკრუტერის სახელი (მაგ. Sarah / მარიამი)", default="")
         hr_message = Prompt.ask("შემოსული შეტყობინების ტექსტი")
     else:
