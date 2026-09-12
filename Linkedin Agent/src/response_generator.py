@@ -169,11 +169,17 @@ class ResponseGenerator:
             return True
 
         # Candidate-directed inquiry patterns for projects, history, or technical architecture/frameworks
-        # Requires candidate/inquiry cues (e.g. 'your architecture', 'what metrics', 'tell me about your framework')
-        # so routine recruiter job descriptions/pitches stay strictly in L1.
+        # Requires candidate/inquiry cues (e.g. 'what metrics', 'tell me about your framework')
+        # while keeping possessive job pitches ('your role will include...', 'your work will focus on...') strictly in L1.
         candidate_deep_patterns = [
-            r"\b(?:your|past|previous|prior)\s+(?:projects?|experience|background|history|roles?|work|metrics?|achievements?|architecture|frameworks?|system design|load test|performance test)\b",
-            r"\b(?:tell|share|describe|walk me through|what|how)\b(?=.*\b(?:you|your|candidate|past|previous|prior)\b)(?=.*\b(?:projects?|experience|background|history|frameworks?|architecture|metrics?|achievements?|system design|load test|performance test)\b).*",
+            # Intrinsically historical references
+            r"\b(?:past|previous|prior|former|last)\s+(?:projects?|experience|background|history|roles?|positions?|work|jobs?|architecture|frameworks?)\b",
+            # Candidate-owned history
+            r"\b(?:your)\s+(?:past|previous|prior|former|last)\s+(?:roles?|positions?|work|jobs?|projects?)\b",
+            r"\b(?:your)\s+(?:projects?|experience|background|history|metrics?|achievements?)\b",
+            # Candidate-directed inquiries
+            r"\b(?:tell|share|describe|walk me through)\b(?=.*\b(?:you|your|candidate)\b)(?=.*\b(?:projects?|experience|background|history|frameworks?|architecture|metrics?|achievements?|system design|load test|performance test|roles?|work)\b).*",
+            r"\b(?:what|how)\b(?=.*\b(?:did you|were your|was your|have you)\b)(?=.*\b(?:projects?|experience|background|history|frameworks?|architecture|metrics?|achievements?|system design|load test|performance test|roles?|work)\b).*",
             r"\b(?:გვიამბეთ|მომიყევი|გვითხარით)\b.*\b(?:პროექტ|გამოცდილებ|ისტორი|არქიტექტურ|მეტრიკ|მიღწევ)\b",
             r"\b(?:შენი|თქვენი|წინა)\s+(?:პროექტ|გამოცდილებ|არქიტექტურ|სამუშაო|მიღწევ|მეტრიკ)\b"
         ]

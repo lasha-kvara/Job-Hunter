@@ -261,12 +261,35 @@ try:
     assert gen._is_deep_query("How does the system design look on our project?") is False
     assert gen._is_deep_query("What does TBC do?") is False
 
+    # Test possessive recruiter job pitches (stay L1) vs candidate historical inquiries (trigger L2)
+    assert gen._is_deep_query("Your role will include system architecture") is False
+    assert gen._is_deep_query("In this position, your work will focus on performance testing") is False
+    assert gen._is_deep_query("Your role here will be fully remote") is False
+    assert gen._is_deep_query("Tell me about your previous role") is True
+    assert gen._is_deep_query("What was your role in system design?") is True
+    assert gen._is_deep_query("Tell me about your past work") is True
+
     assert gen._is_deep_query("Tell me about your system architecture experience") is True
     assert gen._is_deep_query("Walk me through your test framework architecture") is True
     assert gen._is_deep_query("How did you conduct performance testing in past roles?") is True
     assert gen._is_deep_query("What framework did you use on previous projects?") is True
     assert gen._is_deep_query("What was your role at TBC?") is True
     print("  [+] ResponseGenerator: Dynamic employer extraction and technical intent classification correctly separate recruiter pitches from candidate inquiries.")
+
+    # Test featured projects parser handles bold and markdown emphasis bullets
+    prof_feat = CandidateProfile()
+    prof_feat.sections = {
+        "Featured projects": "- **Project Alpha** — automation framework\n* `Project Beta` — performance suite\n- Project Gamma (E-commerce)"
+    }
+    prev_comps = prof_feat.get_previous_companies()
+    assert "Project Alpha" in prev_comps, f"Failed to extract bold project: {prev_comps}"
+    assert "Project Beta" in prev_comps, f"Failed to extract code-styled project: {prev_comps}"
+    assert "Project Gamma" in prev_comps, f"Failed to extract plain project: {prev_comps}"
+    print("  [+] Profile Manager: Featured projects parser correctly extracts bold and styled markdown bullets.")
+
+    # Test availability is included in compact prompt for grounded interview scheduling
+    assert "Availability:" in compact_prompt, "Compact prompt must include grounded Availability"
+    print("  [+] Profile Manager: Grounded availability verified in compact prompt.")
 
     # Test skills extraction skips Personal Skills even when personal skills appears first in profile sections
     prof_ps = CandidateProfile()

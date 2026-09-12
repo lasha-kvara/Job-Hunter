@@ -215,7 +215,7 @@ class CandidateProfile:
         featured = self.get_section("featured projects")
         if featured:
             for line in featured.splitlines():
-                m = re.match(r"^[-*]\s+([A-Za-z0-9\.\s]+?)(?:\s+—|\s+–|\s+\(|$)", line)
+                m = re.match(r"^[-*]\s+[*_`]*([A-Za-z0-9\.\s]+?)[*_`]*(?:\s+—|\s+–|\s+\(|$)", line)
                 if m:
                     comp = re.sub(r'[*_`]', '', m.group(1)).strip()
                     if comp and comp not in companies:
@@ -240,10 +240,10 @@ class CandidateProfile:
         # Bound summary to preserve compact token budget (~150-200 tokens)
         summary_raw = self.get_summary().strip()
         first_para = summary_raw.split("\n\n")[0].strip()
-        summary = self._bound_field(first_para, 250, "[Not configured in candidate-profile.md]")
+        summary = self._bound_field(first_para, 220, "[Not configured in candidate-profile.md]")
 
         raw_roles = ", ".join(self.get_target_roles()[:3])
-        roles = self._bound_field(raw_roles, 80, "[Not configured in candidate-profile.md]")
+        roles = self._bound_field(raw_roles, 70, "[Not configured in candidate-profile.md]")
 
         prefs = self.get_preferences()
         raw_salary = self.get_salary_expectation() or prefs.get("min_salary", "")
@@ -255,7 +255,7 @@ class CandidateProfile:
             skill_lines = [line.strip("- *") for line in skills.splitlines() if line.strip().startswith(("-", "*"))]
             raw_skills = "; ".join(skill_lines[:4]) if skill_lines else " ".join(skills.split())
             clean_skills = re.sub(r"[*_`]", "", raw_skills).strip()
-            skills_summary = self._bound_field(clean_skills, 160, "[Not configured in candidate-profile.md]")
+            skills_summary = self._bound_field(clean_skills, 140, "[Not configured in candidate-profile.md]")
         else:
             skills_summary = "[Not configured in candidate-profile.md]"
 
@@ -269,12 +269,14 @@ class CandidateProfile:
         clean_work_mode = re.sub(r"\(.*?\)", "", prefs.get("work_mode", "Remote / Hybrid")).strip()
         work_mode = self._bound_field(clean_work_mode, 35, "Remote / Hybrid")
 
+        avail = self._bound_field(self.get_availability(), 35, "Flexible with advance notice")
+
         prompt = f"""Candidate Profile (Compact): {name}
 Summary: {summary}
 Target Roles: {roles}
 Key Skills: {skills_summary}
 Salary Expectation: {salary}
-Timezone: {tz} | Work Mode: {work_mode} | Notice: {notice}
+Timezone: {tz} | Work Mode: {work_mode} | Notice: {notice} | Availability: {avail}
 Note: For deep historical project metrics or full architecture breakdowns, escalate to candidate-profile.md."""
         return prompt[:950]
 
