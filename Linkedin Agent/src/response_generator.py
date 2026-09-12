@@ -167,10 +167,12 @@ class ResponseGenerator:
             requires_user_confirmation = True
 
         if not self.client and not self.legacy_model:
-            # Check for casual greetings only if no sensitive topic (salary/interview) is present
+            # Check for casual greetings only if no sensitive topic or role discussion is present
+            has_role_keyword = any(w in hr_message.lower() for w in ["role", "position", "opportunity", "opening", "job", "vacancy", "პოზიცი", "ვაკანსი", "შემოთავაზებ"])
             if (
                 not requires_user_confirmation
-                and any(w in hr_message.lower() for w in ["how are you", "how're you", "how r u", "doing well", "როგორ ხარ", "როგორ ბრძანდებით", "როგორ ხართ"])
+                and not has_role_keyword
+                and any(w in hr_message.lower() for w in ["how are you", "how're you", "how r u", "როგორ ხარ", "როგორ ბრძანდებით", "როგორ ხართ"])
             ):
                 return self.draft_template_response("greeting", contact_name, language=language), False
             # Use template engine
