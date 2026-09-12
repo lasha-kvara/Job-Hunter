@@ -216,6 +216,39 @@ except Exception as e:
     traceback.print_exc()
     sys.exit(1)
 
+
+# -------------------------------------------------------------
+# 4. TEST TIERED TOKEN OPTIMIZATION (COMPACT VS FULL CONTEXT)
+# -------------------------------------------------------------
+print("\n[TEST GROUP 4] Testing Tiered Token Optimization (L1 vs L2)...")
+
+try:
+    from src.profile_manager import CandidateProfile
+    from src.response_generator import ResponseGenerator
+
+    prof = CandidateProfile()
+    compact_prompt = prof.get_compact_context_prompt()
+    full_prompt = prof.get_full_context_prompt()
+
+    assert len(compact_prompt) > 0, "Compact prompt should not be empty"
+    assert len(compact_prompt) < len(full_prompt), "Compact prompt must be significantly smaller than full prompt"
+    print(f"  [+] Profile Manager: Compact context ({len(compact_prompt)} chars) is ~{round((1 - len(compact_prompt)/len(full_prompt))*100)}% smaller than full ({len(full_prompt)} chars).")
+
+    gen = ResponseGenerator(profile=prof)
+    # Standard greeting uses compact L1 context and template fallback
+    reply_std, req_std = gen.draft_llm_response("Hello, are you open to new opportunities?", contact_name="Anna")
+    assert "Anna" in reply_std, "Expected contact name in reply"
+    print("  [+] ResponseGenerator: Standard greeting successfully processed.")
+
+    print("  => ALL TIERED TOKEN OPTIMIZATION TESTS PASSED!")
+
+except Exception as e:
+    print(f"  ❌ FAILED in Token Optimization: {e}")
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+
 print("\n" + "=" * 60)
 print("🎉 ALL CHECKS PASSED: OLD AND NEW COMPONENTS FUNCTION FLAWLESSLY!")
 print("=" * 60)
+

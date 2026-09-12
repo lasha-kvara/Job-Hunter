@@ -187,9 +187,21 @@ class ResponseGenerator:
         tz = self.profile.get_preferences().get("timezone", "")
         salary_rule = f"state expectation from profile ({salary_str})" if salary_str else "state that compensation can be discussed once project scope is explored"
         tz_rule = f"propose availability in candidate timezone ({tz})" if tz else "propose availability and confirm recruiter preferred timezone"
+
+        # Tiered Token Optimization: use compact context for standard recruiter chat,
+        # escalate to full context only when deep project/architecture details are queried.
+        deep_query = any(w in hr_message.lower() for w in [
+            "detail", "architecture", "deep dive", "project breakdown", "framework design",
+            "tbc", "digital area", "biletebi", "optimo", "vtb", "დეტალურად", "არქიტექტურა", "პროექტები"
+        ])
+        profile_context = (
+            self.profile.get_full_context_prompt() if deep_query
+            else self.profile.get_compact_context_prompt()
+        )
+
         system_instruction = f"""You are representing candidate {candidate_name} in LinkedIn conversations with HR/Recruiters.
 Candidate Profile (Single Source of Truth):
-{self.profile.get_full_context_prompt()}
+{profile_context}
 
 Rules:
 1. Tone: Friendly-professional, concise, warm, respectful.

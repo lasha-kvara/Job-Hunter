@@ -196,6 +196,32 @@ class CandidateProfile:
             )
         return "[Not configured in candidate-profile.md]"
 
+    def get_compact_context_prompt(self) -> str:
+        """Returns a high-density, token-efficient summary (~150-200 tokens) for LLM chat generation."""
+        mini_path = self.file_path.parent / "candidate-profile-mini.md"
+        if mini_path.exists():
+            try:
+                with open(mini_path, "r", encoding="utf-8") as f:
+                    return f.read().strip()
+            except Exception:
+                pass
+
+        name = self.get_candidate_name()
+        summary = self.get_summary()
+        roles = ", ".join(self.get_target_roles()[:3])
+        prefs = self.get_preferences()
+        salary = self.get_salary_expectation()
+        skills = self.get_section("skills")
+        skills_summary = "; ".join(skills.splitlines()[:4]) if skills else "QA Automation, Playwright, Selenium, C#, Python"
+
+        return f"""Candidate Profile (Compact): {name}
+Summary: {summary}
+Target Roles: {roles}
+Key Skills: {skills_summary}
+Salary Expectation: {salary}
+Timezone: {prefs.get('timezone', 'GMT+4')} | Work Mode: {prefs.get('preferred_work_mode', 'Remote')} | Notice: {prefs.get('notice_period', '1 month')}
+Note: For deep historical project metrics or full architecture breakdowns, escalate to candidate-profile.md."""
+
     def get_full_context_prompt(self) -> str:
         """Returns the formatted profile for feeding to LLM prompts."""
         name = self.get_candidate_name()
