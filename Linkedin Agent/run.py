@@ -47,7 +47,7 @@ except ImportError:
     console = None
 
 def show_banner(profile: Optional[CandidateProfile] = None):
-    name = profile.get_candidate_name() if profile else "Candidate"
+    name = (profile.get_candidate_name() if profile else "") or "Candidate"
     roles = profile.get_target_roles() if profile else []
     primary_role = roles[0] if roles else "Job-Seeker"
     candidate_label = f"{name} ({primary_role})"

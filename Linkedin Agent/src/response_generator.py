@@ -249,6 +249,7 @@ class ResponseGenerator:
             return self.draft_template_response("initial_reply", contact_name, language=language), requires_user_confirmation
 
         candidate_name = self.profile.get_candidate_name()
+        candidate_label = f"candidate {candidate_name}" if candidate_name else "the candidate"
         salary_str = self.profile.get_salary_expectation()
         tz = self.profile.get_preferences().get("timezone", "")
         salary_rule = f"state expectation from profile ({salary_str})" if salary_str else "state that compensation can be discussed once project scope is explored"
@@ -261,7 +262,7 @@ class ResponseGenerator:
             else self.profile.get_compact_context_prompt()
         )
 
-        system_instruction = f"""You are representing candidate {candidate_name} in LinkedIn conversations with HR/Recruiters.
+        system_instruction = f"""You are representing {candidate_label} in LinkedIn conversations with HR/Recruiters.
 Candidate Profile (Single Source of Truth):
 {profile_context}
 

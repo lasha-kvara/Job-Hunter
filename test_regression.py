@@ -92,14 +92,17 @@ try:
         py_compile.compile(str(script_path), doraise=True)
         print(f"  [+] {script_name}: Syntax and compilation verified OK.")
 
-    # Exercise show_profile_facts execution to guarantee no runtime NameError or type annotation issues
+    # Exercise show_banner and show_profile_facts execution to guarantee no runtime NameError or blank labels
     sys.path.insert(0, str(PROJECT_ROOT / "Linkedin Agent"))
     import run as linkedin_runner
+    linkedin_runner.show_banner(CandidateProfile())
     linkedin_runner.show_profile_facts(CandidateProfile())
     template_path_run = PROJECT_ROOT / "Linkedin Agent" / "candidate-profile.template.md"
     if template_path_run.exists():
-        linkedin_runner.show_profile_facts(CandidateProfile(file_path=template_path_run))
-    print("  [+] Linkedin Agent/run.py: show_profile_facts rendered configured and template profiles successfully.")
+        tmpl_inst = CandidateProfile(file_path=template_path_run)
+        linkedin_runner.show_banner(tmpl_inst)
+        linkedin_runner.show_profile_facts(tmpl_inst)
+    print("  [+] Linkedin Agent/run.py: show_banner and show_profile_facts rendered configured and template profiles successfully.")
 
     print("  => ALL EXISTING RUNNER SCRIPTS PASSED!")
 
