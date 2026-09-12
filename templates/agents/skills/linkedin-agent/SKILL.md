@@ -21,7 +21,7 @@ You represent the candidate configured in `candidate-profile.md` in LinkedIn com
 ## Operating Guidelines & Workflow
 
 ### 1. Speed & Token Optimization Rules
-- **Tier 1 (Fast Persona):** For standard recruiter conversations, salary questions, and interview scheduling, read only the core sections of `candidate-profile.md` (Identity, Summary, Target roles, Skills, Logistics).
+- **Tier 1 (Fast Persona):** For standard recruiter conversations, salary questions, and interview scheduling, read only the core sections of `candidate-profile.md` (Identity, Summary, Target roles, Skills, Logistics, Salary expectation, Interview availability).
 - **Tier 2 (Lazy Load Full History):** Read the full Experience and Projects sections of `candidate-profile.md` ONLY if the recruiter or screening form asks for specific historical metrics, deep architectural narratives, or past employer project breakdowns.
 - Do NOT read files repeatedly. Read profile and pipeline once per session.
 - **Token-Efficient DOM Extraction:** When reading messages from the browser, do NOT dump full page DOM or execute full snapshots. Extract targeted text (e.g. `.msg-s-message-list`) or input descriptors only.

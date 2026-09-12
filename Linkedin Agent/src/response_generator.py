@@ -156,24 +156,26 @@ class ResponseGenerator:
         """
         Determines whether the recruiter message specifically asks for deep candidate
         project details, architecture breakdowns, or past historical metrics (L2 escalation),
-        while keeping general recruiter pitches ('we have an exciting project and need details') in compact context (L1).
+        while keeping general recruiter pitches ('we have an exciting project and need details',
+        'we need someone for our system architecture', 'the role includes performance testing') in compact context (L1).
         """
         msg = message.lower()
 
-        # Explicit technical deep dive / architecture terms (no hardcoded company names)
-        explicit_terms = [
-            "architecture", "deep dive", "project breakdown", "framework design",
-            "load test", "performance test", "system design",
-            "არქიტექტურა", "წინა პროექტ", "წინა სამუშაო", "მეტრიკ", "მიღწევ"
+        # Unambiguous deep-dive phrases that inherently demand candidate project breakdowns
+        unambiguous_deep_dive_terms = [
+            "deep dive", "project breakdown", "წინა პროექტ", "წინა სამუშაო"
         ]
-        if any(term in msg for term in explicit_terms):
+        if any(term in msg for term in unambiguous_deep_dive_terms):
             return True
 
-        # Candidate project/experience inquiry patterns (targeted at candidate's work/history)
+        # Candidate-directed inquiry patterns for projects, history, or technical architecture/frameworks
+        # Requires candidate/inquiry cues (e.g. 'your architecture', 'what metrics', 'tell me about your framework')
+        # so routine recruiter job descriptions/pitches stay strictly in L1.
         candidate_deep_patterns = [
-            r"\b(?:your|past|previous|prior)\s+(?:projects?|experience|background|history|roles?|work|metrics?|achievements?)\b",
-            r"\b(?:tell|share|describe|walk me through|what)\b.*\b(?:projects?|experience|background|history|framework|architecture|metrics?|achievements?)\b",
-            r"\b(?:გვიამბეთ|მომიყევი|გვითხარით)\b.*\b(?:პროექტ|გამოცდილებ|ისტორი)\b"
+            r"\b(?:your|past|previous|prior)\s+(?:projects?|experience|background|history|roles?|work|metrics?|achievements?|architecture|frameworks?|system design|load test|performance test)\b",
+            r"\b(?:tell|share|describe|walk me through|what|how)\b.*\b(?:projects?|experience|background|history|framework|architecture|metrics?|achievements?|system design|load test|performance test)\b",
+            r"\b(?:გვიამბეთ|მომიყევი|გვითხარით)\b.*\b(?:პროექტ|გამოცდილებ|ისტორი|არქიტექტურ|მეტრიკ|მიღწევ)\b",
+            r"\b(?:შენი|თქვენი|წინა)\s+(?:პროექტ|გამოცდილებ|არქიტექტურ|სამუშაო|მიღწევ|მეტრიკ)\b"
         ]
         if any(re.search(p, msg) for p in candidate_deep_patterns):
             return True

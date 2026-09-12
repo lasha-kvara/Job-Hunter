@@ -244,13 +244,23 @@ try:
     assert gen._is_deep_query("Hello, are you open to new opportunities?") is False
 
     # Test dynamic employer detection with historical inquiry requirement vs recruiter pitches
+    # Set explicit in-memory fixture so regression suite does not depend on uncommitted personal profiles
+    prof.sections["Experience"] = "- **2020 — Present: QA @ TBC**\n- **2018 — 2020: QA @ VTB Bank Georgia**"
     assert "TBC" in prof.get_previous_companies() or "VTB Bank Georgia" in prof.get_previous_companies()
     assert gen._is_deep_query("We have an open role at TBC, are you interested?") is False
     assert gen._is_deep_query("Is TBC hiring right now?") is False
     assert gen._is_deep_query("We have a VTB position open") is False
     assert gen._is_deep_query("What did you do at TBC?") is True
     assert gen._is_deep_query("Tell me about your time at VTB") is True
-    print("  [+] ResponseGenerator: Dynamic employer extraction correctly separates recruiter pitches from candidate historical inquiries.")
+
+    # Test routine recruiter pitches with technical terms (stay L1) vs candidate-directed technical inquiries (trigger L2)
+    assert gen._is_deep_query("We need someone for our system architecture") is False
+    assert gen._is_deep_query("The role includes performance testing") is False
+    assert gen._is_deep_query("We are looking for someone with framework design experience") is False
+    assert gen._is_deep_query("Tell me about your system architecture experience") is True
+    assert gen._is_deep_query("Walk me through your test framework architecture") is True
+    assert gen._is_deep_query("How did you conduct performance testing in past roles?") is True
+    print("  [+] ResponseGenerator: Dynamic employer extraction and technical intent classification correctly separate recruiter pitches from candidate inquiries.")
 
     # Test bounded compact context with excessively long prose
     prof_verbose = CandidateProfile()
