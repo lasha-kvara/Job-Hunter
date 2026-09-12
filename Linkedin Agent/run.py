@@ -92,9 +92,12 @@ def show_profile_facts(profile: CandidateProfile):
         table.add_column("პარამეტრი", style="cyan", no_wrap=True)
         table.add_column("მნიშვნელობა", style="magenta")
 
-        target_roles = ", ".join(profile.get_target_roles()[:3])
+        all_roles = profile.get_target_roles()
+        roles_display = ", ".join(all_roles[:3])
+        if len(all_roles) > 3:
+            roles_display += "..."
         table.add_row("კანდიდატი", _val(profile.get_candidate_name()))
-        table.add_row("სამიზნე როლები", (target_roles + "...") if target_roles else "[არ არის მითითებული]")
+        table.add_row("სამიზნე როლები", roles_display if roles_display else "[არ არის მითითებული]")
         table.add_row("ხელფასის მოლოდინი", _val(profile.get_salary_expectation()))
         table.add_row("Notice Period", _val(profile.get_preferences().get("notice_period")))
         table.add_row("სამუშაო ფორმატი", _val(profile.get_preferences().get("work_mode")))
@@ -107,7 +110,10 @@ def show_profile_facts(profile: CandidateProfile):
         print("\n--- კანდიდატის ფაქტები ---")
         print("სახელი:", _val(profile.get_candidate_name()))
         print("ხელფასი:", _val(profile.get_salary_expectation()))
-        print("სამუშაო ფორმატი:", profile.get_preferences())
+        prefs = profile.get_preferences()
+        print("სამუშაო ფორმატი:", _val(prefs.get("work_mode")))
+        print("Notice Period:", _val(prefs.get("notice_period")))
+        print("CV ფაილი:", _val(profile.get_cv_file_path(strict=False)))
 
 async def run_browser_check():
     controller = LinkedInBrowserController()
@@ -249,8 +255,16 @@ def interactive_menu():
         elif choice == "5":
             show_profile_facts(profile)
         elif choice == "6":
-            bat_path = Path(__file__).resolve().parent / "start_browser.bat"
-            os.system(f'start cmd /c "{bat_path}"')
+            base_dir = Path(__file__).resolve().parent
+            if sys.platform == "win32":
+                bat_path = base_dir / "start_browser.bat"
+                os.system(f'start cmd /c "{bat_path}"')
+            else:
+                sh_path = base_dir / "start_browser.sh"
+                if sh_path.exists():
+                    os.system(f'bash "{sh_path}" &')
+                else:
+                    os.system(f'google-chrome --remote-debugging-port={config.CDP_PORT} &')
         elif choice == "0":
             if HAS_RICH:
                 console.print("[bold cyan]ნახვამდის! წარმატებულ გასაუბრებებს გისურვებთ! ✨[/bold cyan]")

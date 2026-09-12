@@ -13,7 +13,7 @@ import config
 
 class CandidateProfile:
     def __init__(self, file_path: Optional[Path] = None):
-        self.file_path = file_path or config.PROFILE_FILE
+        self.file_path = Path(file_path) if file_path else config.PROFILE_FILE
         self.raw_content = ""
         self.sections: Dict[str, str] = {}
         self.load_profile()
@@ -53,12 +53,11 @@ class CandidateProfile:
         # Direct bracketed placeholders: [Full Name], [Your Email], [e.g. ...], [Your professional summary...]
         if s.startswith("[") and s.endswith("]"):
             return True
-        if s.startswith("[") or s.endswith("]"):
-            return True
         # Bracketed template tags within string: $[Amount], [e.g. ...], [Your ...], path/to/...
         if re.search(r"(\[.*?\]|\$\[.*?\]|path/to/|e\.g\.)", s, re.IGNORECASE):
             clean = re.sub(r"(\[.*?\]|\$\[.*?\]|usd/month|or gross annual|\(or gross annual\))", "", s, flags=re.IGNORECASE).strip()
-            if not clean or clean in {"$", "minimum", "target", "expected"}:
+            clean_norm = re.sub(r"[*_`()$.,:/\-\s]", "", clean).lower()
+            if not clean_norm or clean_norm in {"", "minimum", "target", "expected", "net", "gross", "usd", "month", "annual"}:
                 return True
         if s.lower() in {"candidate", "[full name]", "your name", "[your name]"}:
             return True
@@ -241,12 +240,12 @@ class CandidateProfile:
         companies = []
         exp = self.get_experience_summary()
         if exp:
-            # Matches '- **... @ Company Name**'
+            # Matches '- **... @ Company Name**' or '- **... at Company Name**'
             for line in exp.splitlines():
-                m = re.search(r'@\s+([^—–\(\n]+)', line)
+                m = re.search(r'(?:@|\bat\b)\s+([^—–\(\n]+)', line)
                 if m:
                     comp = re.sub(r'[*_`]', '', m.group(1)).strip()
-                    if comp and not self.is_placeholder(comp) and comp not in companies:
+                    if comp and not self.is_placeholder(comp) and comp.lower() not in {"remote", "hybrid", "on-site", "present"} and comp not in companies:
                         companies.append(comp)
 
         featured = self.get_section("featured projects")
@@ -291,18 +290,19 @@ class CandidateProfile:
         if skills:
             skill_lines = []
             for line in skills.splitlines():
-                if line.strip().startswith(("-", "*")):
-                    bullet = line.strip("- *").strip()
-                    if ":" in bullet:
-                        cat, val = bullet.split(":", 1)
-                        clean_val = val.strip().strip("*_` ")
-                        if clean_val and not self.is_placeholder(clean_val):
-                            clean_cat = re.sub(r"[*_`]", "", cat).strip()
-                            skill_lines.append(f"{clean_cat}: {clean_val}")
-                    else:
-                        clean_bullet = re.sub(r"[*_`]", "", bullet).strip()
-                        if clean_bullet and not self.is_placeholder(clean_bullet):
-                            skill_lines.append(clean_bullet)
+                bullet = line.strip().lstrip("-* ").strip()
+                if not bullet or bullet.startswith("#"):
+                    continue
+                if ":" in bullet:
+                    cat, val = bullet.split(":", 1)
+                    clean_val = val.strip().strip("*_` ")
+                    if clean_val and not self.is_placeholder(clean_val):
+                        clean_cat = re.sub(r"[*_`]", "", cat).strip()
+                        skill_lines.append(f"{clean_cat}: {clean_val}")
+                else:
+                    clean_bullet = re.sub(r"[*_`]", "", bullet).strip()
+                    if clean_bullet and not self.is_placeholder(clean_bullet):
+                        skill_lines.append(clean_bullet)
             raw_skills = "; ".join(skill_lines[:4]) if skill_lines else ""
             clean_skills = re.sub(r"[*_`]", "", raw_skills).strip()
             skills_summary = self._bound_field(clean_skills, 140, "[Not configured in candidate-profile.md]")

@@ -203,15 +203,15 @@ class ResponseGenerator:
                         historical_patterns = [
                             rf"\b(?:past|previous|prior|former|last)\s+(?:experience|role|work|project|time)\b.*?\b{re.escape(target)}\b",
                             rf"\b{re.escape(target)}\b.*?\b(?:past|previous|prior|former|last)\s+(?:experience|role|work|project|time)\b",
-                            # Question before target: 'What did you do at TBC?'
-                            rf"\b(?:what|how|tell|describe|share|walk me through|explain)\b(?=.*\b(?:did you|was your|were your|your time|your role|you do)\b).*?\b{re.escape(target)}\b",
-                            # Target before question: 'At TBC, what did you do?' or 'In TBC what was your role?'
-                            rf"\b{re.escape(target)}\b.*?\b(?:what|how|tell|describe|share|walk me through|explain)\b(?=.*\b(?:did you|was your|were your|your time|your role|you do)\b)",
+                            # Question before target: 'What did you do at TBC?' or 'Tell me about your work at TBC'
+                            rf"\b(?:what|how|tell|describe|share|walk me through|explain)\b(?=.*\b(?:did you|was your|were your|your time|your role|your work|your experience|your projects?|your achievements?|your contributions?|you do|you have done)\b).*?\b{re.escape(target)}\b",
+                            # Target before question: 'At TBC, what did you do?' or 'In TBC tell me about your work'
+                            rf"\b{re.escape(target)}\b.*?\b(?:what|how|tell|describe|share|walk me through|explain)\b(?=.*\b(?:did you|was your|were your|your time|your role|your work|your experience|your projects?|your achievements?|your contributions?|you do|you have done)\b)",
                             # Georgian orderings: employer before or after temporal cues / questions
                             rf"\b(?:დროს|პერიოდში)\b.*?\b{re.escape(target)}\b",
                             rf"\b{re.escape(target)}\b.*?\b(?:დროს|პერიოდში)\b",
-                            rf"\b{re.escape(target)}\b.*?\b(?:რას\s+აკეთებდით|რა\s+(?:იყო|პროექტ|როლ|გამოცდილებ)|მოგვიყევით|გვიამბეთ|აღწერეთ)\b",
-                            rf"\b(?:რას\s+აკეთებდით|რა\s+(?:იყო|პროექტ|როლ|გამოცდილებ)|მოგვიყევით|გვიამბეთ|აღწერეთ)\b.*?\b{re.escape(target)}\b",
+                            rf"\b{re.escape(target)}\b.*?\b(?:რას\s+აკეთებდით|რას\s+გვეტყვით|რა\s+(?:იყო|პროექტ|როლ|გამოცდილებ)|მოგვიყევი(?:თ)?|გვიამბე(?:თ)?|გვითხარი(?:თ)?|მომიყევი(?:თ)?|აღწერე(?:თ)?|დაგვიხასიათე(?:თ)?)\b",
+                            rf"\b(?:რას\s+აკეთებდით|რას\s+გვეტყვით|რა\s+(?:იყო|პროექტ|როლ|გამოცდილებ)|მოგვიყევი(?:თ)?|გვიამბე(?:თ)?|გვითხარი(?:თ)?|მომიყევი(?:თ)?|აღწერე(?:თ)?|დაგვიხასიათე(?:თ)?)\b.*?\b{re.escape(target)}\b",
                         ]
                         if any(re.search(p, msg) for p in historical_patterns):
                             return True

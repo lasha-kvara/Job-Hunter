@@ -86,7 +86,7 @@ print("\n[TEST GROUP 2] Testing Existing Runner Scripts...")
 try:
     import py_compile
 
-    for script_name in ["headed_apply.py", "run_headed.py", "Linkedin Agent/run.py"]:
+    for script_name in ["headed_apply.py", "run_headed.py", "Linkedin Agent/run.py", "add_jobs.py", "search_jobs.py"]:
         script_path = PROJECT_ROOT / script_name
         assert script_path.is_file(), f"Required runner script not found: {script_name}"
         py_compile.compile(str(script_path), doraise=True)
@@ -188,6 +188,16 @@ try:
     assert scored_junior.fit_score < 40, f"Expected score < 40, got {scored_junior.fit_score}"
     print(f"  [+] Scorer (Demotion): Penalized junior/manual -> {scored_junior.fit_score}% ({scored_junior.fit_grade})")
 
+    # Test CandidateScorer unconfigured criteria fallback
+    CandidateScorer._cached_keywords = None
+    CandidateScorer._cached_target_roles = None
+    from unittest.mock import patch
+    with patch.object(CandidateScorer, "_resolve_profile_path", return_value=None):
+        def_kws, def_roles = CandidateScorer.load_profile_criteria()
+        assert len(def_kws) > 0, "Default keywords must be loaded when profile path is None"
+        assert "sdet" in def_roles, "Default target roles must contain SDET"
+    print("  [+] Scorer (Fallback): Successfully initialized default SDET criteria when profile is unconfigured.")
+
     # 3.5 Test Jobs.ge Provider HTML parsing (Deterministic Mock)
     from unittest.mock import patch, MagicMock
     import requests
@@ -270,6 +280,15 @@ try:
     assert gen._is_deep_query("In VTB what did you do?") is True
     assert gen._is_deep_query("TBC-ში ყოფნის დროს რას აკეთებდით?") is True
     assert gen._is_deep_query("TBC-ში რა იყო თქვენი როლი?") is True
+    # Test expanded historical inquiries with 'your work', 'your experience', 'your projects' and Georgian variants
+    assert gen._is_deep_query("Can you tell me about your work at TBC?") is True
+    assert gen._is_deep_query("Could you share your experience at TBC?") is True
+    assert gen._is_deep_query("Tell me about your projects at TBC") is True
+    assert gen._is_deep_query("Can you describe your work at TBC?") is True
+    assert gen._is_deep_query("At TBC, tell me about your work") is True
+    assert gen._is_deep_query("TBC-ზე მომიყევით") is True
+    assert gen._is_deep_query("TBC-ში თქვენს გამოცდილებაზე გვითხარით") is True
+    assert gen._is_deep_query("TBC-ში რას გვეტყვით თქვენს როლზე?") is True
 
     # Test routine recruiter pitches with technical terms (stay L1) vs candidate-directed technical inquiries (trigger L2)
     assert gen._is_deep_query("We need someone for our system architecture") is False
@@ -348,7 +367,13 @@ try:
     assert "Key Skills: [Not configured in candidate-profile.md]" in tmpl_compact
     assert "Salary Expectation: [Not specified]" in tmpl_compact
     assert prof_tmpl.get_full_context_prompt() == tmpl_compact, "Template full context must match sanitized compact prompt"
-    print("  [+] Profile Manager: Template-backed profiles correctly normalize placeholders across all fields.")
+    # Test is_placeholder with valid bracketed real values vs template placeholders
+    assert CandidateProfile.is_placeholder("Software Engineer [Remote]") is False, "Bracketed qualifier must not be flagged as placeholder"
+    assert CandidateProfile.is_placeholder("QA Automation Lead [Contract]") is False, "Bracketed qualifier must not be flagged as placeholder"
+    assert CandidateProfile.is_placeholder("[Full Name]") is True, "Full bracketed tag must be recognized as placeholder"
+    assert CandidateProfile.is_placeholder("Minimum $[Amount] USD/month (or gross annual).") is True, "Unconfigured template salary line must be recognized as placeholder"
+    assert CandidateProfile.is_placeholder("[e.g. 1 month / Immediate]") is True, "Example bracketed value must be recognized as placeholder"
+    print("  [+] Profile Manager: is_placeholder accurately differentiates legitimate bracketed text from unconfigured template placeholders.")
 
     # Test unconfigured profile preserves explicit [Not specified] without inventing generic defaults
     prof_empty = CandidateProfile()
