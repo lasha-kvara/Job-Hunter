@@ -6,6 +6,8 @@ import os
 import argparse
 import asyncio
 import warnings
+import subprocess
+import shutil
 from pathlib import Path
 from typing import Optional, Any
 
@@ -113,6 +115,8 @@ def show_profile_facts(profile: CandidateProfile):
         prefs = profile.get_preferences()
         print("სამუშაო ფორმატი:", _val(prefs.get("work_mode")))
         print("Notice Period:", _val(prefs.get("notice_period")))
+        print("რელოკაცია:", _val(prefs.get("relocation")))
+        print("საკონტაქტო მეილი:", _val(profile.get_contacts().get("email")))
         print("CV ფაილი:", _val(profile.get_cv_file_path(strict=False)))
 
 async def run_browser_check():
@@ -264,7 +268,34 @@ def interactive_menu():
                 if sh_path.exists():
                     os.system(f'bash "{sh_path}" &')
                 else:
-                    os.system(f'google-chrome --remote-debugging-port={config.CDP_PORT} --user-data-dir="{config.USER_DATA_DIR}" &')
+                    candidates = []
+                    if sys.platform == "darwin":
+                        candidates.extend([
+                            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+                            "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+                            "/Applications/Chromium.app/Contents/MacOS/Chromium",
+                        ])
+                    candidates.extend([
+                        shutil.which("google-chrome"),
+                        shutil.which("google-chrome-stable"),
+                        shutil.which("brave-browser"),
+                        shutil.which("chromium"),
+                        shutil.which("chromium-browser"),
+                    ])
+                    browser_bin = next((c for c in candidates if c and (os.path.isfile(c) or shutil.which(c))), None)
+                    if browser_bin:
+                        subprocess.Popen(
+                            [browser_bin, f"--remote-debugging-port={config.CDP_PORT}", f"--user-data-dir={config.USER_DATA_DIR}"],
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL,
+                            start_new_session=True
+                        )
+                    else:
+                        msg = f"⚠️ ვერ მოიძებნა Chrome/Brave ბრაუზერი. გთხოვთ გაუშვათ ბრაუზერი ხელით: --remote-debugging-port={config.CDP_PORT}"
+                        if HAS_RICH:
+                            console.print(f"[yellow]{msg}[/yellow]")
+                        else:
+                            print(msg)
         elif choice == "0":
             if HAS_RICH:
                 console.print("[bold cyan]ნახვამდის! წარმატებულ გასაუბრებებს გისურვებთ! ✨[/bold cyan]")

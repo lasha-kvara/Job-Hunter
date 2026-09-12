@@ -262,7 +262,9 @@ class CandidateProfile:
         if not s:
             return default
         if len(s) > max_len:
-            return s[:max_len - 3].rsplit(" ", 1)[0] + "..."
+            split_at_space = s[:max_len - 3].rsplit(" ", 1)[0]
+            truncated = split_at_space if split_at_space else s[:max_len - 3]
+            return truncated + "..."
         return s
 
     def get_compact_context_prompt(self) -> str:

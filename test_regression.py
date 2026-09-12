@@ -253,8 +253,28 @@ try:
     full_prompt = prof.get_full_context_prompt()
 
     assert len(compact_prompt) > 0, "Compact prompt should not be empty"
-    assert len(compact_prompt) < len(full_prompt), "Compact prompt must be significantly smaller than full prompt"
-    print(f"  [+] Profile Manager: Compact context ({len(compact_prompt)} chars) is ~{round((1 - len(compact_prompt)/len(full_prompt))*100)}% smaller than full ({len(full_prompt)} chars).")
+    if prof.is_template_profile:
+        assert compact_prompt == full_prompt, "Template profiles must sanitize full prompt to match compact context"
+        print(f"  [+] Profile Manager (Template): Compact and full context sanitized identically ({len(compact_prompt)} chars).")
+    else:
+        assert len(compact_prompt) < len(full_prompt), "Compact prompt must be significantly smaller than full prompt"
+        print(f"  [+] Profile Manager: Compact context ({len(compact_prompt)} chars) is ~{round((1 - len(compact_prompt)/len(full_prompt))*100)}% smaller than full ({len(full_prompt)} chars).")
+
+    # Verify size comparison on a configured fixture profile regardless of environment
+    prof_configured = CandidateProfile()
+    prof_configured.file_path = PROJECT_ROOT / "candidate-profile.fixture.md"
+    prof_configured.raw_content = "# Candidate Profile: Regression Candidate\n\n" + ("Detailed background information\n" * 100)
+    prof_configured.sections = {
+        "Summary": "A seasoned engineer with extensive distributed systems and QA experience.",
+        "Target Roles": "- Senior QA Automation Engineer\n- SDET",
+        "Key Skills": "- Python, Playwright, CI/CD",
+        "Experience": "- **2020 — Present: QA Lead @ Tech Corp**\n" + ("  * Built robust automation pipelines\n" * 20),
+    }
+    cfg_compact = prof_configured.get_compact_context_prompt()
+    cfg_full = prof_configured.get_full_context_prompt()
+    assert len(cfg_compact) < len(cfg_full), "Configured profile compact prompt must be significantly smaller than full prompt"
+    print(f"  [+] Profile Manager (Configured fixture): Compact context ({len(cfg_compact)} chars) is ~{round((1 - len(cfg_compact)/len(cfg_full))*100)}% smaller than full ({len(cfg_full)} chars).")
+
 
     gen = ResponseGenerator(profile=prof)
     # Test _is_deep_query intent classification (L1 vs L2)
