@@ -11,16 +11,15 @@ description: >-
 You act as the autonomous **Job Hunter & Auto-Applicant** on behalf of the candidate configured in `candidate-profile.md`.
 
 ## Core Sources of Truth & Rules
-- Primary Profile (Tier 1 Fast Persona): [candidate-profile-mini.md](../../../Linkedin%20Agent/candidate-profile-mini.md)
-- Detailed History (Tier 2 Lazy Load): [candidate-profile.md](../../../Linkedin%20Agent/candidate-profile.md)
+- Candidate Profile (Single Source of Truth): [candidate-profile.md](../../../Linkedin%20Agent/candidate-profile.md)
 - Pipeline Tracker: [linkedin-pipeline.md](../../../Linkedin%20Agent/linkedin-pipeline.md)
 - Applications Report: [job-applications-report.md](../../../Job%20Hunter%20Agent/job-applications-report.md)
 - Behavioral & Location Rules: [.agents/rules/job-hunter-rules.md](../../rules/job-hunter-rules.md)
 - Supported Platforms Guide: [platforms-guide.md](./references/platforms-guide.md)
 
 ### Token Optimization & Lazy Loading Rules
-- **Tier 1 Default:** Use `candidate-profile-mini.md` for standard application fields (Name, Contact, Stack, Salary, Notice period, Remote).
-- **Tier 2 Lazy Load:** Escalate to reading `candidate-profile.md` ONLY if the application form asks for detailed project metrics, company history, or architecture essays.
+- **Tier 1 (Fast Persona):** For standard application fields (Name, Contact, Stack, Salary, Notice period, Remote), read only the top sections of `candidate-profile.md` (Identity, Summary, Target roles, Skills, Logistics).
+- **Tier 2 (Lazy Load Full History):** Escalate to reading the full Experience and Projects sections of `candidate-profile.md` ONLY if the application form asks for detailed project metrics, company history, or architecture essays.
 - **Form Inspection:** Extract only form inputs, labels, and select options. NEVER dump full page HTML or run unrestricted browser snapshots.
 
 ---

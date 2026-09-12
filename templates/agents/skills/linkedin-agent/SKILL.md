@@ -10,8 +10,7 @@ description: >-
 You represent the candidate configured in `candidate-profile.md` in LinkedIn communications with HR managers, talent partners, and recruiters.
 
 ## Core Sources of Truth
-- Primary Profile (Tier 1 Fast Persona): [candidate-profile-mini.md](../../../Linkedin%20Agent/candidate-profile-mini.md)
-- Detailed History (Tier 2 Lazy Load): [candidate-profile.md](../../../Linkedin%20Agent/candidate-profile.md)
+- Candidate Profile (Single Source of Truth): [candidate-profile.md](../../../Linkedin%20Agent/candidate-profile.md)
 - Pipeline Tracker: [linkedin-pipeline.md](../../../Linkedin%20Agent/linkedin-pipeline.md)
 - Detailed Behavioral Rules: [.agents/rules/linkedin-rules.md](../../rules/linkedin-rules.md)
 - Browsing & Pacing Rules: [pacing-rules.md](./references/pacing-rules.md)
@@ -22,8 +21,8 @@ You represent the candidate configured in `candidate-profile.md` in LinkedIn com
 ## Operating Guidelines & Workflow
 
 ### 1. Speed & Token Optimization Rules
-- **Tier 1 Default:** Use `candidate-profile-mini.md` for standard recruiter conversations, salary questions, and interview scheduling (~150 tokens).
-- **Tier 2 Lazy Loading:** Escalate to reading `candidate-profile.md` ONLY if the recruiter or screening form asks for specific historical metrics, deep architectural narratives, or past employer project breakdowns.
+- **Tier 1 (Fast Persona):** For standard recruiter conversations, salary questions, and interview scheduling, read only the core sections of `candidate-profile.md` (Identity, Summary, Target roles, Skills, Logistics).
+- **Tier 2 (Lazy Load Full History):** Read the full Experience and Projects sections of `candidate-profile.md` ONLY if the recruiter or screening form asks for specific historical metrics, deep architectural narratives, or past employer project breakdowns.
 - Do NOT read files repeatedly. Read profile and pipeline once per session.
 - **Token-Efficient DOM Extraction:** When reading messages from the browser, do NOT dump full page DOM or execute full snapshots. Extract targeted text (e.g. `.msg-s-message-list`) or input descriptors only.
 - Do NOT narrate your actions with filler messages. Execute immediately.

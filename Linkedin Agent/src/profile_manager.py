@@ -197,29 +197,26 @@ class CandidateProfile:
         return "[Not configured in candidate-profile.md]"
 
     def get_compact_context_prompt(self) -> str:
-        """Returns a high-density, token-efficient summary (~150-200 tokens) for LLM chat generation."""
-        mini_path = self.file_path.parent / "candidate-profile-mini.md"
-        if mini_path.exists():
-            try:
-                with open(mini_path, "r", encoding="utf-8") as f:
-                    return f.read().strip()
-            except Exception:
-                pass
-
+        """Returns a high-density, token-efficient summary (~150-200 tokens) derived directly
+        from the parsed candidate-profile.md (Single Source of Truth)."""
         name = self.get_candidate_name()
         summary = self.get_summary()
         roles = ", ".join(self.get_target_roles()[:3])
         prefs = self.get_preferences()
-        salary = self.get_salary_expectation()
+        salary = self.get_salary_expectation() or prefs.get("min_salary", "")
         skills = self.get_section("skills")
-        skills_summary = "; ".join(skills.splitlines()[:4]) if skills else "QA Automation, Playwright, Selenium, C#, Python"
+        if skills:
+            skill_lines = [line.strip("- *") for line in skills.splitlines() if line.strip().startswith(("-", "*"))]
+            skills_summary = "; ".join(skill_lines[:4]) if skill_lines else "QA Automation, Playwright, Selenium, C#, Python"
+        else:
+            skills_summary = "QA Automation, Playwright, Selenium, C#, Python"
 
         return f"""Candidate Profile (Compact): {name}
 Summary: {summary}
 Target Roles: {roles}
 Key Skills: {skills_summary}
 Salary Expectation: {salary}
-Timezone: {prefs.get('timezone', 'GMT+4')} | Work Mode: {prefs.get('preferred_work_mode', 'Remote')} | Notice: {prefs.get('notice_period', '1 month')}
+Timezone: {prefs.get('timezone', 'GMT+4')} | Work Mode: {prefs.get('work_mode', 'Remote / Hybrid')} | Notice: {prefs.get('notice_period', '1 month')}
 Note: For deep historical project metrics or full architecture breakdowns, escalate to candidate-profile.md."""
 
     def get_full_context_prompt(self) -> str:

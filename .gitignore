@@ -46,8 +46,6 @@ $RECYCLE.BIN/
 # Personal candidate profile, reports & pipelines (keep local only)
 *candidate-profile.md
 !*candidate-profile.template.md
-*candidate-profile-mini.md
-!*candidate-profile-mini.template.md
 *job-applications-report.md
 !*job-applications-report.template.md
 *linkedin-pipeline.md

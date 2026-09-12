@@ -191,8 +191,10 @@ class ResponseGenerator:
         # Tiered Token Optimization: use compact context for standard recruiter chat,
         # escalate to full context only when deep project/architecture details are queried.
         deep_query = any(w in hr_message.lower() for w in [
-            "detail", "architecture", "deep dive", "project breakdown", "framework design",
-            "tbc", "digital area", "biletebi", "optimo", "vtb", "დეტალურად", "არქიტექტურა", "პროექტები"
+            "architecture", "deep dive", "project breakdown", "framework design",
+            "project details", "experience details", "details about your experience",
+            "tbc", "digital area", "biletebi", "optimo", "vtb",
+            "არქიტექტურა", "პროექტები", "გამოცდილების დეტალები"
         ])
         profile_context = (
             self.profile.get_full_context_prompt() if deep_query
