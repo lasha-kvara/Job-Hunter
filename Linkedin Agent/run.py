@@ -6,8 +6,10 @@ import os
 import argparse
 import asyncio
 import warnings
+import subprocess
+import shutil
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 
 # Suppress future warnings from legacy SDKs
 warnings.filterwarnings("ignore")
@@ -47,7 +49,7 @@ except ImportError:
     console = None
 
 def show_banner(profile: Optional[CandidateProfile] = None):
-    name = profile.get_candidate_name() if profile else "Candidate"
+    name = (profile.get_candidate_name() if profile else "") or "Candidate"
     roles = profile.get_target_roles() if profile else []
     primary_role = roles[0] if roles else "Job-Seeker"
     candidate_label = f"{name} ({primary_role})"
@@ -82,26 +84,40 @@ def show_pipeline_summary(tracker: PipelineTracker):
             print(f"- {b}")
 
 def show_profile_facts(profile: CandidateProfile):
+    def _val(v: Any) -> str:
+        if not v or CandidateProfile.is_placeholder(str(v)) or str(v).startswith("[Not configured"):
+            return "[არ არის მითითებული]"
+        return str(v)
+
     if HAS_RICH:
         table = Table(title="👤 კანდიდატის ძირითადი ფაქტები")
         table.add_column("პარამეტრი", style="cyan", no_wrap=True)
         table.add_column("მნიშვნელობა", style="magenta")
 
-        table.add_row("კანდიდატი", profile.get_candidate_name())
-        table.add_row("სამიზნე როლები", ", ".join(profile.get_target_roles()[:3]) + "...")
-        table.add_row("ხელფასის მოლოდინი", profile.get_salary_expectation())
-        table.add_row("Notice Period", profile.get_preferences().get("notice_period", "1 month"))
-        table.add_row("სამუშაო ფორმატი", profile.get_preferences().get("work_mode", "Remote / Hybrid"))
-        table.add_row("რელოკაცია", profile.get_preferences().get("relocation", "Yes"))
-        table.add_row("საკონტაქტო მეილი", profile.get_contacts().get("email", ""))
-        table.add_row("CV ფაილი", profile.get_cv_file_path(strict=False))
+        all_roles = profile.get_target_roles()
+        roles_display = ", ".join(all_roles[:3])
+        if len(all_roles) > 3:
+            roles_display += "..."
+        table.add_row("კანდიდატი", _val(profile.get_candidate_name()))
+        table.add_row("სამიზნე როლები", roles_display if roles_display else "[არ არის მითითებული]")
+        table.add_row("ხელფასის მოლოდინი", _val(profile.get_salary_expectation()))
+        table.add_row("Notice Period", _val(profile.get_preferences().get("notice_period")))
+        table.add_row("სამუშაო ფორმატი", _val(profile.get_preferences().get("work_mode")))
+        table.add_row("რელოკაცია", _val(profile.get_preferences().get("relocation")))
+        table.add_row("საკონტაქტო მეილი", _val(profile.get_contacts().get("email")))
+        table.add_row("CV ფაილი", _val(profile.get_cv_file_path(strict=False)))
 
         console.print(table)
     else:
         print("\n--- კანდიდატის ფაქტები ---")
-        print("სახელი:", profile.get_candidate_name())
-        print("ხელფასი:", profile.get_salary_expectation())
-        print("სამუშაო ფორმატი:", profile.get_preferences())
+        print("სახელი:", _val(profile.get_candidate_name()))
+        print("ხელფასი:", _val(profile.get_salary_expectation()))
+        prefs = profile.get_preferences()
+        print("სამუშაო ფორმატი:", _val(prefs.get("work_mode")))
+        print("Notice Period:", _val(prefs.get("notice_period")))
+        print("რელოკაცია:", _val(prefs.get("relocation")))
+        print("საკონტაქტო მეილი:", _val(profile.get_contacts().get("email")))
+        print("CV ფაილი:", _val(profile.get_cv_file_path(strict=False)))
 
 async def run_browser_check():
     controller = LinkedInBrowserController()
@@ -243,8 +259,43 @@ def interactive_menu():
         elif choice == "5":
             show_profile_facts(profile)
         elif choice == "6":
-            bat_path = Path(__file__).resolve().parent / "start_browser.bat"
-            os.system(f'start cmd /c "{bat_path}"')
+            base_dir = Path(__file__).resolve().parent
+            if sys.platform == "win32":
+                bat_path = base_dir / "start_browser.bat"
+                os.system(f'start cmd /c "{bat_path}"')
+            else:
+                sh_path = base_dir / "start_browser.sh"
+                if sh_path.exists():
+                    os.system(f'bash "{sh_path}" &')
+                else:
+                    candidates = []
+                    if sys.platform == "darwin":
+                        candidates.extend([
+                            "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+                            "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+                            "/Applications/Chromium.app/Contents/MacOS/Chromium",
+                        ])
+                    candidates.extend([
+                        shutil.which("google-chrome"),
+                        shutil.which("google-chrome-stable"),
+                        shutil.which("brave-browser"),
+                        shutil.which("chromium"),
+                        shutil.which("chromium-browser"),
+                    ])
+                    browser_bin = next((c for c in candidates if c and (os.path.isfile(c) or shutil.which(c))), None)
+                    if browser_bin:
+                        subprocess.Popen(
+                            [browser_bin, f"--remote-debugging-port={config.CDP_PORT}", f"--user-data-dir={config.USER_DATA_DIR}"],
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL,
+                            start_new_session=True
+                        )
+                    else:
+                        msg = f"⚠️ ვერ მოიძებნა Chrome/Brave ბრაუზერი. გთხოვთ გაუშვათ ბრაუზერი ხელით: --remote-debugging-port={config.CDP_PORT}"
+                        if HAS_RICH:
+                            console.print(f"[yellow]{msg}[/yellow]")
+                        else:
+                            print(msg)
         elif choice == "0":
             if HAS_RICH:
                 console.print("[bold cyan]ნახვამდის! წარმატებულ გასაუბრებებს გისურვებთ! ✨[/bold cyan]")

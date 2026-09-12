@@ -74,10 +74,10 @@ class CandidateScorer:
     @classmethod
     def _resolve_profile_path(cls) -> Optional[Path]:
         """Finds active candidate-profile.md in common repository locations (never uses template)."""
+        repo_root = Path(__file__).resolve().parent.parent.parent
         candidates = [
-            Path("Linkedin Agent/candidate-profile.md"),
-            Path(__file__).resolve().parent.parent.parent / "Linkedin Agent" / "candidate-profile.md",
-            Path("candidate-profile.md"),
+            repo_root / "Linkedin Agent" / "candidate-profile.md",
+            repo_root / "candidate-profile.md",
         ]
         for p in candidates:
             if p.exists():
@@ -150,11 +150,18 @@ class CandidateScorer:
                 profile_read_success = False
 
         # Strict candidate profile grounding:
-        # If a candidate profile exists and was read successfully, score strictly against parsed profile criteria.
-        # Fall back to default SDET qualifications if no profile file exists or reading/parsing failed.
-        if profile_path and profile_path.exists() and profile_read_success:
-            keywords = parsed_keywords
-            target_roles = list(set(parsed_roles))
+        # If a candidate profile exists, was read successfully, and contains criteria,
+        # score against parsed profile criteria (falling back to defaults for any unconfigured dimension).
+        # Fall back completely to default SDET qualifications if no profile file exists or parsing failed.
+        if profile_path and profile_path.exists() and profile_read_success and (parsed_keywords or parsed_roles):
+            keywords = parsed_keywords if parsed_keywords else dict(cls.DEFAULT_CORE_KEYWORDS)
+            target_roles = list(set(parsed_roles)) if parsed_roles else [
+                "sdet",
+                "qa automation",
+                "automation engineer",
+                "test automation",
+                "software development engineer in test",
+            ]
         else:
             keywords = dict(cls.DEFAULT_CORE_KEYWORDS)
             target_roles = [

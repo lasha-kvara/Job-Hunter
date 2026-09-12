@@ -13,7 +13,7 @@ import config
 
 class CandidateProfile:
     def __init__(self, file_path: Optional[Path] = None):
-        self.file_path = file_path or config.PROFILE_FILE
+        self.file_path = Path(file_path) if file_path else config.PROFILE_FILE
         self.raw_content = ""
         self.sections: Dict[str, str] = {}
         self.load_profile()
@@ -44,29 +44,65 @@ class CandidateProfile:
 
         self.sections = {k: "\n".join(v).strip() for k, v in section_lines.items()}
 
+    @staticmethod
+    def is_placeholder(val: str) -> bool:
+        """Determines whether a value is an unconfigured template placeholder or example instruction."""
+        if not val:
+            return True
+        s = val.strip()
+        # Direct bracketed placeholders: [Full Name], [Your Email], [e.g. ...], [Your professional summary...]
+        if s.startswith("[") and s.endswith("]"):
+            return True
+        # Bracketed template tags within string: $[Amount], [e.g. ...], [Your ...], path/to/...
+        if re.search(r"(\[.*?\]|\$\[.*?\]|path/to/|e\.g\.)", s, re.IGNORECASE):
+            clean = re.sub(r"(\[.*?\]|\$\[.*?\]|usd/month|or gross annual|\(or gross annual\))", "", s, flags=re.IGNORECASE).strip()
+            clean_norm = re.sub(r"[*_`()$.,:/\-\s]", "", clean).lower()
+            if not clean_norm or clean_norm in {"", "minimum", "target", "expected", "net", "gross", "usd", "month", "annual"}:
+                return True
+        if s.lower() in {"candidate", "[full name]", "your name", "[your name]"}:
+            return True
+        return False
+
+    @property
+    def is_template_profile(self) -> bool:
+        """Returns True if the loaded profile is the unconfigured template."""
+        if self.file_path and self.file_path.name.endswith(".template.md"):
+            return True
+        name = self.get_candidate_name()
+        if not name:
+            if "Fill in your details below" in self.raw_content or "[Full Name]" in self.raw_content:
+                return True
+        return False
+
     def get_candidate_name(self) -> str:
         m = re.search(r"^#\s+Candidate\s+Profile:\s*(.+)$", self.raw_content, re.MULTILINE)
         if m:
-            return m.group(1).strip()
-        return "Candidate"
+            val = m.group(1).strip()
+            if not self.is_placeholder(val):
+                return val
+        return ""
 
     def get_summary(self) -> str:
         for sec_name, content in self.sections.items():
             if "summary" in sec_name.lower():
-                return content
-        return "Senior SDET with 7+ years of experience bridging development and reliability."
+                val = content.strip()
+                if val and not self.is_placeholder(val):
+                    return val
+        return ""
 
     def get_target_roles(self) -> List[str]:
         for sec_name, content in self.sections.items():
             if "target roles" in sec_name.lower():
-                return [line.lstrip("- *").strip() for line in content.splitlines() if line.strip().startswith(("-", "*"))]
-        return [
-            "QA Automation Engineer",
-            "Software Development Engineer in Test (SDET)",
-            "Test Automation Engineer Lead",
-            "QA Lead",
-            "AI-based Automation Engineer"
-        ]
+                roles = []
+                for line in content.splitlines():
+                    if line.strip().startswith(("-", "*")):
+                        role = line.lstrip("- *").strip()
+                        if role and not self.is_placeholder(role):
+                            roles.append(role)
+                if self.is_template_profile and all("e.g." in r.lower() or self.is_placeholder(r) for r in roles):
+                    return []
+                return roles
+        return []
 
     def get_salary_expectation(self) -> str:
         for sec_name, content in self.sections.items():
@@ -77,13 +113,13 @@ class CandidateProfile:
                     if l.strip()
                 ]
                 for l in clean_lines:
-                    if l and not l.startswith("[") and "amount" not in l.lower() and not l.lower().startswith("disclose"):
+                    if l and not self.is_placeholder(l) and not l.lower().startswith("disclose"):
                         # Normalize prefixes (e.g., Minimum, Target, Expected, At least, Around)
                         val = re.sub(r"^(?:minimum|target|expected|approx(?:\.|\w*)|around|at least)\s*:?\s*", "", l, flags=re.IGNORECASE).strip()
                         # Remove trailing parenthetical remarks like (or gross annual) or (gross)
                         val = re.sub(r"\s*\([^)]*(?:annual|gross|net|negotiable)[^)]*\)", "", val, flags=re.IGNORECASE).strip()
                         val = val.rstrip(".").strip()
-                        if val:
+                        if val and not self.is_placeholder(val):
                             return val
         return ""
 
@@ -92,7 +128,7 @@ class CandidateProfile:
             if "availability" in sec_name.lower():
                 for line in content.splitlines():
                     clean = re.sub(r"^[-*\s]+", "", line).strip().strip("*_` ")
-                    if clean and not clean.startswith("[") and "e.g." not in clean.lower():
+                    if clean and not self.is_placeholder(clean):
                         return clean
         return ""
 
@@ -117,7 +153,7 @@ class CandidateProfile:
                         k, v = line.split(":", 1)
                         clean_k = re.sub(r"^[-*\s]+", "", k).strip().lower()
                         clean_v = v.strip().strip("*_` ")
-                        if clean_v.startswith("["):
+                        if self.is_placeholder(clean_v):
                             continue
                         if "notice" in clean_k:
                             prefs["notice_period"] = clean_v
@@ -133,9 +169,9 @@ class CandidateProfile:
             prefs["min_salary"] = salary_exp
 
         return {
-            "notice_period": prefs.get("notice_period", "Negotiable"),
-            "work_mode": prefs.get("work_mode", "Remote / Hybrid"),
-            "relocation": prefs.get("relocation", "Open to relocation"),
+            "notice_period": prefs.get("notice_period", ""),
+            "work_mode": prefs.get("work_mode", ""),
+            "relocation": prefs.get("relocation", ""),
             "timezone": prefs.get("timezone", ""),
             "min_salary": prefs.get("min_salary", "")
         }
@@ -148,14 +184,11 @@ class CandidateProfile:
                     if ":" in line:
                         k, v = line.split(":", 1)
                         clean_k = re.sub(r"^[-*\s]+", "", k).strip().lower()
-                        contacts[clean_k] = v.strip()
-        return contacts or {
-            "phone": "[Your Phone]",
-            "email": "[Your Email]",
-            "linkedin": "https://linkedin.com",
-            "github": "https://github.com",
-            "portfolio": ""
-        }
+                        clean_v = v.strip().strip("*_` ")
+                        if self.is_placeholder(clean_v):
+                            continue
+                        contacts[clean_k] = clean_v
+        return contacts
 
     def get_section(self, name: str) -> str:
         """Returns the raw content of a section matching name (case-insensitive)."""
@@ -170,7 +203,7 @@ class CandidateProfile:
         env_cv_path = getattr(config, "DEFAULT_CV_PATH", "") or os.getenv("DEFAULT_CV_PATH", "")
         if env_cv_path and str(env_cv_path).strip():
             candidate_path = str(env_cv_path).strip()
-            if candidate_path and not candidate_path.startswith("path/to") and not candidate_path.startswith("["):
+            if candidate_path and not self.is_placeholder(candidate_path) and "path/to" not in candidate_path.lower() and "your/cv" not in candidate_path.lower():
                 return candidate_path
 
         # 2. Parse from candidate profile
@@ -178,7 +211,7 @@ class CandidateProfile:
         if cv_match:
             candidate_path = cv_match.group(1).strip()
             # Ignore template placeholders like 'path/to/your/CV.pdf'
-            if candidate_path and not candidate_path.startswith("path/to") and not candidate_path.startswith("["):
+            if candidate_path and not self.is_placeholder(candidate_path) and "path/to" not in candidate_path.lower() and "your/cv" not in candidate_path.lower():
                 return candidate_path
         # Look for any explicit path ending with .pdf under CV section
         sec = self.get_section("cv") or self.get_section("resume")
@@ -186,7 +219,7 @@ class CandidateProfile:
             path_match = re.search(r"[`'\"]?([a-zA-Z]:\\[^`'\"\n\r]+\.pdf|/[^`'\"\n\r]+\.pdf)[`'\"]?", sec)
             if path_match:
                 candidate_path = path_match.group(1).strip()
-                if candidate_path and not candidate_path.startswith("path/to") and not candidate_path.startswith("["):
+                if candidate_path and not self.is_placeholder(candidate_path) and "path/to" not in candidate_path.lower() and "your/cv" not in candidate_path.lower():
                     return candidate_path
 
         if strict:
@@ -196,9 +229,118 @@ class CandidateProfile:
             )
         return "[Not configured in candidate-profile.md]"
 
+    def get_previous_companies(self) -> List[str]:
+        """
+        Dynamically extracts candidate's previous employers and featured project names
+        from Experience and Featured Projects sections in candidate-profile.md.
+        """
+        companies = []
+        exp = self.get_experience_summary()
+        if exp:
+            # Matches '- **... @ Company Name**' or '- **... at Company Name**'
+            for line in exp.splitlines():
+                m = re.search(r'(?:@|\bat\b)\s+([^—–\(\n]+)', line)
+                if m:
+                    comp = re.sub(r'[*_`]', '', m.group(1)).strip()
+                    if comp and not self.is_placeholder(comp) and comp.lower() not in {"remote", "hybrid", "on-site", "present"} and comp not in companies:
+                        companies.append(comp)
+
+        featured = self.get_section("featured projects")
+        if featured:
+            for line in featured.splitlines():
+                m = re.match(r"^[-*]\s+[*_`]*(.+?)[*_`]*(?:\s+—|\s+–|\s+\(|$)", line)
+                if m:
+                    comp = re.sub(r'[*_`]', '', m.group(1)).strip()
+                    if comp and not self.is_placeholder(comp) and comp not in companies:
+                        companies.append(comp)
+
+        return companies
+
+    @staticmethod
+    def _bound_field(val: str, max_len: int, default: str = "") -> str:
+        s = " ".join(val.split()).strip()
+        if not s:
+            return default
+        if len(s) > max_len:
+            split_at_space = s[:max_len - 3].rsplit(" ", 1)[0]
+            truncated = split_at_space if split_at_space else s[:max_len - 3]
+            return truncated + "..."
+        return s
+
+    def get_compact_context_prompt(self) -> str:
+        """Returns a high-density, token-efficient summary (~150-200 tokens) derived directly
+        from the parsed candidate-profile.md (Single Source of Truth)."""
+        name = self._bound_field(self.get_candidate_name(), 50, "Candidate")
+
+        # Bound summary to preserve compact token budget (~150-200 tokens)
+        summary_raw = self.get_summary().strip()
+        first_para = summary_raw.split("\n\n")[0].strip()
+        summary = self._bound_field(first_para, 220, "[Not configured in candidate-profile.md]")
+
+        raw_roles = ", ".join(self.get_target_roles()[:3])
+        roles = self._bound_field(raw_roles, 70, "[Not configured in candidate-profile.md]")
+
+        prefs = self.get_preferences()
+        raw_salary = self.get_salary_expectation() or prefs.get("min_salary", "")
+        salary = self._bound_field(raw_salary, 40, "[Not specified]")
+
+        # Explicitly use get_skills_summary() to skip Personal Skills (competencies)
+        skills = self.get_skills_summary()
+        if skills:
+            skill_lines = []
+            for line in skills.splitlines():
+                bullet = line.strip().lstrip("-* ").strip()
+                if not bullet or bullet.startswith("#"):
+                    continue
+                if ":" in bullet:
+                    cat, val = bullet.split(":", 1)
+                    clean_val = val.strip().strip("*_` ")
+                    if clean_val and not self.is_placeholder(clean_val):
+                        clean_cat = re.sub(r"[*_`]", "", cat).strip()
+                        skill_lines.append(f"{clean_cat}: {clean_val}")
+                else:
+                    clean_bullet = re.sub(r"[*_`]", "", bullet).strip()
+                    if clean_bullet and not self.is_placeholder(clean_bullet):
+                        skill_lines.append(clean_bullet)
+            raw_skills = "; ".join(skill_lines[:4]) if skill_lines else ""
+            clean_skills = re.sub(r"[*_`]", "", raw_skills).strip()
+            skills_summary = self._bound_field(clean_skills, 140, "[Not configured in candidate-profile.md]")
+        else:
+            skills_summary = "[Not configured in candidate-profile.md]"
+
+        raw_tz = prefs.get("timezone", "")
+        clean_tz = re.sub(r";.*$", "", raw_tz).strip() if raw_tz else ""
+        tz = self._bound_field(clean_tz, 35, "[Not specified]")
+
+        raw_notice = prefs.get("notice_period", "")
+        clean_notice = re.sub(r"\(.*?\)", "", raw_notice).strip() if raw_notice else ""
+        notice = self._bound_field(clean_notice, 35, "[Not specified]")
+
+        raw_work_mode = prefs.get("work_mode", "")
+        clean_work_mode = re.sub(r"\(.*?\)", "", raw_work_mode).strip() if raw_work_mode else ""
+        work_mode = self._bound_field(clean_work_mode, 35, "[Not specified]")
+
+        raw_reloc = prefs.get("relocation", "")
+        clean_reloc = re.sub(r"\(.*?\)", "", raw_reloc).strip() if raw_reloc else ""
+        reloc = self._bound_field(clean_reloc, 35, "[Not specified]")
+
+        raw_avail = self.get_availability().strip()
+        avail = self._bound_field(raw_avail, 35, "[Not specified]")
+
+        prompt = f"""Candidate Profile (Compact): {name}
+Summary: {summary}
+Target Roles: {roles}
+Key Skills: {skills_summary}
+Salary Expectation: {salary}
+Timezone: {tz} | Work Mode: {work_mode} | Relocation: {reloc} | Notice: {notice} | Availability: {avail}
+Note: For deep historical project metrics or full architecture breakdowns, escalate to candidate-profile.md."""
+        return prompt[:950]
+
     def get_full_context_prompt(self) -> str:
         """Returns the formatted profile for feeding to LLM prompts."""
-        name = self.get_candidate_name()
+        if self.is_template_profile:
+            return self.get_compact_context_prompt()
+        name = self.get_candidate_name() or "Candidate"
         return f"""
 Candidate Profile: {name}
 Single Source of Truth:

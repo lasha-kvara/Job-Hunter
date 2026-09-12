@@ -152,6 +152,72 @@ class ResponseGenerator:
         else:
             return f"Hello {name}, thanks for your message! I will review the details and get back to you shortly. {signoff_en}"
 
+    def _is_deep_query(self, message: str) -> bool:
+        """
+        Determines whether the recruiter message specifically asks for deep candidate
+        project details, architecture breakdowns, or past historical metrics (L2 escalation),
+        while keeping general recruiter pitches ('we have an exciting project and need details',
+        'we need someone for our system architecture', 'the role includes performance testing') in compact context (L1).
+        """
+        msg = message.lower()
+
+        # Unambiguous deep-dive phrases that inherently demand candidate project breakdowns
+        unambiguous_deep_dive_terms = [
+            "deep dive", "project breakdown", "წინა პროექტ", "წინა სამუშაო"
+        ]
+        if any(term in msg for term in unambiguous_deep_dive_terms):
+            return True
+
+        # Candidate-directed inquiry patterns for projects, history, or technical architecture/frameworks
+        # Requires candidate/inquiry cues (e.g. 'what metrics', 'tell me about your framework')
+        # while keeping possessive job pitches ('your role will include...', 'your work will focus on...') strictly in L1.
+        candidate_deep_patterns = [
+            # Inquiries and imperatives directed at candidate's historical experience
+            r"\b(?:what\s+(?:was|were|about)|how\s+(?:did|was|were|about)|tell\s*(?:me\s*about)?|share|describe|walk\s*me\s*through|explain|elaborate|can\s+you)\b.*\b(?:your)\s+(?:past|previous|prior|former|last)\s+(?:roles?|positions?|work|jobs?|projects?|experience|background|history)\b",
+            r"\b(?:tell\s*(?:me\s*about)?|share|describe|walk\s*me\s*through|explain|elaborate|what\s+was|how\s+did\s+you|can\s+you\s+(?:describe|share|detail))\b.*\b(?:your\s+)?(?:past|previous|prior|former|last)\s+(?:projects?|experience|background|history|roles?|positions?|work|jobs?|architecture|frameworks?)\b",
+            # Interrogatives & imperatives directed at candidate's experience/projects
+            r"\b(?:tell|share|describe|walk me through|explain|elaborate)\b(?=.*\b(?:you|your|candidate)\b)(?=.*\b(?:projects?|experience|background|history|frameworks?|architecture|metrics?|achievements?|system design|load test|performance test|roles?|work)\b).*",
+            r"\b(?:what|how)\b(?=.*\b(?:did you|were your|was your|have you)\b)(?=.*\b(?:projects?|experience|background|history|frameworks?|architecture|metrics?|achievements?|system design|load test|performance test|roles?|work)\b).*",
+            r"\b(?:can\s+you|could\s+you|would\s+you)\b(?=.*\b(?:tell|share|describe|walk|provide|detail)\b)(?=.*\b(?:your|candidate(?:'s)?)\b)(?=.*\b(?:projects?|experience|background|history|frameworks?|architecture|metrics?|achievements?|system design|load test|performance test|roles?|work)\b).*",
+            r"\b(?:გვიამბეთ|მომიყევი|გვითხარით|აღწერეთ|დაგვიხასიათეთ)\b.*\b(?:პროექტ|გამოცდილებ|ისტორი|არქიტექტურ|მეტრიკ|მიღწევ)\b",
+            r"\b(?:რა\s+იყო|როგორი\s+იყო|შეგიძლიათ\s+გვითხრათ|გვიამბეთ|აღწერეთ)\b.*\b(?:შენი|თქვენი)\s+(?:წინა|გასულ)\s+(?:პროექტ|გამოცდილებ|არქიტექტურ|სამუშაო|მიღწევ|მეტრიკ)\b"
+        ]
+        if any(re.search(p, msg) for p in candidate_deep_patterns):
+            return True
+
+        # Dynamically evaluate candidate's previous companies from profile
+        # Require historical/project inquiry context to avoid false escalations on recruiter pitches/compliments
+        if hasattr(self.profile, "get_previous_companies"):
+            raw_companies = self.profile.get_previous_companies()
+            for comp in raw_companies:
+                clean = re.sub(r'[*_`]', '', comp).strip()
+                # Extract primary brand name (e.g., 'VTB' from 'VTB Bank Georgia', 'Biletebi' from 'Biletebi.ge')
+                brand = re.split(r'[\s\.]+(?:bank|georgia|group|technologies|ecosystem|ge)\b', clean, flags=re.IGNORECASE)[0].strip().lower()
+                targets = {clean.lower()}
+                if len(brand) >= 3:
+                    targets.add(brand)
+
+                for target in targets:
+                    pattern = rf"\b{re.escape(target)}\b"
+                    if re.search(pattern, msg):
+                        historical_patterns = [
+                            rf"\b(?:past|previous|prior|former|last)\s+(?:experience|role|work|project|time)\b.*?\b{re.escape(target)}\b",
+                            rf"\b{re.escape(target)}\b.*?\b(?:past|previous|prior|former|last)\s+(?:experience|role|work|project|time)\b",
+                            # Question before target: 'What did you do at TBC?' or 'Tell me about your work at TBC'
+                            rf"\b(?:what|how|tell|describe|share|walk me through|explain)\b(?=.*\b(?:did you|was your|were your|your time|your role|your work|your experience|your projects?|your achievements?|your contributions?|you do|you have done)\b).*?\b{re.escape(target)}\b",
+                            # Target before question: 'At TBC, what did you do?' or 'In TBC tell me about your work'
+                            rf"\b{re.escape(target)}\b.*?\b(?:what|how|tell|describe|share|walk me through|explain)\b(?=.*\b(?:did you|was your|were your|your time|your role|your work|your experience|your projects?|your achievements?|your contributions?|you do|you have done)\b)",
+                            # Georgian orderings: employer before or after temporal cues / questions
+                            rf"\b(?:დროს|პერიოდში)\b.*?\b{re.escape(target)}\b",
+                            rf"\b{re.escape(target)}\b.*?\b(?:დროს|პერიოდში)\b",
+                            rf"\b{re.escape(target)}\b.*?\b(?:რას\s+აკეთებდით|რას\s+გვეტყვით|რა\s+(?:იყო|პროექტ|როლ|გამოცდილებ)|მოგვიყევი(?:თ)?|გვიამბე(?:თ)?|გვითხარი(?:თ)?|მომიყევი(?:თ)?|აღწერე(?:თ)?|დაგვიხასიათე(?:თ)?)\b",
+                            rf"\b(?:რას\s+აკეთებდით|რას\s+გვეტყვით|რა\s+(?:იყო|პროექტ|როლ|გამოცდილებ)|მოგვიყევი(?:თ)?|გვიამბე(?:თ)?|გვითხარი(?:თ)?|მომიყევი(?:თ)?|აღწერე(?:თ)?|დაგვიხასიათე(?:თ)?)\b.*?\b{re.escape(target)}\b",
+                        ]
+                        if any(re.search(p, msg) for p in historical_patterns):
+                            return True
+
+        return False
+
     def draft_llm_response(self, hr_message: str, contact_name: str = "", context: str = "") -> Tuple[str, bool]:
         """
         Uses Gemini to generate a grounded response.
@@ -183,13 +249,23 @@ class ResponseGenerator:
             return self.draft_template_response("initial_reply", contact_name, language=language), requires_user_confirmation
 
         candidate_name = self.profile.get_candidate_name()
+        candidate_label = f"candidate {candidate_name}" if candidate_name else "the candidate"
         salary_str = self.profile.get_salary_expectation()
         tz = self.profile.get_preferences().get("timezone", "")
         salary_rule = f"state expectation from profile ({salary_str})" if salary_str else "state that compensation can be discussed once project scope is explored"
         tz_rule = f"propose availability in candidate timezone ({tz})" if tz else "propose availability and confirm recruiter preferred timezone"
-        system_instruction = f"""You are representing candidate {candidate_name} in LinkedIn conversations with HR/Recruiters.
+
+        # Tiered Token Optimization: use compact context for standard recruiter chat,
+        # escalate to full context only when deep candidate project/architecture details are queried.
+        profile_context = (
+            self.profile.get_full_context_prompt()
+            if self._is_deep_query(hr_message) and not getattr(self.profile, "is_template_profile", False)
+            else self.profile.get_compact_context_prompt()
+        )
+
+        system_instruction = f"""You are representing {candidate_label} in LinkedIn conversations with HR/Recruiters.
 Candidate Profile (Single Source of Truth):
-{self.profile.get_full_context_prompt()}
+{profile_context}
 
 Rules:
 1. Tone: Friendly-professional, concise, warm, respectful.
