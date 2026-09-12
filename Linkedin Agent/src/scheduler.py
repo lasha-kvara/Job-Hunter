@@ -14,8 +14,8 @@ class InterviewScheduler:
     def __init__(self, profile: Optional[CandidateProfile] = None):
         self.profile = profile or CandidateProfile()
 
-    def get_standard_slots(self, language: str = "en") -> str:
-        """Returns standard suggested interview slots in candidate timezone."""
+    def get_standard_slots(self, language: str = "en", proposed_slots: Optional[str] = None) -> str:
+        """Returns suggested interview slots based on profile availability or prompts user."""
         tz = self.profile.get_preferences().get("timezone", "").strip()
         if not tz:
             return (
@@ -24,9 +24,14 @@ class InterviewScheduler:
                 else "გასაუბრების დროის შეთავაზებამდე მიუთითეთ კანდიდატის დროის სარტყელი."
             )
         tz_str = f" ({tz})"
-        if language == "ka":
-            return f"ორშაბათს 17:00-ზე ან სამშაბათს 17:00-ზე{tz_str}"
-        return f"Monday at 17:00 or Tuesday at 17:00{tz_str}"
+        slots = proposed_slots or self.profile.get_availability()
+        if not slots or any(k in slots.lower() for k in ["flexible", "confirm", "user", "ask"]):
+            return (
+                f"Please specify your current available interview slots ({tz}) to propose to the recruiter."
+                if language != "ka"
+                else f"გთხოვთ მიუთითოთ გასაუბრებისთვის ხელმისაწვდომი დრო ({tz}) რეკრუტერისთვის შესათავაზებლად."
+            )
+        return f"{slots}{tz_str}"
 
     def format_confirmation(self, date_str: str, time_str: str, timezone: Optional[str] = None, language: str = "en") -> str:
         """

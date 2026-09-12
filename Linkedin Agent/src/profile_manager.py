@@ -87,6 +87,15 @@ class CandidateProfile:
                             return val
         return ""
 
+    def get_availability(self) -> str:
+        for sec_name, content in self.sections.items():
+            if "availability" in sec_name.lower():
+                for line in content.splitlines():
+                    clean = re.sub(r"^[-*\s]+", "", line).strip().strip("*_` ")
+                    if clean and not clean.startswith("[") and "e.g." not in clean.lower():
+                        return clean
+        return ""
+
     def get_experience_summary(self) -> str:
         for sec_name, content in self.sections.items():
             if "experience" in sec_name.lower():

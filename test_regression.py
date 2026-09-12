@@ -49,16 +49,21 @@ try:
     generated = rg.draft_template_response(
         intent="propose_time",
         contact_name="Sarah",
-        role_or_details="Senior SDET",
+        role_or_details="Thursday at 16:00",
         language="en"
     )
     assert len(generated) > 20, "Response generator produced empty response"
     # 1.4 Test InterviewScheduler & Salary normalization
     scheduler = InterviewScheduler(profile)
-    standard_proposal = scheduler.get_standard_slots("en")
-    assert "(" in standard_proposal and ")" in standard_proposal, "Proposal must contain timezone specification"
+    timezone = profile.get_preferences().get("timezone", "").strip()
+    standard_proposal = scheduler.get_standard_slots("en", proposed_slots="Thursday at 16:00")
     confirmation = scheduler.format_confirmation("Thursday, Aug 27", "16:00")
-    assert "(" in confirmation and ")" in confirmation, "Confirmation must contain timezone specification"
+    if timezone:
+        assert "(" in standard_proposal and ")" in standard_proposal, "Proposal must contain timezone specification"
+        assert "(" in confirmation and ")" in confirmation, "Confirmation must contain timezone specification"
+    else:
+        assert "timezone" in standard_proposal.lower(), "Missing timezone should be reported"
+        assert "timezone" in confirmation.lower(), "Missing timezone should be reported"
     salary = profile.get_salary_expectation()
     assert "*" not in salary and "_" not in salary and "`" not in salary, "Salary contains markdown"
     assert not salary.lower().startswith("minimum"), "Salary should be normalized without leading Minimum label"

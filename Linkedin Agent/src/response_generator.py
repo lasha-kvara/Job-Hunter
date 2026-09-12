@@ -79,7 +79,6 @@ class ResponseGenerator:
             has_timezone = bool(
                 role_or_details and (
                     (tz and tz.lower() in details_lower)
-                    or "timezone" in details_lower
                     or re.search(r"\b(?:utc|gmt|est|edt|pst|pdt|cst|cdt|cet|cest)(?:[+-]\d+(?::\d{2})?)?\b", details_lower)
                 )
             )
@@ -89,11 +88,18 @@ class ResponseGenerator:
                     if language != "ka"
                     else "გასაუბრების დროის შეთავაზებამდე მიუთითეთ დროის სარტყელი candidate-profile.md-ში."
                 )
+            slots = role_or_details or self.profile.get_availability()
+            if not slots or any(k in slots.lower() for k in ["flexible", "confirm", "user", "ask"]):
+                return (
+                    f"Please provide specific interview slots to propose to the recruiter (Candidate timezone: {tz})."
+                    if language != "ka"
+                    else f"გთხოვთ მიუთითოთ გასაუბრებისთვის ხელმისაწვდომი დრო რეკრუტერისთვის შესათავაზებლად (დროის სარტყელი: {tz})."
+                )
             tz_str = "" if has_timezone else f" ({tz})"
             if language == "ka":
-                return f"გამარჯობა {name}, შემიძლია შემოგთავაზოთ {role_or_details or 'ორშაბათს 17:00-ზე ან სამშაბათს 17:00-ზე'}{tz_str}. რომელი დრო იქნება თქვენთვის უფრო მოსახერხებელი?"
+                return f"გამარჯობა {name}, შემიძლია შემოგთავაზოთ {slots}{tz_str}. რომელი დრო იქნება თქვენთვის უფრო მოსახერხებელი?"
             else:
-                return f"Hello {name}, I'm available on {role_or_details or 'Monday at 17:00 and Tuesday at 17:00'}{tz_str}. Which time works best for your schedule?"
+                return f"Hello {name}, I'm available on {slots}{tz_str}. Which time works best for your schedule?"
 
         elif intent == "confirm_interview":
             tz = self.profile.get_preferences().get("timezone", "").strip()
@@ -101,7 +107,6 @@ class ResponseGenerator:
             has_timezone = bool(
                 role_or_details and (
                     (tz and tz.lower() in details_lower)
-                    or "timezone" in details_lower
                     or re.search(r"\b(?:utc|gmt|est|edt|pst|pdt|cst|cdt|cet|cest)(?:[+-]\d+(?::\d{2})?)?\b", details_lower)
                 )
             )
