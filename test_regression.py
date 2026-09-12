@@ -261,6 +261,13 @@ try:
     assert gen._is_deep_query("How does the system design look on our project?") is False
     assert gen._is_deep_query("What does TBC do?") is False
 
+    # Test routine recruiter compliments and pitch phrasing (stay L1) vs candidate inquiries (trigger L2)
+    assert gen._is_deep_query("Your experience with Playwright is a strong fit for this role") is False
+    assert gen._is_deep_query("We came across your profile and your background looks great!") is False
+    assert gen._is_deep_query("Your experience caught our eye for this opening.") is False
+    assert gen._is_deep_query("We love your background in QA automation!") is False
+    assert gen._is_deep_query("Your experience at TBC is a strong fit") is False
+
     # Test possessive recruiter job pitches (stay L1) vs candidate historical inquiries (trigger L2)
     assert gen._is_deep_query("Your role will include system architecture") is False
     assert gen._is_deep_query("In this position, your work will focus on performance testing") is False
@@ -268,6 +275,8 @@ try:
     assert gen._is_deep_query("Tell me about your previous role") is True
     assert gen._is_deep_query("What was your role in system design?") is True
     assert gen._is_deep_query("Tell me about your past work") is True
+    assert gen._is_deep_query("Can you tell me about your previous experience?") is True
+    assert gen._is_deep_query("Walk me through your past projects") is True
 
     assert gen._is_deep_query("Tell me about your system architecture experience") is True
     assert gen._is_deep_query("Walk me through your test framework architecture") is True
@@ -276,20 +285,21 @@ try:
     assert gen._is_deep_query("What was your role at TBC?") is True
     print("  [+] ResponseGenerator: Dynamic employer extraction and technical intent classification correctly separate recruiter pitches from candidate inquiries.")
 
-    # Test featured projects parser handles bold and markdown emphasis bullets
+    # Test featured projects parser handles bold, hyphenated, slashed, and ampersand project names
     prof_feat = CandidateProfile()
     prof_feat.sections = {
-        "Featured projects": "- **Project Alpha** — automation framework\n* `Project Beta` — performance suite\n- Project Gamma (E-commerce)"
+        "Featured projects": "- **Job-Hunter** — autonomous application engine\n* `Extra.ge / Area.ge` — mobile test plans\n- QA & Reports (Tooling)"
     }
     prev_comps = prof_feat.get_previous_companies()
-    assert "Project Alpha" in prev_comps, f"Failed to extract bold project: {prev_comps}"
-    assert "Project Beta" in prev_comps, f"Failed to extract code-styled project: {prev_comps}"
-    assert "Project Gamma" in prev_comps, f"Failed to extract plain project: {prev_comps}"
-    print("  [+] Profile Manager: Featured projects parser correctly extracts bold and styled markdown bullets.")
+    assert "Job-Hunter" in prev_comps, f"Failed to extract hyphenated project: {prev_comps}"
+    assert "Extra.ge / Area.ge" in prev_comps, f"Failed to extract slashed project: {prev_comps}"
+    assert "QA & Reports" in prev_comps, f"Failed to extract ampersand project: {prev_comps}"
+    print("  [+] Profile Manager: Featured projects parser correctly extracts hyphenated, slashed, and ampersand project names.")
 
-    # Test availability is included in compact prompt for grounded interview scheduling
+    # Test availability and relocation are included in compact prompt for grounded responses
     assert "Availability:" in compact_prompt, "Compact prompt must include grounded Availability"
-    print("  [+] Profile Manager: Grounded availability verified in compact prompt.")
+    assert "Relocation:" in compact_prompt, "Compact prompt must include grounded Relocation"
+    print("  [+] Profile Manager: Grounded availability and relocation verified in compact prompt.")
 
     # Test skills extraction skips Personal Skills even when personal skills appears first in profile sections
     prof_ps = CandidateProfile()

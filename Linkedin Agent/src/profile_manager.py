@@ -215,7 +215,7 @@ class CandidateProfile:
         featured = self.get_section("featured projects")
         if featured:
             for line in featured.splitlines():
-                m = re.match(r"^[-*]\s+[*_`]*([A-Za-z0-9\.\s]+?)[*_`]*(?:\s+—|\s+–|\s+\(|$)", line)
+                m = re.match(r"^[-*]\s+[*_`]*(.+?)[*_`]*(?:\s+—|\s+–|\s+\(|$)", line)
                 if m:
                     comp = re.sub(r'[*_`]', '', m.group(1)).strip()
                     if comp and comp not in companies:
@@ -269,6 +269,9 @@ class CandidateProfile:
         clean_work_mode = re.sub(r"\(.*?\)", "", prefs.get("work_mode", "Remote / Hybrid")).strip()
         work_mode = self._bound_field(clean_work_mode, 35, "Remote / Hybrid")
 
+        clean_reloc = re.sub(r"\(.*?\)", "", prefs.get("relocation", "Open to relocation")).strip()
+        reloc = self._bound_field(clean_reloc, 35, "Open to relocation")
+
         avail = self._bound_field(self.get_availability(), 35, "Flexible with advance notice")
 
         prompt = f"""Candidate Profile (Compact): {name}
@@ -276,7 +279,7 @@ Summary: {summary}
 Target Roles: {roles}
 Key Skills: {skills_summary}
 Salary Expectation: {salary}
-Timezone: {tz} | Work Mode: {work_mode} | Notice: {notice} | Availability: {avail}
+Timezone: {tz} | Work Mode: {work_mode} | Relocation: {reloc} | Notice: {notice} | Availability: {avail}
 Note: For deep historical project metrics or full architecture breakdowns, escalate to candidate-profile.md."""
         return prompt[:950]
 

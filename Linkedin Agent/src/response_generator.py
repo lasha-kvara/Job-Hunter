@@ -174,20 +174,20 @@ class ResponseGenerator:
         candidate_deep_patterns = [
             # Intrinsically historical references
             r"\b(?:past|previous|prior|former|last)\s+(?:projects?|experience|background|history|roles?|positions?|work|jobs?|architecture|frameworks?)\b",
-            # Candidate-owned history
-            r"\b(?:your)\s+(?:past|previous|prior|former|last)\s+(?:roles?|positions?|work|jobs?|projects?)\b",
-            r"\b(?:your)\s+(?:projects?|experience|background|history|metrics?|achievements?)\b",
-            # Candidate-directed inquiries
-            r"\b(?:tell|share|describe|walk me through)\b(?=.*\b(?:you|your|candidate)\b)(?=.*\b(?:projects?|experience|background|history|frameworks?|architecture|metrics?|achievements?|system design|load test|performance test|roles?|work)\b).*",
+            # Candidate-owned history with explicit historical qualifiers
+            r"\b(?:your)\s+(?:past|previous|prior|former|last)\s+(?:roles?|positions?|work|jobs?|projects?|experience|background|history)\b",
+            # Interrogatives & imperatives directed at candidate's experience/projects
+            r"\b(?:tell|share|describe|walk me through|explain|elaborate)\b(?=.*\b(?:you|your|candidate)\b)(?=.*\b(?:projects?|experience|background|history|frameworks?|architecture|metrics?|achievements?|system design|load test|performance test|roles?|work)\b).*",
             r"\b(?:what|how)\b(?=.*\b(?:did you|were your|was your|have you)\b)(?=.*\b(?:projects?|experience|background|history|frameworks?|architecture|metrics?|achievements?|system design|load test|performance test|roles?|work)\b).*",
-            r"\b(?:გვიამბეთ|მომიყევი|გვითხარით)\b.*\b(?:პროექტ|გამოცდილებ|ისტორი|არქიტექტურ|მეტრიკ|მიღწევ)\b",
-            r"\b(?:შენი|თქვენი|წინა)\s+(?:პროექტ|გამოცდილებ|არქიტექტურ|სამუშაო|მიღწევ|მეტრიკ)\b"
+            r"\b(?:can you|could you|would you)\b(?=.*\b(?:tell|share|describe|walk|provide|detail)\b)(?=.*\b(?:projects?|experience|background|history|frameworks?|architecture|metrics?|achievements?|system design|load test|performance test|roles?|work)\b).*",
+            r"\b(?:გვიამბეთ|მომიყევი|გვითხარით|აღწერეთ|დაგვიხასიათეთ)\b.*\b(?:პროექტ|გამოცდილებ|ისტორი|არქიტექტურ|მეტრიკ|მიღწევ)\b",
+            r"\b(?:შენი|თქვენი)\s+(?:წინა|გასულ)\s+(?:პროექტ|გამოცდილებ|არქიტექტურ|სამუშაო|მიღწევ|მეტრიკ)\b"
         ]
         if any(re.search(p, msg) for p in candidate_deep_patterns):
             return True
 
         # Dynamically evaluate candidate's previous companies from profile
-        # Require historical/project inquiry context to avoid false escalations on recruiter pitches
+        # Require historical/project inquiry context to avoid false escalations on recruiter pitches/compliments
         if hasattr(self.profile, "get_previous_companies"):
             raw_companies = self.profile.get_previous_companies()
             for comp in raw_companies:
@@ -202,11 +202,10 @@ class ResponseGenerator:
                     pattern = rf"\b{re.escape(target)}\b"
                     if re.search(pattern, msg):
                         historical_patterns = [
-                            rf"\b(?:your|past|previous)\s+.*?\b{re.escape(target)}\b",
-                            rf"\b{re.escape(target)}\b.*?\b(?:your|past|previous)\b",
-                            rf"\b(?:at|with|for)\s+{re.escape(target)}\b.*?\b(?:work|role|project|achievement|experience|responsibilit|metric|built|lead|did|time)\b",
-                            rf"\b(?:what|how|tell|describe|share)\b(?=.*\b(?:you|your|candidate|past|previous|prior)\b).*?\b{re.escape(target)}\b",
-                            rf"\b(?:დროს|პერიოდში|გამოცდილება)\b.*?\b{re.escape(target)}\b"
+                            rf"\b(?:past|previous|prior|former|last)\s+(?:experience|role|work|project|time)\b.*?\b{re.escape(target)}\b",
+                            rf"\b{re.escape(target)}\b.*?\b(?:past|previous|prior|former|last)\s+(?:experience|role|work|project|time)\b",
+                            rf"\b(?:what|how|tell|describe|share|walk me through)\b(?=.*\b(?:did you|was your|were your|your time|your role|you do)\b).*?\b{re.escape(target)}\b",
+                            rf"\b(?:დროს|პერიოდში)\b.*?\b{re.escape(target)}\b"
                         ]
                         if any(re.search(p, msg) for p in historical_patterns):
                             return True
