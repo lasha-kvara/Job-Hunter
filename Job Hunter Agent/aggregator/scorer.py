@@ -239,6 +239,20 @@ class CandidateScorer:
                 score += penalty
                 reasons.append(f"Penalty for '{neg_kw}' ({penalty})")
 
+        # 6. Check foreign on-site without relocation penalty (Per strict location rule)
+        loc_lower = (job.location or "").lower()
+        is_georgia = any(geo in loc_lower for geo in ["georgia", "tbilisi", "batumi", "kutaisi"])
+        has_relocation = bool(re.search(r'\b(?:relocation|visa\s+sponsorship|sponsorship\s+provided)\b', text_to_search, re.IGNORECASE))
+        if loc_lower and not is_georgia and not job.is_remote and not has_relocation:
+            foreign_indicators = [
+                "spain", "madrid", "france", "paris", "rennes", "lille", "united kingdom", "uk", "london",
+                "glasgow", "japan", "tokyo", "singapore", "vietnam", "canada", "toronto", "germany", "berlin",
+                "poland", "warsaw", "india", "bangalore", "mumbai", "netherlands", "amsterdam"
+            ]
+            if any(re.search(rf'\b{re.escape(fi)}\b', loc_lower) for fi in foreign_indicators):
+                score -= 40
+                reasons.append(f"Foreign on-site without relocation: '{job.location}' (-40)")
+
         # Normalize score between 0 and 100
         score = max(0, min(100, score))
         job.fit_score = score
