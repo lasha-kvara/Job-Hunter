@@ -56,3 +56,7 @@ $RECYCLE.BIN/
 add_jobs.py
 
 
+
+# Agent Evolver personal knowledge base & log (contain personal data, keep local only)
+*screening-playbook.md
+evolution-log.md

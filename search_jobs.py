@@ -90,8 +90,8 @@ def main():
     parser.add_argument(
         "--min-score",
         type=validate_min_score,
-        default=0,
-        help="Filter out jobs with fit score below this threshold (0-100)"
+        default=45,
+        help="Filter out jobs with fit score below this threshold (0-100, default: 45)"
     )
     parser.add_argument(
         "--remote",
