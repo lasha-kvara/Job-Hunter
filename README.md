@@ -122,6 +122,36 @@ You can now speak directly to the agent in English or Georgian:
 
 ---
 
+## 🧠 Mode 1b: Running with Claude Code
+
+The same agent workflow runs in [Claude Code](https://claude.com/claude-code). The skills live in `.claude/skills/` (`job-hunter-agent`, `linkedin-agent`), the workspace rules in `CLAUDE.md`, and the browser is [Playwright MCP](https://github.com/microsoft/playwright-mcp) with a headed and a headless server sharing one persistent profile.
+
+1. Install Node.js 18+.
+2. Create `.mcp.json` in the repository root (git-ignored, because paths are machine-specific). Windows example:
+   ```json
+   {
+     "mcpServers": {
+       "playwright": {
+         "command": "cmd",
+         "args": ["/c", "npx", "-y", "@playwright/mcp@0.0.83",
+                  "--user-data-dir", "${USERPROFILE}\\.playwright-job-hunter",
+                  "--allow-unrestricted-file-access"]
+       },
+       "playwright-headless": {
+         "command": "cmd",
+         "args": ["/c", "npx", "-y", "@playwright/mcp@0.0.83", "--headless",
+                  "--user-data-dir", "${USERPROFILE}\\.playwright-job-hunter",
+                  "--allow-unrestricted-file-access"]
+       }
+     }
+   }
+   ```
+   On Linux / macOS use `"command": "npx"` without `/c`, and a path such as `${HOME}/.playwright-job-hunter`. `--allow-unrestricted-file-access` lets the browser upload a CV stored outside the repository.
+3. Open the repository in Claude Code and approve the two MCP servers.
+4. Ask in natural language, e.g. *"ვაკანსიები მოძებნე და გაგზავნე ჩემი CV"*. The agent asks for Headed or Headless mode, builds a shortlist, and applies to the items you approve. You sign in, enter 2FA codes and solve CAPTCHAs yourself in the headed window; the login is kept in the profile.
+
+---
+
 ## 💻 Mode 2: Running Standalone (Without Antigravity)
 
 You do **not** need Antigravity, Docker, or paid AI tokens to run Job-Hunter. All tools run directly from your command line:
