@@ -79,10 +79,16 @@ Pause and ask instead of guessing when, during an approved application:
    - Log the rate, its date and the converted figure in the applications report.
 3. Cover letter, if requested: one tailored paragraph built from the profile's featured projects.
 4. CV (paths are in the profile's "CV / Resume file rules" section):
-   - **LinkedIn Easy Apply:** keep the CV LinkedIn pre-selects. Do not upload another one.
-   - **External sites:** build a CV tailored to this vacancy, following
-     [references/tailored-cv.md](references/tailored-cv.md), and upload that PDF with
-     `browser_file_upload`. If tailoring fails, upload the master PDF and say so in the report.
+   - Build a CV tailored to this vacancy, following
+     [references/tailored-cv.md](references/tailored-cv.md), for every application, Easy Apply
+     included. Online forms and Easy Apply get the **ATS** variant; email applications get the
+     designed variant.
+   - **LinkedIn Easy Apply:** in the Resume step click "Upload resume", upload the tailored ATS PDF
+     with `browser_file_upload`, and confirm the newly uploaded file is the selected one before
+     continuing.
+   - **External sites:** upload the tailored PDF with `browser_file_upload`.
+   - If tailoring fails: Easy Apply keeps the LinkedIn default (the master ATS CV); external sites
+     get the master ATS PDF. Say so in the report.
 5. 2FA / OTP / CAPTCHA / email verification: stop and tell the user exactly what is needed. The
    user enters the code or solves it in the headed window; continue when they confirm. Do not
    abandon the application and do not move on to another job meanwhile.

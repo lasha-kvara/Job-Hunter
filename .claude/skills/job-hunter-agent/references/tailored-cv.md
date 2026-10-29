@@ -1,4 +1,4 @@
-# Tailored CV for external applications
+# Tailored CV for every application
 
 One CV per vacancy, built from the master CV so it matches the job description and parses well in
 the employer's ATS, without adding anything that is not true.
@@ -51,9 +51,15 @@ Generate both variants from the tailored copy (run from the CV folder):
   (single column, A4, no photo, plain text; content is read from the same HTML, so both always match).
 
 Which one to upload:
-- **Any online application form or ATS** (Lever, Greenhouse, Workable, Ashby, SmartRecruiters,
-  Recruitee, HireHive, Helio, company career portals): the **ATS** variant.
-- **Email applications**, or a form that explicitly asks for a designed/visual CV: the designed variant.
+- **LinkedIn Easy Apply** and **any online application form or ATS** (Lever, Greenhouse, Workable,
+  Ashby, SmartRecruiters, Recruitee, HireHive, Helio, company career portals): the **ATS** variant.
+  Easy Apply forwards the file to the employer's ATS (the job URL often shows
+  `applicantTrackingSystemName`), and LinkedIn parses it for recruiter search.
+- **Email applications**, a CV a recruiter asks for in a LinkedIn message, a referral, or a form
+  that explicitly asks for a designed/visual CV: the designed variant.
+
+Each Easy Apply upload adds a file to the LinkedIn resume list. In the final report, remind the
+user how many tailored CVs were added so they can clean the list; never delete them yourself.
 
 Both files are named `Lasha_Kvaratskhelia_CV.pdf` (recruiters see the name; no company name, no
 "ATS"). Confirm the chosen PDF exists and is not empty, then upload it.
