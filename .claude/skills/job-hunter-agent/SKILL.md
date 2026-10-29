@@ -66,6 +66,17 @@ Pause and ask instead of guessing when, during an approved application:
 2. Fill fields from the profile and playbook. Answer custom screening questions truthfully and only
    from profile facts. Checkboxes: evaluate each option on its own; select "None of the above" only
    when nothing applies, never together with positive options.
+   Salary: take the base figure from the profile and playbook (Georgian roles: the GEL figure;
+   international roles: the USD figure). If the form asks for another currency or period, convert
+   it yourself instead of asking:
+   - Look up today's rate from a reliable source (ECB rates, e.g.
+     `https://api.frankfurter.dev/v1/latest?base=USD&symbols=EUR`; for GEL the National Bank of
+     Georgia rate). Do not use a remembered rate.
+   - Round **up** to a clean number (nearest 100 per month, nearest 1,000 per year) so the result
+     is never below the profile minimum. Annual = monthly × 12; hourly = monthly ÷ 160.
+   - For a dropdown of ranges, pick the range that contains the converted minimum; if the minimum
+     sits on a boundary (e.g. 4100-4500 / 4500-5000), pick the range that starts at it.
+   - Log the rate, its date and the converted figure in the applications report.
 3. Cover letter, if requested: one tailored paragraph built from the profile's featured projects.
 4. CV: upload with `browser_file_upload` using the exact CV path from the profile's
    "CV / Resume file rules" section. LinkedIn Easy Apply: keep the pre-selected default CV.
