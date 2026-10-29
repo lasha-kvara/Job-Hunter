@@ -60,3 +60,8 @@ add_jobs.py
 # Agent Evolver personal knowledge base & log (contain personal data, keep local only)
 *screening-playbook.md
 evolution-log.md
+
+# Claude Code local config (machine-specific MCP paths, local settings, Playwright MCP output)
+.mcp.json
+.claude/settings.local.json
+.playwright-mcp/
