@@ -78,8 +78,11 @@ Pause and ask instead of guessing when, during an approved application:
      sits on a boundary (e.g. 4100-4500 / 4500-5000), pick the range that starts at it.
    - Log the rate, its date and the converted figure in the applications report.
 3. Cover letter, if requested: one tailored paragraph built from the profile's featured projects.
-4. CV: upload with `browser_file_upload` using the exact CV path from the profile's
-   "CV / Resume file rules" section. LinkedIn Easy Apply: keep the pre-selected default CV.
+4. CV (paths are in the profile's "CV / Resume file rules" section):
+   - **LinkedIn Easy Apply:** keep the CV LinkedIn pre-selects. Do not upload another one.
+   - **External sites:** build a CV tailored to this vacancy, following
+     [references/tailored-cv.md](references/tailored-cv.md), and upload that PDF with
+     `browser_file_upload`. If tailoring fails, upload the master PDF and say so in the report.
 5. 2FA / OTP / CAPTCHA / email verification: stop and tell the user exactly what is needed. The
    user enters the code or solves it in the headed window; continue when they confirm. Do not
    abandon the application and do not move on to another job meanwhile.
@@ -88,7 +91,8 @@ Pause and ask instead of guessing when, during an approved application:
 ## Step 5: Log and report
 - Append each processed job to `Job Hunter Agent/job-applications-report.md`: role, company, URL,
   location and mode, key requirements, questions and the answers given, salary stated, date, status
-  (`submitted`, `review-needed`, `filtered-out`).
+  (`submitted`, `review-needed`, `filtered-out`), and which CV was sent (LinkedIn default, or the
+  tailored folder path with its keyword coverage and gaps).
 - Update `Linkedin Agent/linkedin-pipeline.md` when relevant.
 - Final report to the user: ≤ 5 bullets, in Georgian.
 
