@@ -48,6 +48,9 @@ $RECYCLE.BIN/
 # Personal search settings (config.example.yml is the tracked template)
 config.yml
 
+# Your CV folder (default cv.dir): master CV, photo, tailored copies and PDFs
+my-cv/
+
 # Personal candidate profile, reports & pipelines (keep local only)
 *candidate-profile.md
 !*candidate-profile.template.md

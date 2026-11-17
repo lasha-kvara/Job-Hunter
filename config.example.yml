@@ -30,6 +30,11 @@ role:
   seniority_bonus: {senior: 15, sr: 15, lead: 15, staff: 15, principal: 15}
   title_penalties: {intern: -40, internship: -40, junior: -25, entry level: -20, trainee: -40}
 
+# Your CV for cv_tools.py (tailored CV per vacancy, designed + ATS PDFs).
+cv:
+  dir: my-cv                    # folder with the master CV and tailored/ (relative to the repo, or absolute)
+  master: CVindex.html          # master CV in the format of cv/master.example.html (init.py copies it)
+
 location:
   home_country: Georgia
   # Words that mean "in my country". On-site / hybrid jobs here are fine.

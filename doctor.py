@@ -61,14 +61,19 @@ def check_packages() -> None:
 
 
 def check_chromium() -> None:
-    env = os.getenv("PLAYWRIGHT_BROWSERS_PATH")
-    home = Path.home()
-    roots = [Path(env)] if env and env != "0" else []
-    roots += [Path(os.getenv("LOCALAPPDATA", home / "AppData/Local")) / "ms-playwright",
-              home / ".cache/ms-playwright", home / "Library/Caches/ms-playwright"]
-    found = any(r.exists() and any(r.glob("chromium*")) for r in roots)
+    """Asks Playwright for the exact browser build it needs (a different revision on disk is not enough)."""
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            try:  # a real headless launch: the only reliable test (headless uses its own shell build)
+                p.chromium.launch().close()
+                found, detail = True, "launches"
+            except Exception:
+                found, detail = False, "missing for this Playwright version"
+    except Exception as e:  # playwright not installed: reported by the package check
+        found, detail = False, f"cannot check ({e.__class__.__name__})"
     check("Playwright Chromium", OK if found else WARN,
-          "installed" if found else "not found (needed for CV PDFs and the headed demo, not for searching)",
+          detail if found else detail + " (needed for CV PDFs, not for searching)",
           "" if found else "python -m playwright install chromium")
 
 
@@ -92,6 +97,31 @@ def check_config() -> None:
     cv = s.get("candidate", {}).get("cv_file_name", "")
     if cv.startswith("Firstname"):
         check("CV file name", WARN, cv, "set candidate.cv_file_name in config.yml")
+
+
+def check_master_cv() -> None:
+    """The master CV that cv_tools.py tailors (config.yml: cv.dir / cv.master)."""
+    try:
+        sys.path.insert(0, str(ROOT))
+        import cv_tools
+        cv = cv_tools.cv_settings()
+        master = cv["dir"] / cv["master"]
+        if not master.exists():
+            check("Master CV", WARN, f"{master} missing (needed for tailored CVs)",
+                  "copy cv/master.example.html there, or set cv.dir in config.yml")
+            return
+        html = master.read_text(encoding="utf-8", errors="replace")
+        data = cv_tools.extract(html)
+        if "Jane Doe" in html or "JANE<br>" in html:
+            check("Master CV", WARN, f"{master.name} is still the example (Jane Doe)", "replace it with your own CV")
+        elif not data["name"] or not data["experience"]:
+            check("Master CV", FAIL, f"{master}: no name or work experience found",
+                  "use the class names of cv/master.example.html")
+        else:
+            check("Master CV", OK, f"{data['name']}: {len(data['experience'])} jobs, "
+                  f"{sum(len(g['items']) for g in data['skills'])} skills ({master.parent})")
+    except ModuleNotFoundError as e:
+        check("Master CV", WARN, f"cannot check: {e}", "pip install -r requirements.txt")
 
 
 def check_personal_files() -> None:
@@ -184,6 +214,7 @@ def main() -> int:
     check_chromium()
     check_config()
     check_personal_files()
+    check_master_cv()
     check_claude_code()
     if args.online:
         check_online()

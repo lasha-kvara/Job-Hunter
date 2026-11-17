@@ -125,6 +125,7 @@ python "Linkedin Agent/run.py"                            # LinkedIn pipeline-�
 | ქვეყანა, ქალაქები, რეგიონები, დროის სარტყელი, ენა | `config.yml` → [docs/configuration.md](docs/configuration.md) |
 | ფაქტები შენ შესახებ | `Linkedin Agent/candidate-profile.md` |
 | სკრინინგ-კითხვების პასუხები | `Job Hunter Agent/screening-playbook.md` |
+| შენი CV (master, მორგებული ასლები, PDF-ები) | `my-cv/CVindex.html` ან `cv.dir` → [docs/cv.md](docs/cv.md) |
 | დასასკანერებელი კომპანიები | `ats-boards.json` / `ats-boards.local.json` → [docs/job-sources.md](docs/job-sources.md) |
 
 ---

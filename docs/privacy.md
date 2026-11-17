@@ -13,6 +13,7 @@ These files are personal and git-ignored; they are never committed or uploaded b
 | `Linkedin Agent/linkedin-pipeline.md` | recruiter conversations and interview stages |
 | `Job Hunter Agent/ats-boards.local.json` | companies you added (often ones you applied to) |
 | `search_results.md`, `Job Hunter Agent/jobs_feed.json`, `seen_jobs.json` | search results and history |
+| `my-cv/` (or your `cv.dir`) | master CV, photo, tailored copies and PDFs |
 | `.env`, `.mcp.json`, `.playwright-mcp/` | API keys, machine paths, browser snapshots |
 
 Your logins live in the browser profile `~/.playwright-job-hunter` (outside the repository).

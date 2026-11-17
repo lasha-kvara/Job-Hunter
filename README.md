@@ -70,6 +70,8 @@ Next, fill in your profile. Either edit the two files by hand:
 
 - `Linkedin Agent/candidate-profile.md`: facts, experience, skills, salary, contacts, CV path
 - `Job Hunter Agent/screening-playbook.md`: ready answers for application forms
+- `my-cv/CVindex.html`: your master CV ([docs/cv.md](docs/cv.md)); every application gets a copy
+  tailored to the vacancy, fact-checked against it, as a designed and an ATS PDF
 
 or open the folder in Claude Code and say **"set up my profile"**: it reads your CV, asks only what
 the CV can't tell (salary, work authorization, relocation, ...) and fills both files.
@@ -161,6 +163,7 @@ python "Linkedin Agent/run.py"
 | Country, cities, regions you can / can't work for, time zone, language | `config.yml` → [docs/configuration.md](docs/configuration.md) |
 | Facts about you | `Linkedin Agent/candidate-profile.md` |
 | Answers to screening questions | `Job Hunter Agent/screening-playbook.md` |
+| Your CV (master, tailored copies, PDFs) | `my-cv/CVindex.html` or `cv.dir` → [docs/cv.md](docs/cv.md) |
 | Companies to scan | `Job Hunter Agent/ats-boards.json` (shared) / `ats-boards.local.json` (yours) → [docs/job-sources.md](docs/job-sources.md) |
 
 ---
@@ -170,6 +173,8 @@ python "Linkedin Agent/run.py"
 ```text
 init.py / doctor.py           setup wizard and health check
 search_jobs.py                search + rating CLI
+cv_tools.py                   tailored CV per vacancy, fact check, designed + ATS PDFs
+cv/master.example.html        master CV template (copied to my-cv/, git-ignored)
 config.example.yml            all settings, documented (copy: config.yml, git-ignored)
 presets/                      profession presets
 CLAUDE.md, .claude/skills/    Claude Code rules and the two agents (job-hunter, linkedin)
@@ -178,7 +183,7 @@ Job Hunter Agent/
   ats-boards.json             company boards to scan
   *.template.md               report and screening-playbook templates
 Linkedin Agent/               recruiter pipeline CLI, profile parser, reply drafts, templates
-docs/                         configuration, Claude Code, job sources, privacy, troubleshooting
+docs/                         configuration, CV, Claude Code, job sources, privacy, troubleshooting
 test_regression.py            test suite
 ```
 

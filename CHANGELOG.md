@@ -5,6 +5,17 @@ All notable changes. Format: [Keep a Changelog](https://keepachangelog.com/); ve
 
 ## [Unreleased]
 
+### Added
+- **CV tools in the repository** (`cv_tools.py`, Python, no Node needed): tailor the master CV per
+  vacancy from a JSON spec, fact-check it against the master (and the profile / playbook), and render
+  a designed PDF and a 2-page ATS PDF; `master`, `check`, `designed`, `ats` commands. Output is
+  identical to the previous Node scripts.
+- `cv/master.example.html` template (fictional content), `cv` section in `config.yml`, `my-cv/`
+  default folder created by `init.py`, master-CV check in `doctor.py`, [docs/cv.md](docs/cv.md).
+
+### Fixed
+- `doctor.py` now checks that Chromium actually launches for the installed Playwright version.
+
 ## [0.2.0] - 2026-11-17
 
 ### Added

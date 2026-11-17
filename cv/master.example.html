@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jane Doe – CV</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    @media print {
+      @page {
+        margin: 0;
+      }
+      html,
+      body {
+        margin: 0 !important;
+        padding: 0 !important;
+        min-height: 0 !important;
+      }
+      body {
+        background: transparent !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .cv-wrapper {
+        margin: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        min-height: 0 !important;
+      }
+    }
+
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --dark:    #13202e;
+      --mid:     #1e3348;
+      --accent:  #4a90d9;
+      --accent2: #93c5f0;
+      --light-bg:#f7f4f0;
+      --white:   #ffffff;
+      --muted:   #8fa3b1;
+      --text-dark: #1a2a38;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #d6d1cb;
+      background-image: radial-gradient(ellipse at 60% 0%, #c4bdb4 0%, #d6d1cb 70%);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 48px 16px;
+    }
+
+    .cv-wrapper {
+      display: flex;
+      width: 960px;
+      min-height: 1160px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.28), 0 4px 12px rgba(0,0,0,0.12);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    /* ══════════════════════ LEFT COLUMN ══════════════════════ */
+    .left {
+      background: var(--dark);
+      width: 320px;
+      min-width: 320px;
+      padding: 44px 30px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    /* Photo */
+    .photo-wrap {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      margin-bottom: 28px;
+    }
+
+    .photo-ring {
+      width: 136px;
+      height: 136px;
+      border-radius: 50%;
+      padding: 3px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+    }
+
+    .photo-ring img,
+    .photo-ring .photo-placeholder {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      object-position: center 25%;
+      background: var(--mid);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.5px;
+    }
+
+    /* Name */
+    .name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 30px;
+      font-weight: 700;
+      color: var(--white);
+      line-height: 1.1;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .name-accent {
+      color: var(--accent);
+    }
+
+    .name-divider {
+      width: 36px;
+      height: 2px;
+      background: var(--accent);
+      margin: 12px 0 28px 0;
+    }
+
+    /* Left section headings */
+    .left-section {
+      width: 100%;
+      margin-bottom: 24px;
+    }
+
+    .left-heading {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 2.5px;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .left-heading::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(74,144,217,0.25);
+    }
+
+    /* Skill badges */
+    .badge-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .badge {
+      font-size: 10.5px;
+      font-weight: 500;
+      color: var(--accent2);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(74,144,217,0.25);
+      border-radius: 3px;
+      padding: 4px 9px;
+      line-height: 1;
+      letter-spacing: 0.2px;
+      white-space: nowrap;
+    }
+
+    /* Soft skills */
+    .soft-list {
+      list-style: none;
+      width: 100%;
+    }
+
+    .soft-list li {
+      font-size: 12px;
+      font-weight: 400;
+      color: #9db5c4;
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      line-height: 1.4;
+    }
+
+    .soft-list li::before {
+      content: '—';
+      font-size: 10px;
+      color: var(--accent);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* Contact */
+    .contact-section {
+      margin-top: auto;
+      padding-top: 28px;
+      width: 100%;
+      border-top: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .contact-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .contact-icon {
+      font-size: 13px;
+      color: var(--accent);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .contact-text {
+      font-size: 11.5px;
+      color: #9db5c4;
+      word-break: break-all;
+      line-height: 1.5;
+    }
+
+    .contact-text a {
+      color: #9db5c4;
+      text-decoration: none;
+    }
+
+    .contact-text a:hover {
+      color: var(--accent2);
+    }
+
+    /* ══════════════════════ RIGHT COLUMN ══════════════════════ */
+    .right {
+      background: var(--light-bg);
+      flex: 1;
+      padding: 48px 40px 40px;
+      color: var(--text-dark);
+    }
+
+    /* Section header */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .section-label {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 2.8px;
+      color: var(--accent);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .section-line {
+      flex: 1;
+      height: 1px;
+      background: #d9d3cb;
+    }
+
+    /* Right section spacing */
+    .right-section {
+      margin-bottom: 36px;
+    }
+
+    /* Timeline */
+    .timeline {
+      position: relative;
+      padding-left: 22px;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 4px;
+      top: 6px;
+      bottom: 6px;
+      width: 1px;
+      background: linear-gradient(to bottom, var(--accent), transparent);
+    }
+
+    .tl-item {
+      position: relative;
+      margin-bottom: 28px;
+    }
+
+    .tl-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .tl-dot {
+      position: absolute;
+      left: -22px;
+      top: 5px;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent);
+      border: 2px solid var(--light-bg);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+
+    .tl-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-bottom: 2px;
+    }
+
+    .tl-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-dark);
+      letter-spacing: 0.1px;
+    }
+
+    .tl-period {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    .tl-company {
+      font-size: 12px;
+      font-weight: 500;
+      color: #5a7a90;
+      margin-bottom: 8px;
+      letter-spacing: 0.2px;
+    }
+
+    .tl-projects-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      color: #8a9fad;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .projects-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .project-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      padding: 4px 10px;
+      background: rgba(74,144,217,0.07);
+      border-left: 2px solid var(--accent);
+      border-radius: 0 2px 2px 0;
+    }
+
+    .project-name {
+      color: var(--text-dark);
+      font-weight: 500;
+    }
+
+    .project-years {
+      color: #8a9fad;
+      font-size: 11px;
+    }
+
+    /* Education */
+    .edu-block {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .edu-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 3px;
+    }
+
+    .edu-detail {
+      font-size: 12px;
+      color: #5a7a90;
+      font-weight: 400;
+    }
+
+    /* Other Skills: two-column grid */
+    .other-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px 32px;
+    }
+
+    .other-group-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--text-dark);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid #d9d3cb;
+    }
+
+    .lang-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 7px;
+    }
+
+    .lang-name {
+      font-size: 12.5px;
+      font-weight: 500;
+      color: var(--text-dark);
+    }
+
+    .lang-level {
+      font-size: 10.5px;
+      color: var(--accent);
+      font-weight: 600;
+      background: rgba(74,144,217,0.12);
+      padding: 2px 7px;
+      border-radius: 10px;
+    }
+
+    .personal-list {
+      list-style: none;
+    }
+
+    .personal-list li {
+      font-size: 12px;
+      color: #4a6070;
+      padding: 5px 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      border-bottom: 1px solid #ede9e3;
+      line-height: 1.4;
+    }
+
+    .personal-list li:last-child {
+      border-bottom: none;
+    }
+
+    .personal-list li::before {
+      content: '✦';
+      font-size: 7px;
+      color: var(--accent);
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+
+    /* Job subtitle under name */
+    .name-subtitle {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-top: 6px;
+    }
+
+    /* Summary highlight list */
+    .summary-highlights {
+      list-style: none;
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .summary-highlights li {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent);
+      background: rgba(74,144,217,0.08);
+      border: 1px solid rgba(74,144,217,0.2);
+      border-radius: 3px;
+      padding: 3px 9px;
+    }
+
+    /* Professional Summary */
+    .summary-text {
+      font-size: 12.5px;
+      line-height: 1.75;
+      color: #3a5570;
+      font-weight: 400;
+    }
+
+    /* Skill category groups */
+    .skill-group {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
+    .skill-group-label {
+      font-size: 8.5px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: rgba(74,144,217,0.6);
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+
+    /* Job bullet list */
+    .tl-bullets {
+      list-style: none;
+      margin-top: 8px;
+    }
+
+    .tl-bullets li {
+      font-size: 11.5px;
+      color: #4a6070;
+      line-height: 1.55;
+      padding: 3px 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      border-bottom: 1px solid rgba(217,211,203,0.5);
+    }
+
+    .tl-bullets li:last-child {
+      border-bottom: none;
+    }
+
+    .tl-bullets li::before {
+      content: '▸';
+      font-size: 9px;
+      color: var(--accent);
+      flex-shrink: 0;
+      margin-top: 3px;
+    }
+
+    /* Job tags row */
+    .tl-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 8px;
+    }
+
+    .tl-tag {
+      font-size: 9.5px;
+      font-weight: 600;
+      color: #5a7a90;
+      background: rgba(90,122,144,0.1);
+      border-radius: 2px;
+      padding: 2px 6px;
+      letter-spacing: 0.2px;
+    }
+  </style>
+</head>
+<body>
+  <!--
+    MASTER CV TEMPLATE (example content: Jane Doe is fictional).
+    Replace every value with your own facts, keep the class names: cv_tools.py reads them.
+      name / name-accent ......... first and last name        name-subtitle .... headline
+      skill-group-label / badge .. skill groups and skills     soft-list li ..... competencies
+      contact-text ............... location, phone, e-mail, links
+      summary-text / summary-highlights li ..................... summary and key numbers
+      tl-item (tl-title, tl-period, tl-company, tl-bullets li, tl-tag) ... jobs and education
+      lang-row (lang-name, lang-level) ......................... languages
+    Photo: put a file next to this one and replace the placeholder with
+      <img src="photo.jpg" alt="Your Name" />   (or delete the photo-wrap block).
+  -->
+  <div class="cv-wrapper">
+
+    <!-- LEFT COLUMN -->
+    <div class="left">
+      <div class="photo-wrap">
+        <div class="photo-ring">
+          <div class="photo-placeholder">PHOTO</div>
+        </div>
+      </div>
+
+      <div class="name">JANE<br><span class="name-accent">DOE</span></div>
+      <div class="name-subtitle">Senior Software Engineer</div>
+      <div class="name-divider"></div>
+
+      <div class="left-section">
+        <div class="left-heading">Technical Skills</div>
+
+        <div class="skill-group">
+          <div class="skill-group-label">Languages</div>
+          <div class="badge-grid">
+            <span class="badge">TypeScript</span>
+            <span class="badge">Python</span>
+            <span class="badge">Go</span>
+            <span class="badge">SQL</span>
+          </div>
+        </div>
+
+        <div class="skill-group">
+          <div class="skill-group-label">Frameworks</div>
+          <div class="badge-grid">
+            <span class="badge">React</span>
+            <span class="badge">Node.js</span>
+            <span class="badge">FastAPI</span>
+            <span class="badge">Playwright</span>
+          </div>
+        </div>
+
+        <div class="skill-group">
+          <div class="skill-group-label">Tools &amp; Infrastructure</div>
+          <div class="badge-grid">
+            <span class="badge">Git</span>
+            <span class="badge">Docker</span>
+            <span class="badge">Kubernetes</span>
+            <span class="badge">AWS</span>
+            <span class="badge">PostgreSQL</span>
+            <span class="badge">CI/CD</span>
+            <span class="badge">Agile / Scrum</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="left-section">
+        <div class="left-heading">Competencies</div>
+        <ul class="soft-list">
+          <li>System design &amp; API architecture</li>
+          <li>Mentoring and code review</li>
+          <li>Cross-functional collaboration with product and design</li>
+        </ul>
+      </div>
+
+      <div class="contact-section">
+        <div class="left-heading">Contact</div>
+        <div class="contact-item">
+          <span class="contact-icon">&#128205;</span>
+          <span class="contact-text">City, Country</span>
+        </div>
+        <div class="contact-item">
+          <span class="contact-icon">&#9742;</span>
+          <span class="contact-text">+00 000 000 000</span>
+        </div>
+        <div class="contact-item">
+          <span class="contact-icon">&#9993;</span>
+          <span class="contact-text"><a href="mailto:jane.doe@example.com">jane.doe@example.com</a></span>
+        </div>
+        <div class="contact-item">
+          <span class="contact-icon">&#128279;</span>
+          <span class="contact-text"><a href="https://www.linkedin.com/in/jane-doe-example/" target="_blank">linkedin.com/in/jane-doe-example</a></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="right">
+
+      <div class="right-section">
+        <div class="section-header">
+          <span class="section-label">Professional Summary</span>
+          <div class="section-line"></div>
+        </div>
+        <p class="summary-text">
+          Senior Software Engineer with 7+ years of experience building web products and APIs for fintech and e-commerce. Designs services in TypeScript and Python, ships React front ends, and owns delivery from design to production in Agile teams.
+        </p>
+        <ul class="summary-highlights">
+          <li>7+ years of experience</li>
+          <li>3 products from zero to launch</li>
+          <li>99.9% service uptime</li>
+        </ul>
+      </div>
+
+      <div class="right-section">
+        <div class="section-header">
+          <span class="section-label">Work Experience</span>
+          <div class="section-line"></div>
+        </div>
+
+        <div class="timeline">
+
+          <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-header">
+              <span class="tl-title">Senior Software Engineer</span>
+              <span class="tl-period">2022 — Present</span>
+            </div>
+            <div class="tl-company">Acme Corp &nbsp;·&nbsp; Payments platform</div>
+            <ul class="tl-bullets">
+              <li>Led the redesign of the checkout API serving 2M requests per day, cutting p95 latency by 40%</li>
+              <li>Built a React design system used by 5 product teams</li>
+              <li>Introduced contract tests and Playwright end-to-end tests in CI/CD, reducing production incidents by 30%</li>
+              <li>Mentored 4 engineers and ran the team's code review process</li>
+            </ul>
+            <div class="tl-tags">
+              <span class="tl-tag">TypeScript</span><span class="tl-tag">Node.js</span><span class="tl-tag">React</span><span class="tl-tag">PostgreSQL</span><span class="tl-tag">AWS</span><span class="tl-tag">Playwright</span>
+            </div>
+          </div>
+
+          <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-header">
+              <span class="tl-title">Software Engineer</span>
+              <span class="tl-period">2019 — 2022</span>
+            </div>
+            <div class="tl-company">Globex &nbsp;·&nbsp; E-commerce marketplace</div>
+            <ul class="tl-bullets">
+              <li>Developed Python (FastAPI) services for search and recommendations</li>
+              <li>Migrated 12 services to Docker and Kubernetes</li>
+              <li>Worked with product and design in two-week Scrum sprints</li>
+            </ul>
+            <div class="tl-tags">
+              <span class="tl-tag">Python</span><span class="tl-tag">FastAPI</span><span class="tl-tag">Docker</span><span class="tl-tag">Kubernetes</span><span class="tl-tag">SQL</span>
+            </div>
+          </div>
+
+          <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-header">
+              <span class="tl-title">Junior Developer</span>
+              <span class="tl-period">2017 — 2019</span>
+            </div>
+            <div class="tl-company">Initech</div>
+            <ul class="tl-bullets">
+              <li>Maintained internal web tools and fixed customer-reported bugs</li>
+              <li>Wrote SQL reports for the finance team</li>
+            </ul>
+            <div class="tl-tags">
+              <span class="tl-tag">Go</span><span class="tl-tag">SQL</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="right-section">
+        <div class="section-header">
+          <span class="section-label">Education</span>
+          <div class="section-line"></div>
+        </div>
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-dot"></div>
+            <div class="tl-header">
+              <span class="tl-title">State University</span>
+              <span class="tl-period">2013 — 2017</span>
+            </div>
+            <div class="tl-company">BSc Computer Science</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="right-section">
+        <div class="section-header">
+          <span class="section-label">Other Skills</span>
+          <div class="section-line"></div>
+        </div>
+        <div class="other-grid">
+          <div>
+            <div class="other-group-title">Languages</div>
+            <div class="lang-row"><span class="lang-name">English</span><span class="lang-level">C1</span></div>
+            <div class="lang-row"><span class="lang-name">Spanish</span><span class="lang-level">B1</span></div>
+          </div>
+          <div>
+            <div class="other-group-title">Personal Skills</div>
+            <ul class="personal-list">
+              <li>Clear written communication</li>
+              <li>Ownership from idea to production</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

@@ -241,6 +241,14 @@ def main() -> int:
         cfg.write_text(build_config(args), encoding="utf-8")
         say("      ✓ wrote config.yml")
 
+    # Master CV for cv_tools.py: only for the default folder (a configured cv.dir is the user's own).
+    cfg_text = cfg.read_text(encoding="utf-8") if cfg.exists() else ""
+    master = ROOT / "my-cv" / "CVindex.html"
+    if "\ncv:" not in "\n" + cfg_text and not master.exists():
+        master.parent.mkdir(exist_ok=True)
+        shutil.copyfile(ROOT / "cv" / "master.example.html", master)
+        say("      + my-cv/CVindex.html (master CV template: replace the example with your CV)")
+
     step(6, "Claude Code browser (.mcp.json for Playwright MCP)")
     mcp = ROOT / ".mcp.json"
     if mcp.exists():

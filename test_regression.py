@@ -86,7 +86,7 @@ print("\n[TEST GROUP 2] Testing Existing Runner Scripts...")
 try:
     import py_compile
 
-    for script_name in ["Linkedin Agent/run.py", "search_jobs.py", "init.py", "doctor.py"]:
+    for script_name in ["Linkedin Agent/run.py", "search_jobs.py", "init.py", "doctor.py", "cv_tools.py"]:
         script_path = PROJECT_ROOT / script_name
         assert script_path.is_file(), f"Required runner script not found: {script_name}"
         py_compile.compile(str(script_path), doraise=True)
@@ -750,6 +750,91 @@ try:
     print("  => ALL SETUP TESTS PASSED!")
 except Exception as e:
     print(f"  ❌ FAILED in Setup: {e}")
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+
+# -------------------------------------------------------------
+# 6. CV TOOLS (tailor, fact check, ATS rendering)
+# -------------------------------------------------------------
+print("\n[TEST GROUP 6] Testing CV tools...")
+try:
+    import tempfile, json as _json
+    sys.path.insert(0, str(PROJECT_ROOT))
+    import cv_tools as cvt
+
+    master_html = (PROJECT_ROOT / "cv" / "master.example.html").read_text(encoding="utf-8")
+    d = cvt.extract(master_html)
+    assert d["name"] == "Jane Doe" and d["subtitle"] == "Senior Software Engineer", (d["name"], d["subtitle"])
+    assert [j["company"].split(" ·")[0].strip() for j in d["experience"]] == ["Acme Corp", "Globex", "Initech"]
+    assert d["education"][0]["title"] == "State University" and "English (C1)" in d["languages"]
+    assert len(d["contacts"]) == 4 and d["experience"][0]["bullets"][0].startswith("Led the redesign")
+    ats = cvt.render_ats(d, cvt.LEVELS[0])
+    assert "<h2>Work Experience</h2>" in ats and "Technologies: TypeScript" in ats and "<img" not in ats
+    tight = cvt.render_ats(d, cvt.LEVELS[-1])
+    assert tight.count("<li>") < ats.count("<li>"), "tight level must cut bullets"
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        spec = {"folder": "tailored/x", "subtitle": "Senior Backend Engineer",
+                "summary": "Backend engineer with 7+ years in Python and Go services.",
+                "skills": {"Languages": ["Go", "Python"]},
+                "bullets": {"Acme Corp": [2, 0]}, "tags": {"Globex": ["Kubernetes", "Python"]}}
+        with_photo = master_html.replace('<div class="photo-placeholder">PHOTO</div>', '<img src="photo.jpg" alt="x" />')
+        out = cvt.tailor_html(with_photo, spec, tmp, tmp / "tailored" / "x")
+        t = cvt.extract(out)
+        assert t["subtitle"] == "Senior Backend Engineer" and t["skills"][0]["items"] == ["Go", "Python"]
+        assert t["experience"][0]["bullets"][0].startswith("Introduced contract tests") and len(t["experience"][0]["bullets"]) == 2
+        assert t["experience"][1]["tags"] == ["Kubernetes", "Python"]
+        assert 'src="../../photo.jpg"' in out, "photo path must be rewritten for the tailored folder"
+        errs, warns = cvt.fact_check(master_html, out)
+        assert not errs and any("summary" in w for w in warns), (errs, warns)
+
+        # Things the check must reject or flag
+        bad = out.replace("2022 — Present", "2020 — Present")
+        assert any("dates" in e for e in cvt.fact_check(master_html, bad)[0])
+        bad = out.replace('<span class="badge">Go</span>', '<span class="badge">Rust</span>')
+        assert any("Rust" in e for e in cvt.fact_check(master_html, bad)[0])
+        bad = out.replace("7+ years in Python", "17+ years in Python")
+        assert any("17" in e for e in cvt.fact_check(master_html, bad)[0])
+        bad = out.replace("jane.doe@example.com</a>", "someone@else.com</a>")
+        assert any("contacts" in e for e in cvt.fact_check(master_html, bad)[0])
+        renamed = out.replace('<span class="badge">Go</span>', '<span class="badge">Go (Golang)</span>')
+        e2, w2 = cvt.fact_check(master_html, renamed)
+        assert not e2 and any("renamed" in w for w in w2), (e2, w2)
+        from_profile = out.replace('<span class="badge">Go</span>', '<span class="badge">Terraform</span>')
+        e3, w3 = cvt.fact_check(master_html, from_profile, "- Terraform: 3 years")
+        assert not e3 and any("candidate-profile" in w for w in w3), (e3, w3)
+        try:
+            cvt.tailor_html(master_html, {"skills": {"Languages": ["Rust"]}}, tmp, tmp)
+            raise AssertionError("unknown skill accepted by tailor")
+        except SystemExit:
+            pass
+    print("  [+] cv_tools: template parsing, ATS rendering and fitting levels, tailoring with photo path, fact check (dates, skills, numbers, contacts, renames, profile skills).")
+
+    # Real PDFs only where Chromium is installed (CI runs without the browser download)
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            p.chromium.launch().close()
+        have_browser = True
+    except Exception:
+        have_browser = False
+    if have_browser:
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp) / "CVindex.html"
+            src.write_text(master_html, encoding="utf-8")
+            msg = cvt.ats_pdf(src, Path(tmp) / "ats" / "cv.pdf", 2)
+            pdf = (Path(tmp) / "ats" / "cv.pdf").read_bytes()
+            assert pdf.startswith(b"%PDF") and 1 <= cvt.count_pdf_pages(pdf) <= 2, msg
+            cvt.designed_pdf(src, Path(tmp) / "cv.pdf")
+            assert (Path(tmp) / "cv.pdf").stat().st_size > 10000
+        print(f"  [+] cv_tools: real PDFs rendered ({msg.split('(')[1].rstrip(')')}).")
+    else:
+        print("  [~] cv_tools: Chromium not installed, PDF rendering skipped.")
+    print("  => ALL CV TOOL TESTS PASSED!")
+except Exception as e:
+    print(f"  ❌ FAILED in CV tools: {e}")
     import traceback
     traceback.print_exc()
     sys.exit(1)
