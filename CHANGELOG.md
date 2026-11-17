@@ -5,6 +5,8 @@ All notable changes. Format: [Keep a Changelog](https://keepachangelog.com/); ve
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-18
+
 ### Added
 - **CV tools in the repository** (`cv_tools.py`, Python, no Node needed): tailor the master CV per
   vacancy from a JSON spec, fact-check it against the master (and the profile / playbook), and render
@@ -12,13 +14,6 @@ All notable changes. Format: [Keep a Changelog](https://keepachangelog.com/); ve
   identical to the previous Node scripts.
 - `cv/master.example.html` template (fictional content), `cv` section in `config.yml`, `my-cv/`
   default folder created by `init.py`, master-CV check in `doctor.py`, [docs/cv.md](docs/cv.md).
-
-### Fixed
-- `doctor.py` now checks that Chromium actually launches for the installed Playwright version.
-
-## [0.2.0] - 2026-11-17
-
-### Added
 - **Any profession:** 11 presets in `presets/` (QA automation, frontend, backend, full-stack, mobile,
   DevOps, data engineer, data analyst, ML engineer, product designer, product manager), chosen with
   `preset:` in `config.yml` or `search_jobs.py --preset`; `--list-presets`.
@@ -54,6 +49,9 @@ All notable changes. Format: [Keep a Changelog](https://keepachangelog.com/); ve
   done by the Claude Code agent.
 - `Linkedin Agent/requirements.txt` (the root `requirements.txt` covers everything).
 
+### Fixed
+- `doctor.py` now checks that Chromium actually launches for the installed Playwright version.
+
 ## [0.1.0] - 2026-09-13
 
 ### Added
@@ -62,3 +60,6 @@ All notable changes. Format: [Keep a Changelog](https://keepachangelog.com/); ve
 - LinkedIn agent: terminal pipeline manager, profile-grounded reply drafts (templates or Gemini),
   interview-slot scheduling, tiered prompt context.
 - Agent skill and rule templates, privacy-first git-ignored personal files, regression test suite.
+
+[Unreleased]: https://github.com/lasha-kvara/Job-Hunter/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/lasha-kvara/Job-Hunter/releases/tag/v0.2.0
