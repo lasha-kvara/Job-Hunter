@@ -129,7 +129,7 @@ def work_auth_flags(job: JobPost) -> List[str]:
     c = CLEARANCE_RE.search(f"{job.title}\n{text}")
     if c:
         flags.append(f"BLOCK: security clearance required ('{c.group(0)}')")
-    elif m and not sponsor_ok:
+    elif m and not sponsor_ok and not is_home(m.group(m.lastindex or 0)):
         flags.append(f"BLOCK: work authorization required ('{m.group(0)[:70]}')")
     elif p["locked"].search(loc) and not friendly_location(loc):
         flags.append(f"BLOCK: region-locked ('{loc[:60]}')")

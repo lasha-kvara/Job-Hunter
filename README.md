@@ -20,68 +20,50 @@ Job-Hunter is engineered to work in **two distinct modes**:
 
 ---
 
-## 🚀 Quick Start: Installation (Common to Both Modes)
+## 🚀 Quick Start
 
-### 1. Clone the Repository
+Requirements: Python 3.10+, Git, and (for Claude Code's browser) Node.js 18+.
+
 ```bash
 git clone https://github.com/lasha-kvara/Job-Hunter.git
 cd Job-Hunter
+python init.py
 ```
 
-### 2. Create Virtual Environment & Install Dependencies
+`init.py` creates `.venv`, installs the packages and Playwright Chromium, copies the personal
+templates (profile, screening playbook, applications report, LinkedIn pipeline), asks a few
+questions to write `config.yml` (profession preset, country, time zone, language, relocation),
+writes `.mcp.json` for Claude Code, and finishes with a health check. It never overwrites a file
+you already have, so it is safe to run again. `python init.py --yes --preset frontend` skips the
+questions.
+
+Then fill in `Linkedin Agent/candidate-profile.md` and `Job Hunter Agent/screening-playbook.md`,
+or open the folder in Claude Code and say *"set up my profile"*: it reads your CV, asks what the CV
+cannot tell, and fills both files for you.
+
 ```bash
-# Create and activate virtual environment
+python doctor.py            # what is installed, what is still missing, and how to fix it
+python search_jobs.py --list-presets
+```
+
+Your profession, country and search rules live in `config.yml` (documented in
+[`config.example.yml`](config.example.yml); professions in [`presets/`](presets/README.md)).
+
+> 🛡️ **Privacy:** `config.yml`, `.mcp.json`, `.env`, the profile, playbook, report and pipeline are
+> git-ignored. Your personal details and application history never leave your machine through Git.
+
+<details><summary>Manual setup (without init.py)</summary>
+
+```bash
 python -m venv .venv
-
-# On Windows:
-.venv\Scripts\activate
-
-# On Linux / macOS:
-source .venv/bin/activate
-
-# Install all dependencies
+.venv\Scripts\activate             # Linux / macOS: source .venv/bin/activate
 pip install -r requirements.txt
-
-# Install Playwright browser engines
-playwright install
+python -m playwright install chromium
+cp config.example.yml config.yml   # then set preset, location and candidate
 ```
-
-### 3. Initialize Your Local Profiles & Trackers
-Copy the provided templates to your local, git-ignored active files:
-
-```bash
-# Windows:
-copy "Linkedin Agent\candidate-profile.template.md" "Linkedin Agent\candidate-profile.md"
-copy "Linkedin Agent\linkedin-pipeline.template.md" "Linkedin Agent\linkedin-pipeline.md"
-copy "Job Hunter Agent\job-applications-report.template.md" "Job Hunter Agent\job-applications-report.md"
-
-# Linux / macOS:
-cp "Linkedin Agent/candidate-profile.template.md" "Linkedin Agent/candidate-profile.md"
-cp "Linkedin Agent/linkedin-pipeline.template.md" "Linkedin Agent/linkedin-pipeline.md"
-cp "Job Hunter Agent/job-applications-report.template.md" "Job Hunter Agent/job-applications-report.md"
-```
-
-Open `Linkedin Agent/candidate-profile.md` in any editor and specify:
-- **Full Name, Email, Phone, Location, Timezone**
-- **Target Roles** (e.g. `QA Automation Engineer`, `Senior SDET`, `Backend Developer`)
-- **Core Skills & Frameworks** (e.g. `Playwright`, `TypeScript`, `Python`, `C#`, `Selenium`)
-- **Years of Experience & Past Projects**
-- **Absolute Path to your CV/Resume PDF**
-- **Salary Expectations**
-
-> 🛡️ **Privacy Guarantee:** `candidate-profile.md`, `job-applications-report.md`, and `linkedin-pipeline.md` are strictly git-ignored. Your personal contact details and private application histories will never be committed or uploaded to Git.
-
-### 4. (Optional) Configure Environment Variables
-If you want to use Google Gemini for AI-assisted recruiter message drafting or customize browser ports, copy `.env.example` to `.env`:
-
-```bash
-# Windows:
-copy .env.example .env
-
-# Linux / macOS:
-cp .env.example .env
-```
-Open `.env` and configure your optional `GEMINI_API_KEY` (free from [Google AI Studio](https://aistudio.google.com/)). Without an API key, all features work 100% locally with built-in templates.
+Copy each `*.template.md` next to it without `.template`, and create `.mcp.json` as shown in the
+Claude Code section below. Optional: copy `.env.example` to `.env` for the Gemini API key.
+</details>
 
 ---
 
@@ -127,7 +109,7 @@ You can now speak directly to the agent in English or Georgian:
 The same agent workflow runs in [Claude Code](https://claude.com/claude-code). The skills live in `.claude/skills/` (`job-hunter-agent`, `linkedin-agent`), the workspace rules in `CLAUDE.md`, and the browser is [Playwright MCP](https://github.com/microsoft/playwright-mcp) with a headed and a headless server sharing one persistent profile.
 
 1. Install Node.js 18+.
-2. Create `.mcp.json` in the repository root (git-ignored, because paths are machine-specific). Windows example:
+2. `python init.py` writes `.mcp.json` for you. To write it by hand (git-ignored, because paths are machine-specific), Windows example:
    ```json
    {
      "mcpServers": {

@@ -679,6 +679,81 @@ except Exception as e:
     traceback.print_exc()
     sys.exit(1)
 
+# -------------------------------------------------------------
+# 5. SETUP WIZARD (init.py) AND HEALTH CHECK (doctor.py)
+# -------------------------------------------------------------
+print("\n[TEST GROUP 5] Testing setup wizard and doctor...")
+try:
+    import importlib.util, builtins, types, tempfile, json as _json, yaml as _yaml
+    from unittest.mock import patch
+
+    def _load(name):
+        spec = importlib.util.spec_from_file_location(f"_jh_{name}", PROJECT_ROOT / f"{name}.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+
+    init_mod = _load("init")
+    doctor_mod = _load("doctor")
+    from aggregator import settings as _settings
+
+    def wizard(answers, preset=None):
+        it = iter(answers)
+        with patch.object(builtins, "input", lambda *_: next(it)), patch("sys.stdout", new=io.StringIO()):
+            return _yaml.safe_load(init_mod.build_config(types.SimpleNamespace(yes=False, preset=preset)))
+
+    # Defaults-only run produces a valid config that composes with its preset
+    with patch("sys.stdout", new=io.StringIO()):
+        dflt = _yaml.safe_load(init_mod.build_config(types.SimpleNamespace(yes=True, preset="devops")))
+    assert dflt["preset"] == "devops" and dflt["candidate"]["cv_file_name"] == "Firstname_Lastname_CV.pdf"
+    assert _settings.compose(dflt)["role"]["default_query"] == "DevOps Engineer"
+
+    # A Polish frontend developer: EU removed from check regions, home = Poland + cities
+    pl = wizard(["frontend", "Jan Kowalski", "Poland", "Warsaw, Krakow", "en", "1", "-2..3", "y"])
+    assert pl["candidate"] == {"reply_language": "en", "timezone": "GMT+1", "timezone_window": [-2, 3],
+                               "cv_file_name": "Jan_Kowalski_CV.pdf"}, pl["candidate"]
+    assert pl["location"]["home_places"] == ["poland", "warsaw", "krakow"]
+    assert "poland" not in pl["location"]["check_regions"] and "eu" not in pl["location"]["check_regions"]
+
+    # A US data analyst: US regions are home, not locked; relocation off
+    us = wizard(["data-analyst", "Jane Doe", "United States", "Austin", "en", "-6", "", "n"])
+    assert us["candidate"]["timezone_window"] == [-9, -3] and us["location"]["open_to_relocation"] is False
+    assert "us" in us["location"]["home_places"] and "us" not in us["location"]["locked_regions"]
+    assert "canada" in us["location"]["locked_regions"]
+
+    # Unknown preset is re-asked, then accepted
+    again = wizard(["designer", "product-designer", "A B", "Georgia", "", "ka", "4", "", "y"])
+    assert again["preset"] == "product-designer" and again["location"]["home_exclude"]
+    mcp = init_mod.mcp_config()["mcpServers"]
+    assert set(mcp) == {"playwright", "playwright-headless"} and "--headless" in str(mcp["playwright-headless"])
+    print("  [+] init.py: wizard writes valid config.yml for QA/Georgia, frontend/Poland and analyst/US users; .mcp.json has both browsers.")
+
+    # Doctor: placeholders, CV detection, JSON output
+    tmpl = (PROJECT_ROOT / "Linkedin Agent" / "candidate-profile.template.md").read_text(encoding="utf-8")
+    assert doctor_mod.placeholders(tmpl) > 10
+    assert doctor_mod.placeholders((PROJECT_ROOT / "Job Hunter Agent" / "screening-playbook.template.md").read_text(encoding="utf-8")) > 5
+    with tempfile.TemporaryDirectory() as tmp:
+        (Path(tmp) / "cv.pdf").write_bytes(b"%PDF-1.4")
+        doctor_mod.results.clear()
+        doctor_mod.check_cv(f"## CV / Resume file rules\n- CV folder: `{tmp}`\n  - ATS: `cv.pdf`\n## Next")
+        assert doctor_mod.results[-1]["status"] == "OK", doctor_mod.results
+        doctor_mod.check_cv(f"## CV / Resume file rules\n- ALWAYS upload the CV from: `{tmp}/missing.pdf`\n")
+        assert doctor_mod.results[-1]["status"] == "FAIL", doctor_mod.results
+        doctor_mod.check_cv(tmpl)
+        assert doctor_mod.results[-1]["status"] == "WARN", doctor_mod.results
+    import subprocess
+    out = subprocess.run([sys.executable, str(PROJECT_ROOT / "doctor.py"), "--json"], capture_output=True, text=True,
+                         encoding="utf-8", cwd=PROJECT_ROOT)
+    report = _json.loads(out.stdout)
+    assert {"ok", "checks"} <= set(report) and any(c["check"] == "config.yml" for c in report["checks"])
+    print(f"  [+] doctor.py: placeholder count, CV path detection (folder / absolute / template) and --json output verified.")
+    print("  => ALL SETUP TESTS PASSED!")
+except Exception as e:
+    print(f"  ❌ FAILED in Setup: {e}")
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+
 print("\n" + "=" * 60)
 print("🎉 ALL CHECKS PASSED: OLD AND NEW COMPONENTS FUNCTION FLAWLESSLY!")
 print("=" * 60)

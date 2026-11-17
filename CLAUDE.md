@@ -8,6 +8,20 @@ The browser is Playwright MCP (`.mcp.json`): `playwright` is headed, `playwright
 headless, both share one persistent profile. Pages are analysed live from snapshots; there are no
 pre-written apply scripts.
 
+## First run (onboarding)
+Run `python doctor.py --json` (with the venv's Python) before the first search or application, and
+whenever the user says "set up my profile". If `.venv` or packages are missing, tell the user to run
+`python init.py` (or run it for them with their OK). If the profile or playbook still has template
+placeholders, or `config.yml` is missing, interview the user, short and in batches:
+1. Ask for their CV file (path). Read it and draft the profile's Summary, Experience, Skills,
+   Education and Languages from it; facts come only from the CV and the user's answers.
+2. Ask what the CV cannot tell: target roles (pick a preset from `presets/`), country and city,
+   time zone, relocation, work authorization / sponsorship, notice period, minimum salary,
+   per-skill years where the CV is vague, contact links, reply language.
+3. Write `Linkedin Agent/candidate-profile.md` and `Job Hunter Agent/screening-playbook.md` (keep the
+   templates' headings) and `config.yml` (only keys that differ from the example and preset).
+4. Show a short summary for confirmation, fix what the user corrects, re-run `doctor.py`.
+
 ## Candidate data: zero hallucination
 - Every candidate fact (name, contacts, experience, skills, salary, CV path, links) comes from
   `Linkedin Agent/candidate-profile.md` and `Job Hunter Agent/screening-playbook.md`.
