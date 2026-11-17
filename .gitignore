@@ -25,6 +25,8 @@ logs/
 
 # Generated search feeds & results
 jobs_feed.json
+seen_jobs.json
+ats-boards.local.json
 search_results.md
 search_*.md
 *_results.md
@@ -42,6 +44,9 @@ ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 .DS_Store
+
+# Personal search settings (config.example.yml is the tracked template)
+config.yml
 
 # Personal candidate profile, reports & pipelines (keep local only)
 *candidate-profile.md

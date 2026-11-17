@@ -13,8 +13,11 @@ pre-written apply scripts.
   `Linkedin Agent/candidate-profile.md` and `Job Hunter Agent/screening-playbook.md`.
 - Never guess or invent a value. If a form or recruiter asks for something not in those files, ask
   the user.
-- These files and the reports are personal and git-ignored. Never commit them or copy their
-  contents into tracked files.
+- What to search for and where the candidate can work (role, title keywords, home country,
+  allowed and locked regions, time zone, reply language, CV file name) comes from `config.yml`
+  (defaults and documentation: `config.example.yml`).
+- These files, `config.yml` and the reports are personal and git-ignored. Never commit them or
+  copy their contents (names, phone numbers, emails, companies applied to) into tracked files.
 
 ## Approvals
 - Applications: the user approves a numbered shortlist once; then fill and submit exactly the
@@ -30,7 +33,8 @@ pre-written apply scripts.
   before applying, to avoid duplicates.
 
 ## Reporting
-- Reply to the user in Georgian. Status reports are ≤ 5 bullets.
+- Reply to the user in `candidate.reply_language` from `config.yml` (if unset, in the language the
+  user writes in). Status reports are ≤ 5 bullets.
 
 ## Code
 - Python 3.10+. Use the project venv: `.venv/Scripts/python.exe` on Windows.

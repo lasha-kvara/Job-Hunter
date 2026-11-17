@@ -1,4 +1,4 @@
-# Tailored CV for every application
+# Tailored CV for external applications
 
 One CV per vacancy, built from the master CV so it matches the job description and parses well in
 the employer's ATS, without adding anything that is not true.
@@ -46,22 +46,20 @@ gaps and never added, even if the candidate "probably" knows them.
 
 ## 5. Generate and upload
 Generate both variants from the tailored copy (run from the CV folder):
-- Designed: `node generate-pdf.js "tailored\<folder>\CVindex.html" "tailored\<folder>\Lasha_Kvaratskhelia_CV.pdf"`
-- ATS: `node build-ats.js "tailored\<folder>\CVindex.html" "tailored\<folder>\ats\Lasha_Kvaratskhelia_CV.pdf"`
+Below, `<cv_file_name>` is `candidate.cv_file_name` from `config.yml`.
+- Designed: `node generate-pdf.js "tailored\<folder>\CVindex.html" "tailored\<folder>\<cv_file_name>"`
+- ATS: `node build-ats.js "tailored\<folder>\CVindex.html" "tailored\<folder>\ats\<cv_file_name>"`
   (single column, A4, no photo, plain text; content is read from the same HTML, so both always match).
 
 Which one to upload:
-- **LinkedIn Easy Apply** and **any online application form or ATS** (Lever, Greenhouse, Workable,
+- **Any online application form or ATS** (Lever, Greenhouse, Workable,
   Ashby, SmartRecruiters, Recruitee, HireHive, Helio, company career portals): the **ATS** variant.
-  Easy Apply forwards the file to the employer's ATS (the job URL often shows
-  `applicantTrackingSystemName`), and LinkedIn parses it for recruiter search.
+- **LinkedIn Easy Apply:** no upload; the master ATS CV stored on LinkedIn is used (no duplicates).
 - **Email applications**, a CV a recruiter asks for in a LinkedIn message, a referral, or a form
   that explicitly asks for a designed/visual CV: the designed variant.
 
-Each Easy Apply upload adds a file to the LinkedIn resume list. In the final report, remind the
-user how many tailored CVs were added so they can clean the list; never delete them yourself.
 
-Both files are named `Lasha_Kvaratskhelia_CV.pdf` (recruiters see the name; no company name, no
+Both files are named `<cv_file_name>` (recruiters see the name; no company name, no
 "ATS"). Confirm the chosen PDF exists and is not empty, then upload it.
 
 ## 6. Report

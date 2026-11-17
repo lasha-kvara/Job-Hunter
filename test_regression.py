@@ -127,7 +127,10 @@ try:
     from aggregator.sources.jobs_ge_provider import JobsGeProvider
     from aggregator.sources.jobspy_provider import JobSpyProvider
     from aggregator.engine import AggregatorEngine
+    from aggregator import settings
 
+    # Tests use the documented defaults only, never the user's personal config.yml.
+    settings.use(settings.example())
     print("  [+] Imports: All Aggregator modules imported successfully.")
 
     # 3.1 Test URL Cleaner (including spjobid and spreportid)
@@ -227,8 +230,181 @@ try:
     # 3.6 Test AggregatorEngine output formatting
     engine = AggregatorEngine()
     table = engine.format_markdown_table([scored_sdet, scored_junior])
-    assert "| Fit | Score | Job Title |" in table
+    assert "| Verdict | Rating | Score | Job Title |" in table
     print("  [+] AggregatorEngine: Markdown table formatting verified.")
+
+    # 3.7 Assessment: 1-5 rating, verdicts, blockers, legitimacy, duplicates
+    from datetime import datetime, timezone
+    from aggregator.assessment import assess, RepostTracker
+    now = datetime(2026, 11, 17, tzinfo=timezone.utc)
+
+    good = JobPost(title="Senior SDET", company="Acme", job_url="https://acme.com/1", source="ats",
+                   location="Remote - EMEA", is_remote=True, date_posted="2026-11-10T00:00:00Z",
+                   description="Remote within Europe. " + "Playwright TypeScript CI/CD. " * 30)
+    good.fit_score = 90
+    assess(good, now=now)
+    assert good.rating == 4.6 and good.verdict == "Apply" and not good.flags, (good.rating, good.verdict, good.flags)
+
+    us_only = JobPost(title="QA Automation Engineer", company="Outside", job_url="https://o.com/2", source="ats",
+                      location="Remote", is_remote=True,
+                      description="Fully remote; we welcome applicants based anywhere in the United States or Canada. " * 10)
+    us_only.fit_score = 90
+    assess(us_only, now=now)
+    assert us_only.verdict == "Skip" and us_only.rating <= 2.0 and us_only.flags[0].startswith("BLOCK"), us_only.flags
+
+    us_loc = JobPost(title="SDET", company="X", job_url="https://x.com/3", source="ats", location="Remote - US",
+                     is_remote=True, description="Build tests. " * 50)
+    us_loc.fit_score = 80
+    assess(us_loc, now=now)
+    assert us_loc.verdict == "Skip" and "region-locked" in us_loc.flags[0], us_loc.flags
+
+    paren = JobPost(title="QA/DevOps Engineer", company="D", job_url="https://d.com/9", source="ats",
+                    location="San Francisco Bay Area or Remote (U.S.)", is_remote=True, description="Tests. " * 80)
+    paren.fit_score = 100
+    assess(paren, now=now)
+    assert paren.verdict == "Skip" and "region-locked" in paren.flags[0], paren.flags
+
+    marketing = JobPost(title="QA Automation Engineer", company="O", job_url="https://o.com/8", source="ats",
+                        location="Remote", is_remote=True,
+                        description="Loved by athletes worldwide. " * 5 + "We welcome applicants based anywhere in the United States or Canada.")
+    marketing.fit_score = 100
+    assess(marketing, now=now)
+    assert marketing.verdict == "Skip" and "residency" in marketing.flags[0], marketing.flags
+
+    onsite = JobPost(title="QA Engineer", company="P", job_url="https://p.com/7", source="ats",
+                     location="Sofia, Bulgaria", is_remote=False, description="Office in Sofia. " * 40)
+    onsite.fit_score = 100
+    assess(onsite, now=now)
+    assert onsite.verdict == "Skip" and "on-site/hybrid abroad" in onsite.flags[0], onsite.flags
+
+    tbilisi = JobPost(title="QA Engineer", company="G", job_url="https://g.ge/6", source="jobs_ge",
+                      location="Tbilisi", is_remote=False, description="Office in Tbilisi. " * 40)
+    tbilisi.fit_score = 80
+    assess(tbilisi, now=now)
+    assert tbilisi.verdict == "Apply" and not tbilisi.flags, tbilisi.flags
+
+    auth = JobPost(title="SDET", company="Y", job_url="https://y.com/4", source="ats", location="Remote",
+                   is_remote=True, description="You must be legally authorized to work in the United States. " * 8)
+    auth.fit_score = 80
+    assess(auth, now=now)
+    assert auth.verdict == "Skip" and "work authorization" in auth.flags[0], auth.flags
+
+    stale = JobPost(title="SDET", company="Z", job_url="https://z.com/5", source="ats", location="Remote, Worldwide",
+                    is_remote=True, date_posted="2026-09-01T00:00:00Z", description="Too short.")
+    stale.fit_score = 75
+    assess(stale, now=now)
+    assert any(f.startswith("stale") for f in stale.flags) and "thin description" in stale.flags
+    assert stale.rating == 3.5 and stale.verdict == "Consider", (stale.rating, stale.verdict)
+
+    dup = JobPost(title="Senior QA Automation Engineer", company="Ankix", job_url="https://jobs.ankix.com/77",
+                  source="ats", location="Remote", is_remote=True, description="Remote. " * 80)
+    dup.fit_score = 90
+    assess(dup, applied_text="- 1. ankix — senior qa automation engineer | external | submitted", now=now)
+    assert dup.applied and dup.verdict == "Skip" and dup.flags[0] == "already applied", dup.flags
+
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        tr = RepostTracker(Path(tmp) / "seen.json")
+        a1 = JobPost(title="SDET", company="Q", job_url="https://q.com/a", source="ats")
+        assert tr.check(a1, now=datetime(2026, 10, 1, tzinfo=timezone.utc)) is None
+        tr.save()
+        tr2 = RepostTracker(Path(tmp) / "seen.json")
+        a2 = JobPost(title="SDET", company="Q", job_url="https://q.com/b", source="ats")
+        assert "reposted" in (tr2.check(a2, now=now) or ""), "repost not detected"
+    print("  [+] Assessment: rating/verdict, US-only + work-auth blockers, stale/thin/repost flags, duplicate check verified.")
+
+    # 3.8 ATS boards provider (deterministic mocks for Greenhouse, Ashby, Lever)
+    from aggregator.sources.ats_provider import AtsBoardsProvider
+
+    def fake_get(self, url, timeout=None, **kw):
+        r = MagicMock(); r.ok = True; r.status_code = 200
+        if "boards-api.greenhouse.io" in url and url.endswith("/jobs"):
+            r.json.return_value = {"jobs": [
+                {"id": 1, "title": "Senior QA Automation Engineer", "absolute_url": "https://gh/1",
+                 "location": {"name": "Remote, Europe"}, "first_published": "2026-11-15T00:00:00Z"},
+                {"id": 2, "title": "Account Executive", "absolute_url": "https://gh/2", "location": {"name": "Remote"}}]}
+        elif "boards-api.greenhouse.io" in url:
+            r.json.return_value = {"content": "&lt;p&gt;Playwright &amp; TypeScript&lt;/p&gt;", "company_name": "GH Co"}
+        elif "ashbyhq" in url:
+            r.json.return_value = {"jobs": [
+                {"title": "SDET", "jobUrl": "https://ashby/1", "location": "Berlin", "isRemote": False,
+                 "workplaceType": "OnSite", "publishedAt": "2026-11-14T00:00:00Z", "descriptionPlain": "Office role"},
+                {"title": "Test Engineer", "jobUrl": "https://ashby/2", "location": "Remote", "isRemote": True,
+                 "publishedAt": "2026-06-01T00:00:00Z", "descriptionPlain": "old"}]}
+        elif "smartrecruiters.com" in url and "/postings?" in url:
+            r.json.return_value = {"totalFound": 2, "content": [
+                {"id": "11", "name": "Senior QA Engineer", "company": {"name": "SR Co"}, "releasedDate": "2026-11-15T00:00:00Z",
+                 "location": {"city": "Tbilisi", "country": "ge", "remote": True, "fullLocation": "Tbilisi, Georgia"}},
+                {"id": "12", "name": "Lawyer", "company": {"name": "SR Co"}, "location": {"remote": True}}]}
+        elif "smartrecruiters.com" in url:
+            r.json.return_value = {"postingUrl": "https://jobs.smartrecruiters.com/srco/11-qa",
+                                   "jobAd": {"sections": {"jobDescription": {"text": "<p>Playwright</p>"}}}}
+        elif "recruitee.com" in url:
+            r.json.return_value = {"offers": [
+                {"title": "QA Automation Engineer", "careers_url": "https://rc.recruitee.com/o/qa", "location": "Remote job",
+                 "city": "San Francisco", "country": "United States", "remote": True, "company_name": "RC Ltd",
+                 "published_at": "2026-11-16 10:01:42 UTC", "description": "<p>Remote</p>", "requirements": ""}]}
+        else:  # lever
+            r.json.return_value = [{"text": "QA Engineer (Playwright)", "hostedUrl": "https://lever/1",
+                                    "categories": {"location": "Tbilisi, Georgia", "commitment": "Full-time"},
+                                    "workplaceType": "remote", "createdAt": 1763164800000,
+                                    "descriptionPlain": "Remote role", "lists": []}]
+        return r
+
+    with patch.object(requests.Session, "get", fake_get):
+        ats_jobs = AtsBoardsProvider.search(query="QA Automation Engineer", max_age_days=30000, is_remote=True,
+                                            boards={"greenhouse": ["ghco"], "ashby": ["ash"], "lever": ["lev"], "lever_eu": []})
+    titles = sorted(j.title for j in ats_jobs)
+    # Account Executive: wrong title; Berlin SDET: on-site; old Ashby job is kept only because max_age_days is huge here.
+    assert titles == ["QA Engineer (Playwright)", "Senior QA Automation Engineer", "Test Engineer"], titles
+    gh_job = next(j for j in ats_jobs if j.source == "greenhouse")
+    assert gh_job.company == "GH Co" and "Playwright & TypeScript" in gh_job.description, gh_job
+    with patch.object(requests.Session, "get", fake_get):
+        recent = AtsBoardsProvider.search(query="", max_age_days=30, is_remote=True,
+                                          boards={"greenhouse": [], "ashby": ["ash"], "lever": [], "lever_eu": []})
+    assert recent == [] or all(j.date_posted >= "2026-10" for j in recent), [j.title for j in recent]
+    with patch.object(requests.Session, "get", fake_get):
+        more = AtsBoardsProvider.search(query="", max_age_days=30000, is_remote=True,
+                                        boards={"smartrecruiters": ["srco"], "recruitee": ["rc"]})
+    by_src = {j.source: j for j in more}
+    assert set(by_src) == {"smartrecruiters", "recruitee"} and len(more) == 2, [j.title for j in more]
+    sr = by_src["smartrecruiters"]
+    assert sr.company == "SR Co" and sr.job_url.endswith("11-qa") and "Playwright" in sr.description and sr.location.startswith("Remote")
+    rc = by_src["recruitee"]
+    # Remote Recruitee offers keep their own label, not the HQ country (which would look US-locked).
+    assert rc.location == "Remote job" and rc.company == "RC Ltd" and rc.date_posted.startswith("2026-11-16T10:01:42"), rc
+    # 3.9 A different person's config.yml changes title filter, home country and scoring
+    import copy
+    other = copy.deepcopy(settings.example())
+    other["role"].update(title_keywords=["frontend", "front-end", "react"], title_exclude=["intern"],
+                         target_roles=["frontend developer"], fallback_skills={"react": 20, "typescript": 15})
+    other["location"].update(home_places=["poland", "warsaw", "kraków"], home_exclude=[],
+                             locked_regions=["us", "united states"], check_regions=["uk"])
+    other["candidate"]["timezone_window"] = [-1, 2]
+    settings.use(other)
+    CandidateScorer._cached_keywords = None
+    CandidateScorer._cached_target_roles = None
+    from aggregator.sources.ats_provider import _title_matcher
+    m = _title_matcher("")
+    assert m("Senior Frontend Engineer (React)") and not m("Senior QA Engineer") and not m("Frontend Intern")
+    warsaw = JobPost(title="Frontend Developer", company="W", job_url="https://w.pl/1", source="ats",
+                     location="Warsaw, Poland", is_remote=False, description="Office. " * 80)
+    warsaw.fit_score = 80
+    assess(warsaw, now=now)
+    assert warsaw.verdict == "Apply" and not warsaw.flags, warsaw.flags
+    tbilisi_now = JobPost(title="Frontend Developer", company="T", job_url="https://t.ge/1", source="ats",
+                          location="Tbilisi, Georgia", is_remote=False, description="Office. " * 80)
+    tbilisi_now.fit_score = 80
+    assess(tbilisi_now, now=now)
+    assert tbilisi_now.verdict == "Skip" and "on-site/hybrid abroad" in tbilisi_now.flags[0], tbilisi_now.flags
+    with patch.object(CandidateScorer, "_resolve_profile_path", return_value=None):
+        kws, roles = CandidateScorer.load_profile_criteria()
+    assert kws == {"react": 20, "typescript": 15} and roles == ["frontend developer"], (kws, roles)
+    settings.use(settings.example())
+    CandidateScorer._cached_keywords = None
+    CandidateScorer._cached_target_roles = None
+    print("  [+] Settings: another profession/country in config.yml changes title filter, home country and fallback skills.")
+    print(f"  [+] ATS Provider (Deterministic Mock): {len(ats_jobs) + len(more)} QA jobs from Greenhouse/Ashby/Lever/SmartRecruiters/Recruitee; title, remote and age filters verified.")
 
     print("  => ALL NEW AGGREGATOR TESTS PASSED!")
 

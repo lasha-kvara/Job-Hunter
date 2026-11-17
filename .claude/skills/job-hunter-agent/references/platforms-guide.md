@@ -1,10 +1,10 @@
 # Supported Job Platforms & ATS Guide
 
-## 1. Georgian platforms
+## 1. Local platforms (Georgia; used when `location.home_country` is Georgia; add your country's sites here)
 
 ### jobs.ge
 - URL: `https://jobs.ge/` (search: `https://jobs.ge/?page=1&q=QA+Automation`)
-- Keywords: "QA", "Automation", "SDET", "Test Engineer", "Selenium", "Playwright".
+- Keywords: the profile's target roles and `role.title_keywords` from `config.yml`.
 - Flow: usually an external redirect or a company contact email shown in the listing.
 
 ### recruiter.ge
@@ -15,8 +15,13 @@
 
 ### LinkedIn Jobs & Easy Apply
 - URL: `https://www.linkedin.com/jobs/`
-- Filters: keywords from the profile's target roles; location `Worldwide / Remote` or `Georgia`;
+- Filters: keywords from the profile's target roles; location `Worldwide / Remote` or the home country;
   `Easy Apply` filter when the user wants quick applications.
+- The Remote filter is not reliable. The guest search API
+  (`/jobs-guest/jobs/api/seeMoreJobPostings/search?...&f_WT=2`) ignores `f_WT` completely. Before
+  applying to a foreign job, open it logged in and check the top-card workplace badge
+  (Remote / Hybrid / On-site).
+- Location `Georgia` as text resolves to the US state; use `geoId=106315325` for the country.
 - Easy Apply is a multi-step dialog (contact, resume, screening questions, review). Keep the
   pre-selected default resume.
 - External Apply leads to the company ATS (Lever, Greenhouse, Ashby, Workable, SmartRecruiters).

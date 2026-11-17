@@ -24,6 +24,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "Job Hunter Agent"))
 
 from aggregator.engine import AggregatorEngine
+from aggregator import settings
 
 try:
     from rich.console import Console
@@ -53,7 +54,7 @@ def main():
     )
     parser.add_argument(
         "--query", "-q",
-        default="QA Automation Engineer",
+        default=settings.section("role").get("default_query") or "",
         help="Job title or search keywords (e.g. 'SDET', 'Senior QA Automation', 'Playwright')"
     )
     parser.add_argument(
@@ -65,15 +66,32 @@ def main():
     parser.add_argument(
         "--country",
         type=str,
-        default="USA",
+        default=settings.section("search").get("indeed_country", "USA"),
         help="Country for Indeed search (default: 'USA')"
     )
     parser.add_argument(
         "--sources", "-s",
         nargs="+",
-        choices=["indeed", "linkedin", "google", "glassdoor", "zip_recruiter", "jobs_ge"],
-        default=["indeed", "linkedin", "google", "glassdoor", "zip_recruiter", "jobs_ge"],
-        help="Platforms to search: indeed, linkedin, google, glassdoor, zip_recruiter, jobs_ge"
+        choices=["ats", "indeed", "linkedin", "google", "glassdoor", "zip_recruiter", "jobs_ge"],
+        default=settings.section("search").get("sources") or ["ats"],
+        help="Platforms to search: ats (Greenhouse/Ashby/Lever boards from ats-boards.json), indeed, linkedin, google, glassdoor, zip_recruiter, jobs_ge"
+    )
+    parser.add_argument(
+        "--ats-days",
+        type=int,
+        default=0,
+        help="ATS boards: only postings published in the last N days (default: 0 = all open jobs; older ones get a 'stale' flag)"
+    )
+    parser.add_argument(
+        "--min-rating",
+        type=float,
+        default=0.0,
+        help="Drop jobs rated below this 1-5 rating (e.g. 3.5)"
+    )
+    parser.add_argument(
+        "--hide-skip",
+        action="store_true",
+        help="Drop jobs whose verdict is Skip (blockers, already applied, low fit)"
     )
     parser.add_argument(
         "--limit", "-n",
@@ -90,13 +108,13 @@ def main():
     parser.add_argument(
         "--min-score",
         type=validate_min_score,
-        default=45,
+        default=int(settings.section("search").get("min_score", 45)),
         help="Filter out jobs with fit score below this threshold (0-100, default: 45)"
     )
     parser.add_argument(
         "--remote",
         action=argparse.BooleanOptionalAction,
-        default=True,
+        default=bool(settings.section("search").get("remote_only", True)),
         help="Filter for remote-only positions (use --no-remote to include on-site)"
     )
     parser.add_argument(
@@ -144,7 +162,10 @@ def main():
         country_indeed=args.country,
         is_remote=args.remote,
         min_fit_score=args.min_score,
-        include_jobs_ge="jobs_ge" in args.sources
+        include_jobs_ge="jobs_ge" in args.sources,
+        ats_max_age_days=args.ats_days,
+        min_rating=args.min_rating,
+        hide_skip=args.hide_skip,
     )
 
     if not jobs:
@@ -166,16 +187,14 @@ def main():
             table.add_column("URL", style="dim")
 
             for idx, j in enumerate(jobs[:15], 1):
-                if j.fit_score >= 80:
-                    score_markup = f"[bold green]{j.fit_score}% {escape(j.fit_grade)}[/bold green]"
-                elif j.fit_score >= 60:
-                    score_markup = f"[bold yellow]{j.fit_score}% {escape(j.fit_grade)}[/bold yellow]"
-                else:
-                    score_markup = f"[dim]{j.fit_score}% {escape(j.fit_grade)}[/dim]"
+                colour = {"Apply": "bold green", "Consider": "bold yellow", "Research first": "yellow"}.get(j.verdict, "dim")
+                score_markup = f"[{colour}]{j.rating:.1f}/5 {escape(j.verdict)}[/{colour}]\n[dim]{j.fit_score}%[/dim]"
 
-                # Show title and highlights together so matching reasons are preserved
+                # Show title with flags (blockers first) or, if none, the matching reasons
                 title_markup = escape(j.title)
-                if j.fit_reasons:
+                if j.flags:
+                    title_markup += f"\n[red italic]⚑ {escape('; '.join(j.flags[:2]))}[/red italic]"
+                elif j.fit_reasons:
                     highlights = escape("; ".join(j.fit_reasons[:2]))
                     title_markup += f"\n[dim italic]💡 {highlights}[/dim italic]"
 
@@ -203,7 +222,9 @@ def main():
             print("=" * 65)
 
             for idx, j in enumerate(jobs[:15], 1):
-                print(f"\n[{idx}] {j.fit_grade} ({j.fit_score}%) — {j.title}")
+                print(f"\n[{idx}] {j.verdict} {j.rating:.1f}/5 ({j.fit_score}%) — {j.title}")
+                if j.flags:
+                    print(f"    ⚑ Flags:    {'; '.join(j.flags)}")
                 print(f"    🏢 Company:  {j.company}")
                 print(f"    📍 Location: {j.location} | Source: {j.source.upper()}")
                 print(f"    💰 Salary:   {j.salary_str}")

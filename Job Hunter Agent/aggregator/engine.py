@@ -3,11 +3,14 @@ import logging
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 
+from . import settings
 from .models import JobPost
 from .cleaner import deduplicate_jobs
 from .scorer import CandidateScorer
 from .sources.jobspy_provider import JobSpyProvider
 from .sources.jobs_ge_provider import JobsGeProvider
+from .sources.ats_provider import AtsBoardsProvider
+from .assessment import RepostTracker, assess, load_applied_text
 
 logger = logging.getLogger(__name__)
 
@@ -21,11 +24,17 @@ class AggregatorEngine:
     def __init__(self, output_dir: Optional[Path] = None):
         self.output_dir = output_dir or Path(__file__).parent.parent
         self.feed_file = self.output_dir / "jobs_feed.json"
+        self.seen_file = self.output_dir / "seen_jobs.json"
+        # Our own records: anything listed here is marked "already applied" and gets verdict Skip.
+        self.applied_files = [
+            self.output_dir / "job-applications-report.md",
+            self.output_dir.parent / "Linkedin Agent" / "linkedin-pipeline.md",
+        ]
         self.last_save_success: bool = False
 
     def search(
         self,
-        query: str = "QA Automation Engineer",
+        query: Optional[str] = None,
         location: str = "Remote",
         sources: Optional[List[str]] = None,
         results_per_source: int = 15,
@@ -34,16 +43,19 @@ class AggregatorEngine:
         is_remote: bool = True,
         min_fit_score: int = 0,
         include_jobs_ge: bool = True,
+        ats_max_age_days: int = 0,
+        min_rating: float = 0.0,
+        hide_skip: bool = False,
     ) -> List[JobPost]:
         """
         Executes search across all requested platforms, cleans, deduplicates,
         and scores results against the configured candidate profile.
         """
         all_jobs: List[JobPost] = []
+        query = query or settings.section("role").get("default_query") or ""
         if sources is None:
-            target_sources = ["indeed", "linkedin", "google", "glassdoor", "zip_recruiter"]
-            if include_jobs_ge:
-                target_sources.append("jobs_ge")
+            target_sources = [s for s in settings.section("search").get("sources") or []
+                              if s != "jobs_ge" or include_jobs_ge]
         else:
             target_sources = list(sources)
 
@@ -76,6 +88,13 @@ class AggregatorEngine:
             all_jobs.extend(found_jobs_ge)
             print(f"  -> Found {len(found_jobs_ge)} raw listings from Jobs.ge.")
 
+        # 2b. Company career boards via public ATS APIs (Greenhouse / Ashby / Lever)
+        if "ats" in target_sources:
+            print("🏢 Searching on: ATS BOARDS (Greenhouse / Ashby / Lever public APIs)...")
+            found_ats = AtsBoardsProvider.search(query=query, max_age_days=ats_max_age_days, is_remote=is_remote)
+            all_jobs.extend(found_ats)
+            print(f"  -> Found {len(found_ats)} matching listings on company boards.")
+
         print(f"\n📊 Total raw listings before deduplication: {len(all_jobs)}")
 
         # 3. Clean & Deduplicate
@@ -84,6 +103,18 @@ class AggregatorEngine:
 
         # 4. Score Candidate Fit
         scored_jobs = CandidateScorer.score_all(unique_jobs)
+
+        # 4b. 1-5 rating, verdict and blocker / legitimacy flags (see assessment.py)
+        applied_text = load_applied_text(self.applied_files)
+        tracker = RepostTracker(self.seen_file)
+        for j in scored_jobs:
+            assess(j, applied_text=applied_text, repost_flag=tracker.check(j))
+        tracker.save()
+        scored_jobs.sort(key=lambda j: (j.verdict != "Skip", j.rating, j.fit_score), reverse=True)
+        if hide_skip:
+            scored_jobs = [j for j in scored_jobs if j.verdict != "Skip"]
+        if min_rating > 0:
+            scored_jobs = [j for j in scored_jobs if j.rating >= min_rating]
 
         # 5. Apply score threshold
         if min_fit_score > 0:
@@ -114,16 +145,18 @@ class AggregatorEngine:
             return "No matching jobs found."
 
         lines = [
-            "| Fit | Score | Job Title | Company | Location | Source | Salary | Apply Link |",
-            "|:---:|:---:|:---|:---|:---|:---:|:---|:---:|"
+            "| Verdict | Rating | Score | Job Title | Company | Location | Source | Salary | Flags | Apply Link |",
+            "|:---|:---:|:---:|:---|:---|:---|:---:|:---|:---|:---:|"
         ]
 
         for j in jobs:
             title_clean = j.title.replace("|", "-")
             company_clean = j.company.replace("|", "-")
             link_str = f"[Apply ↗]({j.job_url})" if j.job_url else "N/A"
+            flags = "; ".join(j.flags).replace("|", "/") or "—"
+            location = (j.location or "").replace("|", "/")
             lines.append(
-                f"| {j.fit_grade} | **{j.fit_score}%** | {title_clean} | {company_clean} | {j.location} | {j.source.upper()} | {j.salary_str} | {link_str} |"
+                f"| {j.verdict or j.fit_grade} | **{j.rating:.1f}** | {j.fit_score}% | {title_clean} | {company_clean} | {location} | {j.source.upper()} | {j.salary_str} | {flags} | {link_str} |"
             )
 
         return "\n".join(lines)

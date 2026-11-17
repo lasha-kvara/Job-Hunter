@@ -22,6 +22,9 @@ class JobPost:
     fit_score: int = 0
     fit_reasons: List[str] = field(default_factory=list)
     fit_grade: str = ""
+    rating: float = 0.0          # 1.0-5.0, see assessment.assess()
+    verdict: str = ""            # Apply / Consider / Research first / Skip
+    flags: List[str] = field(default_factory=list)  # blockers and legitimacy warnings
     applied: bool = False
     id: str = ""
 

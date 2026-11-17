@@ -1,9 +1,9 @@
 ---
 name: linkedin-agent
 description: >-
-  მართავს LinkedIn-ის მიმოწერას HR-ებთან და რეკრუტერებთან კანდიდატის სახელით: კითხულობს
-  მესიჯებს, ამზადებს პასუხებს ქართულად ან ინგლისურად, ათანხმებს გასაუბრებებს და ანახლებს pipeline-ს.
-  Use when the user asks to check LinkedIn messages, reply to recruiters, schedule interviews,
+  Handles LinkedIn conversations with recruiters on the candidate's behalf: reads messages,
+  drafts replies in the recruiter's language, schedules interviews and updates the pipeline.
+  Use when the user asks (in any language) to check LinkedIn messages, reply to recruiters, schedule interviews,
   or update the LinkedIn opportunity pipeline.
 ---
 
@@ -40,12 +40,12 @@ recruiter asks for project detail.
   If a question touches something not in the profile, ask the user.
 - Salary: state the figure from the profile only when the recruiter explicitly asks.
 - Notice period, relocation and work preferences: from the profile's Logistics section.
-- Reply in the recruiter's language (Georgian or English).
+- Reply in the recruiter's language. Talk to the user in `candidate.reply_language` (`config.yml`).
 - If asked whether AI is involved, answer honestly (template 6).
 
 ## Interviews
 - Show every proposed time to the user first; confirm a slot only after the user approves it.
-- Always include weekday, date, time and timezone (GMT+4, Georgia time).
+- Always include weekday, date, time and timezone (`candidate.timezone` in `config.yml`).
 
 ## Pipeline
 - After each change, update `Linkedin Agent/linkedin-pipeline.md` (stage, contact, next step).
