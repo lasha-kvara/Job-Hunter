@@ -52,8 +52,8 @@ def validate_min_score(val: str) -> int:
 def main():
     # --preset / --list-presets are read first: the preset decides the other defaults.
     pre = argparse.ArgumentParser(add_help=False)
-    pre.add_argument("--preset")
-    pre.add_argument("--list-presets", action="store_true")
+    pre.add_argument("--preset", help="profession preset for this run (overrides config.yml), e.g. frontend")
+    pre.add_argument("--list-presets", action="store_true", help="show the available profession presets and exit")
     early, _ = pre.parse_known_args()
     if early.list_presets:
         print("Presets (set `preset:` in config.yml or pass --preset):")
