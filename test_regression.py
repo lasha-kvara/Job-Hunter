@@ -79,14 +79,14 @@ except Exception as e:
 
 
 # -------------------------------------------------------------
-# 2. TEST EXISTING RUNNER SCRIPTS (headed_apply.py, run_headed.py)
+# 2. TEST RUNNER SCRIPTS (CLIs and setup tools compile)
 # -------------------------------------------------------------
 print("\n[TEST GROUP 2] Testing Existing Runner Scripts...")
 
 try:
     import py_compile
 
-    for script_name in ["headed_apply.py", "run_headed.py", "Linkedin Agent/run.py", "search_jobs.py"]:
+    for script_name in ["Linkedin Agent/run.py", "search_jobs.py", "init.py", "doctor.py", "cv_tools.py"]:
         script_path = PROJECT_ROOT / script_name
         assert script_path.is_file(), f"Required runner script not found: {script_name}"
         py_compile.compile(str(script_path), doraise=True)
@@ -127,7 +127,10 @@ try:
     from aggregator.sources.jobs_ge_provider import JobsGeProvider
     from aggregator.sources.jobspy_provider import JobSpyProvider
     from aggregator.engine import AggregatorEngine
+    from aggregator import settings
 
+    # Tests use the documented defaults only, never the user's personal config.yml.
+    settings.use(settings.example())
     print("  [+] Imports: All Aggregator modules imported successfully.")
 
     # 3.1 Test URL Cleaner (including spjobid and spreportid)
@@ -227,8 +230,228 @@ try:
     # 3.6 Test AggregatorEngine output formatting
     engine = AggregatorEngine()
     table = engine.format_markdown_table([scored_sdet, scored_junior])
-    assert "| Fit | Score | Job Title |" in table
+    assert "| Verdict | Rating | Score | Job Title |" in table
     print("  [+] AggregatorEngine: Markdown table formatting verified.")
+
+    # 3.7 Assessment: 1-5 rating, verdicts, blockers, legitimacy, duplicates
+    from datetime import datetime, timezone
+    from aggregator.assessment import assess, RepostTracker
+    now = datetime(2026, 11, 17, tzinfo=timezone.utc)
+
+    good = JobPost(title="Senior SDET", company="Acme", job_url="https://acme.com/1", source="ats",
+                   location="Remote - EMEA", is_remote=True, date_posted="2026-11-10T00:00:00Z",
+                   description="Remote within Europe. " + "Playwright TypeScript CI/CD. " * 30)
+    good.fit_score = 90
+    assess(good, now=now)
+    assert good.rating == 4.6 and good.verdict == "Apply" and not good.flags, (good.rating, good.verdict, good.flags)
+
+    us_only = JobPost(title="QA Automation Engineer", company="Outside", job_url="https://o.com/2", source="ats",
+                      location="Remote", is_remote=True,
+                      description="Fully remote; we welcome applicants based anywhere in the United States or Canada. " * 10)
+    us_only.fit_score = 90
+    assess(us_only, now=now)
+    assert us_only.verdict == "Skip" and us_only.rating <= 2.0 and us_only.flags[0].startswith("BLOCK"), us_only.flags
+
+    us_loc = JobPost(title="SDET", company="X", job_url="https://x.com/3", source="ats", location="Remote - US",
+                     is_remote=True, description="Build tests. " * 50)
+    us_loc.fit_score = 80
+    assess(us_loc, now=now)
+    assert us_loc.verdict == "Skip" and "region-locked" in us_loc.flags[0], us_loc.flags
+
+    paren = JobPost(title="QA/DevOps Engineer", company="D", job_url="https://d.com/9", source="ats",
+                    location="San Francisco Bay Area or Remote (U.S.)", is_remote=True, description="Tests. " * 80)
+    paren.fit_score = 100
+    assess(paren, now=now)
+    assert paren.verdict == "Skip" and "region-locked" in paren.flags[0], paren.flags
+
+    marketing = JobPost(title="QA Automation Engineer", company="O", job_url="https://o.com/8", source="ats",
+                        location="Remote", is_remote=True,
+                        description="Loved by athletes worldwide. " * 5 + "We welcome applicants based anywhere in the United States or Canada.")
+    marketing.fit_score = 100
+    assess(marketing, now=now)
+    assert marketing.verdict == "Skip" and "residency" in marketing.flags[0], marketing.flags
+
+    onsite = JobPost(title="QA Engineer", company="P", job_url="https://p.com/7", source="ats",
+                     location="Sofia, Bulgaria", is_remote=False, description="Office in Sofia. " * 40)
+    onsite.fit_score = 100
+    assess(onsite, now=now)
+    assert onsite.verdict == "Skip" and "on-site/hybrid abroad" in onsite.flags[0], onsite.flags
+
+    tbilisi = JobPost(title="QA Engineer", company="G", job_url="https://g.ge/6", source="jobs_ge",
+                      location="Tbilisi", is_remote=False, description="Office in Tbilisi. " * 40)
+    tbilisi.fit_score = 80
+    assess(tbilisi, now=now)
+    assert tbilisi.verdict == "Apply" and not tbilisi.flags, tbilisi.flags
+
+    auth = JobPost(title="SDET", company="Y", job_url="https://y.com/4", source="ats", location="Remote",
+                   is_remote=True, description="You must be legally authorized to work in the United States. " * 8)
+    auth.fit_score = 80
+    assess(auth, now=now)
+    assert auth.verdict == "Skip" and "work authorization" in auth.flags[0], auth.flags
+
+    stale = JobPost(title="SDET", company="Z", job_url="https://z.com/5", source="ats", location="Remote, Worldwide",
+                    is_remote=True, date_posted="2026-09-01T00:00:00Z", description="Too short.")
+    stale.fit_score = 75
+    assess(stale, now=now)
+    assert any(f.startswith("stale") for f in stale.flags) and "thin description" in stale.flags
+    assert stale.rating == 3.5 and stale.verdict == "Consider", (stale.rating, stale.verdict)
+
+    dup = JobPost(title="Senior QA Automation Engineer", company="Ankix", job_url="https://jobs.ankix.com/77",
+                  source="ats", location="Remote", is_remote=True, description="Remote. " * 80)
+    dup.fit_score = 90
+    assess(dup, applied_text="- 1. ankix — senior qa automation engineer | external | submitted", now=now)
+    assert dup.applied and dup.verdict == "Skip" and dup.flags[0] == "already applied", dup.flags
+
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        tr = RepostTracker(Path(tmp) / "seen.json")
+        a1 = JobPost(title="SDET", company="Q", job_url="https://q.com/a", source="ats")
+        assert tr.check(a1, now=datetime(2026, 10, 1, tzinfo=timezone.utc)) is None
+        tr.save()
+        tr2 = RepostTracker(Path(tmp) / "seen.json")
+        a2 = JobPost(title="SDET", company="Q", job_url="https://q.com/b", source="ats")
+        assert "reposted" in (tr2.check(a2, now=now) or ""), "repost not detected"
+    print("  [+] Assessment: rating/verdict, US-only + work-auth blockers, stale/thin/repost flags, duplicate check verified.")
+
+    # 3.8 ATS boards provider (deterministic mocks for Greenhouse, Ashby, Lever)
+    from aggregator.sources.ats_provider import AtsBoardsProvider
+
+    def fake_get(self, url, timeout=None, **kw):
+        r = MagicMock(); r.ok = True; r.status_code = 200
+        if "boards-api.greenhouse.io" in url and url.endswith("/jobs"):
+            r.json.return_value = {"jobs": [
+                {"id": 1, "title": "Senior QA Automation Engineer", "absolute_url": "https://gh/1",
+                 "location": {"name": "Remote, Europe"}, "first_published": "2026-11-15T00:00:00Z"},
+                {"id": 2, "title": "Account Executive", "absolute_url": "https://gh/2", "location": {"name": "Remote"}}]}
+        elif "boards-api.greenhouse.io" in url:
+            r.json.return_value = {"content": "&lt;p&gt;Playwright &amp; TypeScript&lt;/p&gt;", "company_name": "GH Co"}
+        elif "ashbyhq" in url:
+            r.json.return_value = {"jobs": [
+                {"title": "SDET", "jobUrl": "https://ashby/1", "location": "Berlin", "isRemote": False,
+                 "workplaceType": "OnSite", "publishedAt": "2026-11-14T00:00:00Z", "descriptionPlain": "Office role"},
+                {"title": "Test Engineer", "jobUrl": "https://ashby/2", "location": "Remote", "isRemote": True,
+                 "publishedAt": "2026-06-01T00:00:00Z", "descriptionPlain": "old"}]}
+        elif "smartrecruiters.com" in url and "/postings?" in url:
+            r.json.return_value = {"totalFound": 2, "content": [
+                {"id": "11", "name": "Senior QA Engineer", "company": {"name": "SR Co"}, "releasedDate": "2026-11-15T00:00:00Z",
+                 "location": {"city": "Tbilisi", "country": "ge", "remote": True, "fullLocation": "Tbilisi, Georgia"}},
+                {"id": "12", "name": "Lawyer", "company": {"name": "SR Co"}, "location": {"remote": True}}]}
+        elif "smartrecruiters.com" in url:
+            r.json.return_value = {"postingUrl": "https://jobs.smartrecruiters.com/srco/11-qa",
+                                   "jobAd": {"sections": {"jobDescription": {"text": "<p>Playwright</p>"}}}}
+        elif "recruitee.com" in url:
+            r.json.return_value = {"offers": [
+                {"title": "QA Automation Engineer", "careers_url": "https://rc.recruitee.com/o/qa", "location": "Remote job",
+                 "city": "San Francisco", "country": "United States", "remote": True, "company_name": "RC Ltd",
+                 "published_at": "2026-11-16 10:01:42 UTC", "description": "<p>Remote</p>", "requirements": ""}]}
+        else:  # lever
+            r.json.return_value = [{"text": "QA Engineer (Playwright)", "hostedUrl": "https://lever/1",
+                                    "categories": {"location": "Tbilisi, Georgia", "commitment": "Full-time"},
+                                    "workplaceType": "remote", "createdAt": 1763164800000,
+                                    "descriptionPlain": "Remote role", "lists": []}]
+        return r
+
+    with patch.object(requests.Session, "get", fake_get):
+        ats_jobs = AtsBoardsProvider.search(query="QA Automation Engineer", max_age_days=30000, is_remote=True,
+                                            boards={"greenhouse": ["ghco"], "ashby": ["ash"], "lever": ["lev"], "lever_eu": []})
+    titles = sorted(j.title for j in ats_jobs)
+    # Account Executive: wrong title; Berlin SDET: on-site; old Ashby job is kept only because max_age_days is huge here.
+    assert titles == ["QA Engineer (Playwright)", "Senior QA Automation Engineer", "Test Engineer"], titles
+    gh_job = next(j for j in ats_jobs if j.source == "greenhouse")
+    assert gh_job.company == "GH Co" and "Playwright & TypeScript" in gh_job.description, gh_job
+    with patch.object(requests.Session, "get", fake_get):
+        recent = AtsBoardsProvider.search(query="", max_age_days=30, is_remote=True,
+                                          boards={"greenhouse": [], "ashby": ["ash"], "lever": [], "lever_eu": []})
+    assert recent == [] or all(j.date_posted >= "2026-10" for j in recent), [j.title for j in recent]
+    with patch.object(requests.Session, "get", fake_get):
+        more = AtsBoardsProvider.search(query="", max_age_days=30000, is_remote=True,
+                                        boards={"smartrecruiters": ["srco"], "recruitee": ["rc"]})
+    by_src = {j.source: j for j in more}
+    assert set(by_src) == {"smartrecruiters", "recruitee"} and len(more) == 2, [j.title for j in more]
+    sr = by_src["smartrecruiters"]
+    assert sr.company == "SR Co" and sr.job_url.endswith("11-qa") and "Playwright" in sr.description and sr.location.startswith("Remote")
+    rc = by_src["recruitee"]
+    # Remote Recruitee offers keep their own label, not the HQ country (which would look US-locked).
+    assert rc.location == "Remote job" and rc.company == "RC Ltd" and rc.date_posted.startswith("2026-11-16T10:01:42"), rc
+    # 3.9 A different person's config.yml changes title filter, home country and scoring
+    import copy
+    other = copy.deepcopy(settings.example())
+    other["role"].update(title_keywords=["frontend", "front-end", "react"], title_exclude=["intern"],
+                         target_roles=["frontend developer"], fallback_skills={"react": 20, "typescript": 15})
+    other["location"].update(home_places=["poland", "warsaw", "kraków"], home_exclude=[],
+                             locked_regions=["us", "united states"], check_regions=["uk"])
+    other["candidate"]["timezone_window"] = [-1, 2]
+    settings.use(other)
+    CandidateScorer._cached_keywords = None
+    CandidateScorer._cached_target_roles = None
+    from aggregator.sources.ats_provider import _title_matcher
+    m = _title_matcher("")
+    assert m("Senior Frontend Engineer (React)") and not m("Senior QA Engineer") and not m("Frontend Intern")
+    warsaw = JobPost(title="Frontend Developer", company="W", job_url="https://w.pl/1", source="ats",
+                     location="Warsaw, Poland", is_remote=False, description="Office. " * 80)
+    warsaw.fit_score = 80
+    assess(warsaw, now=now)
+    assert warsaw.verdict == "Apply" and not warsaw.flags, warsaw.flags
+    tbilisi_now = JobPost(title="Frontend Developer", company="T", job_url="https://t.ge/1", source="ats",
+                          location="Tbilisi, Georgia", is_remote=False, description="Office. " * 80)
+    tbilisi_now.fit_score = 80
+    assess(tbilisi_now, now=now)
+    assert tbilisi_now.verdict == "Skip" and "on-site/hybrid abroad" in tbilisi_now.flags[0], tbilisi_now.flags
+    with patch.object(CandidateScorer, "_resolve_profile_path", return_value=None):
+        kws, roles = CandidateScorer.load_profile_criteria()
+    assert kws == {"react": 20, "typescript": 15} and roles == ["frontend developer"], (kws, roles)
+    settings.use(settings.example())
+    CandidateScorer._cached_keywords = None
+    CandidateScorer._cached_target_roles = None
+    print("  [+] Settings: another profession/country in config.yml changes title filter, home country and fallback skills.")
+
+    # 3.10 Every profession preset loads and its title filter keeps the right titles
+    samples = {
+        "qa-automation": (["Senior QA Automation Engineer", "SDET II", "Test Automation Lead"],
+                          ["Data Quality Analyst", "Growth Marketer (QA Automation)", "Senior Backend Engineer"]),
+        "frontend": (["Senior Frontend Engineer", "React Developer", "Front-End Developer"],
+                     ["Product Designer", "Backend Engineer"]),
+        "backend": (["Senior Backend Engineer (Go)", "Java Developer", "Node.js Engineer"],
+                    ["Frontend Engineer", "Account Executive"]),
+        "fullstack": (["Full Stack Engineer", "Senior Full-Stack Developer"],
+                      ["Software Engineer, Infrastructure", "Analytics Lead, Full Stack"]),
+        "mobile": (["Senior iOS Engineer", "Android Developer", "React Native Engineer"],
+                   ["Account Executive, Mobile Gaming", "Mobile QA Engineer"]),
+        "devops": (["Senior DevOps Engineer", "Site Reliability Engineer", "Platform Engineer"],
+                   ["Corporate Security Infrastructure Project Manager"]),
+        "data-engineer": (["Senior Data Engineer", "Analytics Engineer"], ["Data Entry Clerk", "Data Analyst"]),
+        "data-analyst": (["Senior Data Analyst", "Product Analyst"], ["Data Engineer", "Credit Analytics AVP"]),
+        "ml-engineer": (["Machine Learning Engineer", "Senior Data Scientist", "LLM Engineer"],
+                        ["Solutions Architect - AI/ML", "HTML Developer"]),
+        "product-designer": (["Senior Product Designer", "UX Designer", "UI/UX Designer"],
+                             ["Frontend Engineer", "Interior Designer"]),
+        "product-manager": (["Senior Product Manager", "Product Owner"],
+                            ["Product Marketing Manager", "Product Designer"]),
+    }
+    assert sorted(samples) == settings.available_presets(), settings.available_presets()
+    for name, (keep, drop) in samples.items():
+        cfg_p = settings.example(name)
+        role = cfg_p["role"]
+        for key in ("default_query", "target_roles", "title_keywords", "fallback_skills"):
+            assert role.get(key), f"preset {name}: role.{key} is empty"
+        assert role["seniority_bonus"] and role["title_penalties"].get("intern"), f"{name}: shared defaults lost"
+        settings.use(cfg_p)
+        m = _title_matcher("")
+        bad = [t for t in keep if not m(t)] + [f"!{t}" for t in drop if m(t)]
+        assert not bad, f"preset {name}: {bad}"
+    settings.use(settings.example())
+    try:
+        settings.compose({}, "no-such-preset")
+        raise AssertionError("unknown preset accepted")
+    except ValueError:
+        pass
+    clr = JobPost(title="Staff SRE (TS/SCI)", company="C", job_url="https://c.com/1", source="ats",
+                  location="Remote", is_remote=True, description="Remote. " * 80)
+    clr.fit_score = 90
+    assess(clr, now=now)
+    assert clr.verdict == "Skip" and "security clearance" in clr.flags[0], clr.flags
+    print(f"  [+] Presets: {len(samples)} profession presets load and filter titles correctly; clearance jobs blocked.")
+    print(f"  [+] ATS Provider (Deterministic Mock): {len(ats_jobs) + len(more)} QA jobs from Greenhouse/Ashby/Lever/SmartRecruiters/Recruitee; title, remote and age filters verified.")
 
     print("  => ALL NEW AGGREGATOR TESTS PASSED!")
 
@@ -452,6 +675,166 @@ try:
 
 except Exception as e:
     print(f"  ❌ FAILED in Token Optimization: {e}")
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+
+# -------------------------------------------------------------
+# 5. SETUP WIZARD (init.py) AND HEALTH CHECK (doctor.py)
+# -------------------------------------------------------------
+print("\n[TEST GROUP 5] Testing setup wizard and doctor...")
+try:
+    import importlib.util, builtins, types, tempfile, json as _json, yaml as _yaml
+    from unittest.mock import patch
+
+    def _load(name):
+        spec = importlib.util.spec_from_file_location(f"_jh_{name}", PROJECT_ROOT / f"{name}.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+
+    init_mod = _load("init")
+    doctor_mod = _load("doctor")
+    from aggregator import settings as _settings
+
+    def wizard(answers, preset=None):
+        it = iter(answers)
+        with patch.object(builtins, "input", lambda *_: next(it)), patch("sys.stdout", new=io.StringIO()):
+            return _yaml.safe_load(init_mod.build_config(types.SimpleNamespace(yes=False, preset=preset)))
+
+    # Defaults-only run produces a valid config that composes with its preset
+    with patch("sys.stdout", new=io.StringIO()):
+        dflt = _yaml.safe_load(init_mod.build_config(types.SimpleNamespace(yes=True, preset="devops")))
+    assert dflt["preset"] == "devops" and dflt["candidate"]["cv_file_name"] == "Firstname_Lastname_CV.pdf"
+    assert _settings.compose(dflt)["role"]["default_query"] == "DevOps Engineer"
+
+    # A Polish frontend developer: EU removed from check regions, home = Poland + cities
+    pl = wizard(["frontend", "Jan Kowalski", "Poland", "Warsaw, Krakow", "en", "1", "-2..3", "y"])
+    assert pl["candidate"] == {"reply_language": "en", "timezone": "GMT+1", "timezone_window": [-2, 3],
+                               "cv_file_name": "Jan_Kowalski_CV.pdf"}, pl["candidate"]
+    assert pl["location"]["home_places"] == ["poland", "warsaw", "krakow"]
+    assert "poland" not in pl["location"]["check_regions"] and "eu" not in pl["location"]["check_regions"]
+
+    # A US data analyst: US regions are home, not locked; relocation off
+    us = wizard(["data-analyst", "Jane Doe", "United States", "Austin", "en", "-6", "", "n"])
+    assert us["candidate"]["timezone_window"] == [-9, -3] and us["location"]["open_to_relocation"] is False
+    assert "us" in us["location"]["home_places"] and "us" not in us["location"]["locked_regions"]
+    assert "canada" in us["location"]["locked_regions"]
+
+    # Unknown preset is re-asked, then accepted
+    again = wizard(["designer", "product-designer", "A B", "Georgia", "", "ka", "4", "", "y"])
+    assert again["preset"] == "product-designer" and again["location"]["home_exclude"]
+    mcp = init_mod.mcp_config()["mcpServers"]
+    assert set(mcp) == {"playwright", "playwright-headless"} and "--headless" in str(mcp["playwright-headless"])
+    print("  [+] init.py: wizard writes valid config.yml for QA/Georgia, frontend/Poland and analyst/US users; .mcp.json has both browsers.")
+
+    # Doctor: placeholders, CV detection, JSON output
+    tmpl = (PROJECT_ROOT / "Linkedin Agent" / "candidate-profile.template.md").read_text(encoding="utf-8")
+    assert doctor_mod.placeholders(tmpl) > 10
+    assert doctor_mod.placeholders((PROJECT_ROOT / "Job Hunter Agent" / "screening-playbook.template.md").read_text(encoding="utf-8")) > 5
+    with tempfile.TemporaryDirectory() as tmp:
+        (Path(tmp) / "cv.pdf").write_bytes(b"%PDF-1.4")
+        doctor_mod.results.clear()
+        doctor_mod.check_cv(f"## CV / Resume file rules\n- CV folder: `{tmp}`\n  - ATS: `cv.pdf`\n## Next")
+        assert doctor_mod.results[-1]["status"] == "OK", doctor_mod.results
+        doctor_mod.check_cv(f"## CV / Resume file rules\n- ALWAYS upload the CV from: `{tmp}/missing.pdf`\n")
+        assert doctor_mod.results[-1]["status"] == "FAIL", doctor_mod.results
+        doctor_mod.check_cv(tmpl)
+        assert doctor_mod.results[-1]["status"] == "WARN", doctor_mod.results
+    import subprocess
+    out = subprocess.run([sys.executable, str(PROJECT_ROOT / "doctor.py"), "--json"], capture_output=True, text=True,
+                         encoding="utf-8", cwd=PROJECT_ROOT)
+    report = _json.loads(out.stdout)
+    assert {"ok", "checks"} <= set(report) and any(c["check"] == "config.yml" for c in report["checks"])
+    print(f"  [+] doctor.py: placeholder count, CV path detection (folder / absolute / template) and --json output verified.")
+    print("  => ALL SETUP TESTS PASSED!")
+except Exception as e:
+    print(f"  ❌ FAILED in Setup: {e}")
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
+
+# -------------------------------------------------------------
+# 6. CV TOOLS (tailor, fact check, ATS rendering)
+# -------------------------------------------------------------
+print("\n[TEST GROUP 6] Testing CV tools...")
+try:
+    import tempfile, json as _json
+    sys.path.insert(0, str(PROJECT_ROOT))
+    import cv_tools as cvt
+
+    master_html = (PROJECT_ROOT / "cv" / "master.example.html").read_text(encoding="utf-8")
+    d = cvt.extract(master_html)
+    assert d["name"] == "Jane Doe" and d["subtitle"] == "Senior Software Engineer", (d["name"], d["subtitle"])
+    assert [j["company"].split(" ·")[0].strip() for j in d["experience"]] == ["Acme Corp", "Globex", "Initech"]
+    assert d["education"][0]["title"] == "State University" and "English (C1)" in d["languages"]
+    assert len(d["contacts"]) == 4 and d["experience"][0]["bullets"][0].startswith("Led the redesign")
+    ats = cvt.render_ats(d, cvt.LEVELS[0])
+    assert "<h2>Work Experience</h2>" in ats and "Technologies: TypeScript" in ats and "<img" not in ats
+    tight = cvt.render_ats(d, cvt.LEVELS[-1])
+    assert tight.count("<li>") < ats.count("<li>"), "tight level must cut bullets"
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp = Path(tmp)
+        spec = {"folder": "tailored/x", "subtitle": "Senior Backend Engineer",
+                "summary": "Backend engineer with 7+ years in Python and Go services.",
+                "skills": {"Languages": ["Go", "Python"]},
+                "bullets": {"Acme Corp": [2, 0]}, "tags": {"Globex": ["Kubernetes", "Python"]}}
+        with_photo = master_html.replace('<div class="photo-placeholder">PHOTO</div>', '<img src="photo.jpg" alt="x" />')
+        out = cvt.tailor_html(with_photo, spec, tmp, tmp / "tailored" / "x")
+        t = cvt.extract(out)
+        assert t["subtitle"] == "Senior Backend Engineer" and t["skills"][0]["items"] == ["Go", "Python"]
+        assert t["experience"][0]["bullets"][0].startswith("Introduced contract tests") and len(t["experience"][0]["bullets"]) == 2
+        assert t["experience"][1]["tags"] == ["Kubernetes", "Python"]
+        assert 'src="../../photo.jpg"' in out, "photo path must be rewritten for the tailored folder"
+        errs, warns = cvt.fact_check(master_html, out)
+        assert not errs and any("summary" in w for w in warns), (errs, warns)
+
+        # Things the check must reject or flag
+        bad = out.replace("2022 — Present", "2020 — Present")
+        assert any("dates" in e for e in cvt.fact_check(master_html, bad)[0])
+        bad = out.replace('<span class="badge">Go</span>', '<span class="badge">Rust</span>')
+        assert any("Rust" in e for e in cvt.fact_check(master_html, bad)[0])
+        bad = out.replace("7+ years in Python", "17+ years in Python")
+        assert any("17" in e for e in cvt.fact_check(master_html, bad)[0])
+        bad = out.replace("jane.doe@example.com</a>", "someone@else.com</a>")
+        assert any("contacts" in e for e in cvt.fact_check(master_html, bad)[0])
+        renamed = out.replace('<span class="badge">Go</span>', '<span class="badge">Go (Golang)</span>')
+        e2, w2 = cvt.fact_check(master_html, renamed)
+        assert not e2 and any("renamed" in w for w in w2), (e2, w2)
+        from_profile = out.replace('<span class="badge">Go</span>', '<span class="badge">Terraform</span>')
+        e3, w3 = cvt.fact_check(master_html, from_profile, "- Terraform: 3 years")
+        assert not e3 and any("candidate-profile" in w for w in w3), (e3, w3)
+        try:
+            cvt.tailor_html(master_html, {"skills": {"Languages": ["Rust"]}}, tmp, tmp)
+            raise AssertionError("unknown skill accepted by tailor")
+        except SystemExit:
+            pass
+    print("  [+] cv_tools: template parsing, ATS rendering and fitting levels, tailoring with photo path, fact check (dates, skills, numbers, contacts, renames, profile skills).")
+
+    # Real PDFs only where Chromium is installed (CI runs without the browser download)
+    try:
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            p.chromium.launch().close()
+        have_browser = True
+    except Exception:
+        have_browser = False
+    if have_browser:
+        with tempfile.TemporaryDirectory() as tmp:
+            src = Path(tmp) / "CVindex.html"
+            src.write_text(master_html, encoding="utf-8")
+            msg = cvt.ats_pdf(src, Path(tmp) / "ats" / "cv.pdf", 2)
+            pdf = (Path(tmp) / "ats" / "cv.pdf").read_bytes()
+            assert pdf.startswith(b"%PDF") and 1 <= cvt.count_pdf_pages(pdf) <= 2, msg
+            cvt.designed_pdf(src, Path(tmp) / "cv.pdf")
+            assert (Path(tmp) / "cv.pdf").stat().st_size > 10000
+        print(f"  [+] cv_tools: real PDFs rendered ({msg.split('(')[1].rstrip(')')}).")
+    else:
+        print("  [~] cv_tools: Chromium not installed, PDF rendering skipped.")
+    print("  => ALL CV TOOL TESTS PASSED!")
+except Exception as e:
+    print(f"  ❌ FAILED in CV tools: {e}")
     import traceback
     traceback.print_exc()
     sys.exit(1)

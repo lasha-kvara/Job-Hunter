@@ -1,0 +1,67 @@
+# Job-Hunter configuration
+# -----------------------------------------------------------------------------------------------
+# Copy this file to `config.yml` and edit it. `config.yml` is git-ignored and only needs the keys
+# you change: everything you leave out falls back to the values below.
+# Facts about you (experience, skills, salary, contacts) do NOT go here; they live in
+# `Linkedin Agent/candidate-profile.md`. This file says WHAT to search for and WHERE you can work.
+#
+# The values below are a worked example: a senior QA Automation engineer living in Georgia who
+# wants remote work in Europe or relocation. Replace them with your own.
+#
+# Order of precedence: this file  <  presets/<preset>.yml  <  your config.yml
+
+# Your profession. One of the files in presets/ (without .yml): qa-automation, frontend, backend,
+# fullstack, mobile, devops, data-engineer, data-analyst, ml-engineer, product-designer,
+# product-manager. A preset fills the whole `role` section below; you can still override any key.
+preset: qa-automation
+
+candidate:
+  reply_language: en            # language the agents use when talking to you: en, ka, de, uk, ...
+  timezone: "GMT+4"             # shown in interview-scheduling messages
+  timezone_window: [0, 4]       # UTC offsets you can work with; "GMT+2" / "UTC+3" in a posting count as OK
+  cv_file_name: "Firstname_Lastname_CV.pdf"   # file name recruiters see on the CVs you upload
+
+role:
+  # Shared by every preset. The preset adds: default_query (search_jobs.py --query default),
+  # target_roles (scored in titles; fallback when the profile has no "Target roles"),
+  # title_keywords (a scanned title must contain one), title_exclude (and none of these),
+  # fallback_skills (skill weights used only when candidate-profile.md has no "Skills" section),
+  # and role-specific title_penalties. Override any of them here or in config.yml.
+  seniority_bonus: {senior: 15, sr: 15, lead: 15, staff: 15, principal: 15}
+  title_penalties: {intern: -40, internship: -40, junior: -25, entry level: -20, trainee: -40}
+
+# Your CV for cv_tools.py (tailored CV per vacancy, designed + ATS PDFs).
+cv:
+  dir: my-cv                    # folder with the master CV and tailored/ (relative to the repo, or absolute)
+  master: CVindex.html          # master CV in the format of cv/master.example.html (init.py copies it)
+
+location:
+  home_country: Georgia
+  # Words that mean "in my country". On-site / hybrid jobs here are fine.
+  home_places: [georgia, tbilisi, batumi, kutaisi, საქართველო, თბილისი]
+  # Phrases that look like a home place but are not (e.g. the US state of Georgia).
+  home_exclude: ["georgia, usa", "georgia, us", "atlanta"]
+  open_to_relocation: true      # on-site abroad is still blocked unless the posting offers relocation
+  # Remote scopes you can work under.
+  friendly_regions: [worldwide, anywhere, global, globally, emea, europe, european time zones, caucasus, cet, eet]
+  # Remote jobs limited to these places are out of reach (you cannot live or work there).
+  # A remote job "in" one of these usually means you must live there; cities count too.
+  locked_regions: [us, usa, u.s., u.s.a., united states, canada, north america, americas, latam, latin america,
+                   brazil, mexico, argentina, chile, colombia, peru, uruguay, venezuela, costa rica,
+                   india, apac, apj, australia, new zealand, philippines, japan, singapore, hong kong, china,
+                   taiwan, korea, san francisco, bay area, new york, nyc, seattle, austin, boston, chicago,
+                   los angeles, denver, toronto, vancouver, montreal]
+  # Places where a right-to-work question is likely but contracts may still work: flag, don't block.
+  check_regions: [uk, united kingdom, england, london, germany, netherlands, france, spain, poland,
+                  ireland, portugal, eu, european union]
+
+search:
+  sources: [ats, indeed, linkedin, google, glassdoor, zip_recruiter, jobs_ge]
+  indeed_country: USA
+  min_score: 45
+  remote_only: true
+
+scoring:
+  stale_days: 30                # postings older than this lose 0.3
+  repost_gap_days: 7            # same company + title under a new URL after this many days = repost
+  verdicts: {apply: 4.0, consider: 3.5, research: 2.5}

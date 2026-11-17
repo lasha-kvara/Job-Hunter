@@ -1,0 +1,11 @@
+# Mobile engineer (iOS, Android, cross-platform)
+role:
+  default_query: "Mobile Engineer"
+  target_roles: [mobile engineer, mobile developer, ios engineer, ios developer, android engineer,
+                 android developer, react native developer, flutter developer]
+  title_keywords: [mobile, ios, android, react native, flutter, swift, kotlin]
+  title_exclude: [designer, product manager, sales, marketing, recruiter, support, qa, test, account executive,
+                  account manager, business development, partnerships, growth marketing]
+  fallback_skills: {swift: 16, swiftui: 10, objective-c: 6, kotlin: 16, jetpack compose: 10, java: 6,
+                    react native: 14, flutter: 14, dart: 8, typescript: 6, xcode: 4, gradle: 4, rest: 6,
+                    graphql: 6, firebase: 6, ci/cd: 6, fastlane: 6, app store: 4}

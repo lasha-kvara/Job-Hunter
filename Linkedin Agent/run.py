@@ -77,83 +77,83 @@ def show_pipeline_summary(tracker: PipelineTracker):
     report_bullets = tracker.generate_brief_report(max_bullets=5)
     if HAS_RICH:
         panel_content = "\n".join([f"• {b}" for b in report_bullets])
-        console.print(Panel(panel_content, title="[bold green]📋 Pipeline-ის მოკლე ანგარიში (≤ 5 bullets)[/bold green]", expand=False))
+        console.print(Panel(panel_content, title="[bold green]📋 Pipeline summary (≤ 5 bullets)[/bold green]", expand=False))
     else:
-        print("\n--- Pipeline-ის მოკლე ანგარიში ---")
+        print("\n--- Pipeline summary ---")
         for b in report_bullets:
             print(f"- {b}")
 
 def show_profile_facts(profile: CandidateProfile):
     def _val(v: Any) -> str:
         if not v or CandidateProfile.is_placeholder(str(v)) or str(v).startswith("[Not configured"):
-            return "[არ არის მითითებული]"
+            return "[not set]"
         return str(v)
 
     if HAS_RICH:
-        table = Table(title="👤 კანდიდატის ძირითადი ფაქტები")
-        table.add_column("პარამეტრი", style="cyan", no_wrap=True)
-        table.add_column("მნიშვნელობა", style="magenta")
+        table = Table(title="👤 Candidate facts")
+        table.add_column("Field", style="cyan", no_wrap=True)
+        table.add_column("Value", style="magenta")
 
         all_roles = profile.get_target_roles()
         roles_display = ", ".join(all_roles[:3])
         if len(all_roles) > 3:
             roles_display += "..."
-        table.add_row("კანდიდატი", _val(profile.get_candidate_name()))
-        table.add_row("სამიზნე როლები", roles_display if roles_display else "[არ არის მითითებული]")
-        table.add_row("ხელფასის მოლოდინი", _val(profile.get_salary_expectation()))
+        table.add_row("Candidate", _val(profile.get_candidate_name()))
+        table.add_row("Target roles", roles_display if roles_display else "[not set]")
+        table.add_row("Salary expectation", _val(profile.get_salary_expectation()))
         table.add_row("Notice Period", _val(profile.get_preferences().get("notice_period")))
-        table.add_row("სამუშაო ფორმატი", _val(profile.get_preferences().get("work_mode")))
-        table.add_row("რელოკაცია", _val(profile.get_preferences().get("relocation")))
-        table.add_row("საკონტაქტო მეილი", _val(profile.get_contacts().get("email")))
-        table.add_row("CV ფაილი", _val(profile.get_cv_file_path(strict=False)))
+        table.add_row("Work mode", _val(profile.get_preferences().get("work_mode")))
+        table.add_row("Relocation", _val(profile.get_preferences().get("relocation")))
+        table.add_row("Contact e-mail", _val(profile.get_contacts().get("email")))
+        table.add_row("CV file", _val(profile.get_cv_file_path(strict=False)))
 
         console.print(table)
     else:
-        print("\n--- კანდიდატის ფაქტები ---")
-        print("სახელი:", _val(profile.get_candidate_name()))
-        print("ხელფასი:", _val(profile.get_salary_expectation()))
+        print("\n--- Candidate facts ---")
+        print("Name:", _val(profile.get_candidate_name()))
+        print("Salary:", _val(profile.get_salary_expectation()))
         prefs = profile.get_preferences()
-        print("სამუშაო ფორმატი:", _val(prefs.get("work_mode")))
+        print("Work mode:", _val(prefs.get("work_mode")))
         print("Notice Period:", _val(prefs.get("notice_period")))
-        print("რელოკაცია:", _val(prefs.get("relocation")))
-        print("საკონტაქტო მეილი:", _val(profile.get_contacts().get("email")))
-        print("CV ფაილი:", _val(profile.get_cv_file_path(strict=False)))
+        print("Relocation:", _val(prefs.get("relocation")))
+        print("Contact e-mail:", _val(profile.get_contacts().get("email")))
+        print("CV file:", _val(profile.get_cv_file_path(strict=False)))
 
 async def run_browser_check():
     controller = LinkedInBrowserController()
     if HAS_RICH:
-        console.print(f"[yellow]🌐 ვუკავშირდებით Chrome/Brave-ს CDP პორტზე ({config.CDP_PORT})...[/yellow]")
+        console.print(f"[yellow]🌐 Connecting to Chrome/Brave on CDP port ({config.CDP_PORT})...[/yellow]")
     else:
         print(f"Connecting to browser on port {config.CDP_PORT}...")
 
     try:
         await controller.connect()
         if HAS_RICH:
-            console.print("[green]✔ დაკავშირება წარმატებულია! ვამოწმებთ LinkedIn შეტყობინებებს (pacing rules)...[/green]")
+            console.print("[green]✔ Connected. Checking LinkedIn messages (with pacing rules)...[/green]")
         else:
             print("Connected. Checking messages...")
 
         messages = await controller.check_unread_messages()
 
         if not messages:
-            msg = "ახალი მესიჯები არ არის — ყველა საუბარი მეორე მხარეს ელოდება."
+            msg = "No new messages: every conversation is waiting on the other side."
             if HAS_RICH:
                 console.print(f"[bold green]{msg}[/bold green]")
             else:
                 print(msg)
         else:
             if HAS_RICH:
-                table = Table(title="📥 ბოლო შეტყობინებები")
+                table = Table(title="📥 Latest messages")
                 table.add_column("#", style="dim")
-                table.add_column("კონტაქტი", style="cyan")
-                table.add_column("წაუკითხავი", style="red")
-                table.add_column("ნაწყვეტი", style="white")
+                table.add_column("Contact", style="cyan")
+                table.add_column("Unread", style="red")
+                table.add_column("Snippet", style="white")
 
                 for m in messages:
                     table.add_row(
                         str(m["index"] + 1),
                         m["name"],
-                        "🔴 დიახ" if m["is_unread"] else "⚪ არა",
+                        "🔴 yes" if m["is_unread"] else "⚪ no",
                         m["snippet"][:60] + "..." if len(m["snippet"]) > 60 else m["snippet"]
                     )
                 console.print(table)
@@ -163,8 +163,8 @@ async def run_browser_check():
 
     except Exception as e:
         if HAS_RICH:
-            console.print(f"[bold red]❌ შეცდომა:[/bold red] {e}")
-            console.print(f"[yellow]💡 რჩევა: დარწმუნდით, რომ გაშვებულია `start_browser.bat` ან ბრაუზერი `--remote-debugging-port={config.CDP_PORT}`-ით.[/yellow]")
+            console.print(f"[bold red]❌ Error:[/bold red] {e}")
+            console.print(f"[yellow]💡 Tip: start the browser with `start_browser.bat` or `--remote-debugging-port={config.CDP_PORT}` first.[/yellow]")
         else:
             print(f"Error: {e}")
     finally:
@@ -173,13 +173,13 @@ async def run_browser_check():
 def handle_draft_response(generator: ResponseGenerator):
     has_ai = bool(generator.client or generator.legacy_model)
     if HAS_RICH:
-        console.print("\n[bold cyan]✍️ პასუხის დრაფტის მომზადება[/bold cyan]")
+        console.print("\n[bold cyan]✍️ Draft a reply[/bold cyan]")
         if has_ai:
             console.print(f"[dim green]🤖 AI Engine: Active ({config.DEFAULT_MODEL})[/dim green]")
         else:
-            console.print("[dim yellow]📋 რეჟიმი: Offline შაბლონები (დინამიური AI-სთვის მიუთითეთ GEMINI_API_KEY .env-ში)[/dim yellow]")
-        contact_name = Prompt.ask("რეკრუტერის სახელი (მაგ. Sarah / მარიამი)", default="")
-        hr_message = Prompt.ask("შემოსული შეტყობინების ტექსტი")
+            console.print("[dim yellow]📋 Mode: offline templates (for AI drafts set GEMINI_API_KEY in .env and install requirements-optional.txt)[/dim yellow]")
+        contact_name = Prompt.ask("Recruiter name (e.g. Sarah)", default="")
+        hr_message = Prompt.ask("Text of the recruiter's message")
     else:
         contact_name = input("Contact Name: ")
         hr_message = input("HR Message: ")
@@ -188,20 +188,20 @@ def handle_draft_response(generator: ResponseGenerator):
 
     if HAS_RICH:
         status_color = "red" if requires_approval else "green"
-        warning = "[bold red]⚠️ ყურადღება: ეს შეტყობინება შეიცავს ხელფასის ან შეხვედრის დეტალებს. გაგზავნამდე აუცილებელია მომხმარებლის დადასტურება![/bold red]\n" if requires_approval else ""
-        console.print(Panel(f"{warning}[bold white]{draft}[/bold white]", title="[bold green]📝 მომზადებული პასუხი[/bold green]"))
+        warning = "[bold red]⚠️ This reply mentions salary or a meeting time: review and approve it before sending![/bold red]\n" if requires_approval else ""
+        console.print(Panel(f"{warning}[bold white]{draft}[/bold white]", title="[bold green]📝 Draft reply[/bold green]"))
     else:
-        print("\n--- მომზადებული პასუხი ---")
+        print("\n--- Draft reply ---")
         if requires_approval:
             print("⚠️ REQUIRES APPROVAL BEFORE SENDING")
         print(draft)
 
 def handle_update_status(tracker: PipelineTracker):
     if HAS_RICH:
-        console.print("\n[bold cyan]🔄 საუბრის სტატუსის განახლება[/bold cyan]")
-        search_term = Prompt.ask("კომპანიის ან კონტაქტის სახელი (მაგ. TechCorp, Acme, GlobalTech)")
+        console.print("\n[bold cyan]🔄 Update a conversation's status[/bold cyan]")
+        search_term = Prompt.ask("Company or contact name (e.g. TechCorp, Acme)")
         status_options = ["waiting", "pending-user", "scheduled", "in-progress", "closed"]
-        new_status = Prompt.ask(f"ახალი სტატუსი ({'/'.join(status_options)})", choices=status_options, default="waiting")
+        new_status = Prompt.ask(f"New status ({'/'.join(status_options)})", choices=status_options, default="waiting")
     else:
         search_term = input("Search term (Company/Contact): ")
         new_status = input("New status (waiting/pending-user/scheduled/in-progress/closed): ")
@@ -209,12 +209,12 @@ def handle_update_status(tracker: PipelineTracker):
     success = tracker.update_status(search_term, new_status)
     if success:
         if HAS_RICH:
-            console.print(f"[bold green]✔ სტატუსი წარმატებით განახლდა: '{search_term}' -> `{new_status}`[/bold green]")
+            console.print(f"[bold green]✔ Status updated: '{search_term}' -> `{new_status}`[/bold green]")
         else:
             print(f"Status updated: {search_term} -> {new_status}")
     else:
         if HAS_RICH:
-            console.print(f"[bold red]❌ ჩანაწერი სახელწოდებით '{search_term}' ვერ მოიძებნა pipeline-ში.[/bold red]")
+            console.print(f"[bold red]❌ No pipeline entry matches '{search_term}'.[/bold red]")
         else:
             print(f"Item not found: {search_term}")
 
@@ -229,16 +229,16 @@ def interactive_menu():
         show_pipeline_summary(tracker)
 
         if HAS_RICH:
-            console.print("\n[bold yellow]აირჩიეთ მოქმედება:[/bold yellow]")
-            console.print("1. 📥 LinkedIn შეტყობინებების შემოწმება (Browser CDP Check)")
-            console.print("2. ✍️ რეკრუტერისთვის პასუხის მომზადება (Draft Reply)")
-            console.print("3. 📅 გასაუბრების დროის შეთავაზება / დადასტურება")
-            console.print("4. 🔄 Pipeline-ში სტატუსის განახლება (Update Status)")
-            console.print("5. 👤 კანდიდატის ფაქტებისა და მონაცემების ნახვა")
-            console.print(f"6. 🌐 Chrome / Brave-ის გაშვება დებაგ რეჟიმში (Port {config.CDP_PORT})")
-            console.print("0. 🚪 გასვლა (Exit)")
+            console.print("\n[bold yellow]Choose an action:[/bold yellow]")
+            console.print("1. 📥 Check LinkedIn messages (browser, CDP)")
+            console.print("2. ✍️ Draft a reply to a recruiter")
+            console.print("3. 📅 Propose / confirm interview times")
+            console.print("4. 🔄 Update a pipeline status")
+            console.print("5. 👤 Show candidate facts")
+            console.print(f"6. 🌐 Start Chrome / Brave in debug mode (port {config.CDP_PORT})")
+            console.print("0. 🚪 Exit")
 
-            choice = Prompt.ask("შეიყვანეთ ნომერი", choices=["0", "1", "2", "3", "4", "5", "6"], default="1")
+            choice = Prompt.ask("Enter a number", choices=["0", "1", "2", "3", "4", "5", "6"], default="1")
         else:
             print("\n1. Check Messages | 2. Draft Reply | 3. Interview Time | 4. Update Status | 5. View Profile | 6. Start Browser | 0. Exit")
             choice = input("Choice: ")
@@ -249,8 +249,8 @@ def interactive_menu():
             handle_draft_response(generator)
         elif choice == "3":
             if HAS_RICH:
-                lang = Prompt.ask("ენა (ka/en)", choices=["ka", "en"], default="en")
-                console.print(f"\n[bold green]📅 შემოთავაზებული დროის შაბლონი:[/bold green]\n{scheduler.get_standard_slots(lang)}")
+                lang = Prompt.ask("Language of the message (ka/en)", choices=["ka", "en"], default="en")
+                console.print(f"\n[bold green]📅 Suggested interview slots:[/bold green]\n{scheduler.get_standard_slots(lang)}")
             else:
                 print(scheduler.get_standard_slots("en"))
         elif choice == "4":
@@ -291,18 +291,18 @@ def interactive_menu():
                             start_new_session=True
                         )
                     else:
-                        msg = f"⚠️ ვერ მოიძებნა Chrome/Brave ბრაუზერი. გთხოვთ გაუშვათ ბრაუზერი ხელით: --remote-debugging-port={config.CDP_PORT}"
+                        msg = f"⚠️ Chrome/Brave not found. Start a browser yourself with: --remote-debugging-port={config.CDP_PORT}"
                         if HAS_RICH:
                             console.print(f"[yellow]{msg}[/yellow]")
                         else:
                             print(msg)
         elif choice == "0":
             if HAS_RICH:
-                console.print("[bold cyan]ნახვამდის! წარმატებულ გასაუბრებებს გისურვებთ! ✨[/bold cyan]")
+                console.print("[bold cyan]Goodbye, and good luck with your interviews! ✨[/bold cyan]")
             break
 
         if HAS_RICH:
-            Prompt.ask("\n[dim]დააჭირეთ Enter-ს გასაგრძელებლად...[/dim]", default="")
+            Prompt.ask("\n[dim]Press Enter to continue...[/dim]", default="")
 
 def main():
     parser = argparse.ArgumentParser(description="LinkedIn Job-Seeker Agent CLI")

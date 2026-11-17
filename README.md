@@ -1,305 +1,215 @@
-# 🎯 Job-Hunter — Autonomous Job Search & Application Agent
+# Job-Hunter
 
-An open-source, dual-mode job search and application engine built with **Python**, **Playwright**, and **AI Agent Skills**. Designed for software engineers, SDETs, and QA Automation professionals to discover, filter, score, and apply to vacancies across multiple platforms with a local-by-default, privacy-first architecture (zero external telemetry and explicit opt-in for optional cloud LLM APIs).
+[![tests](https://github.com/lasha-kvara/Job-Hunter/actions/workflows/tests.yml/badge.svg)](https://github.com/lasha-kvara/Job-Hunter/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+**An AI job-search assistant that finds vacancies for your profession, rates them against your
+profile and applies to the ones you approve, from your own computer.**
+
+[ქართული ვერსია → README.ka.md](README.ka.md)
+
+Job-Hunter runs inside [Claude Code](https://claude.com/claude-code) (or as plain Python scripts
+without any AI). You describe yourself once (profile, CV, where you can work); it then scans
+company career pages and job boards, rates every vacancy 1–5, shows you a shortlist, fills in and
+submits the applications you approve, and keeps a report. A second agent handles recruiter
+messages on LinkedIn and interview scheduling.
+
+- **Any profession.** 11 presets (QA, frontend, backend, full-stack, mobile, DevOps, data engineer,
+  data analyst, ML, product designer, product manager), or your own.
+- **Any country.** You set where you live and which regions you can work for; jobs you could never
+  take (remote "US only", clearances, on-site abroad without relocation) are filtered out.
+- **~200 company boards** read straight from Greenhouse, Ashby, Lever, SmartRecruiters and
+  Recruitee, plus LinkedIn, Indeed, Glassdoor, ZipRecruiter, Google Jobs and jobs.ge.
+- **You stay in control.** Nothing is sent without your approval of the shortlist; passwords, 2FA
+  codes, CAPTCHAs and online tests are always yours; the agent answers only from facts you wrote.
+- **Private by default.** Your profile, CV, settings and history stay on your disk (git-ignored).
 
 ---
 
-## 🌟 Two Ways to Use Job-Hunter
+## How it works
 
-Job-Hunter is engineered to work in **two distinct modes**:
+```text
+ profile + CV + config.yml
+          │
+          ▼
+   search  ──►  rate 1–5 + flags  ──►  shortlist  ──►  YOU approve  ──►  apply in the browser  ──►  report
+ (boards,        (skills, level,        (best first,     ("1, 3, 5")      (forms filled from your     (what was sent,
+  job sites)      location, legitimacy)  one line each)                    profile; you do 2FA/CAPTCHA)  answers, CV)
+```
 
-| Feature | 🤖 Mode 1: AI Agent Mode (Google Antigravity) | 💻 Mode 2: Standalone Mode (Pure Python CLI) |
-| :--- | :--- | :--- |
-| **Prerequisites** | Google Antigravity IDE + Python 3.10+ | Python 3.10+ only (No AI required) |
-| **Interaction** | Natural language conversational prompts | Terminal CLI commands & scripts |
-| **Vacancy Discovery** | Autonomous multi-platform aggregation | `python search_jobs.py --query ...` |
-| **CV / Profile Fit** | Evaluated against your profile facts | Weighted keyword scoring (0–100%) |
-| **Form Filling** | Autonomous dynamic DOM analysis in Headed mode | Listing inspection & navigation in Headed mode |
-| **2FA / Captcha** | Pauses and prompts the user; never accesses email or credentials | Visual browser pauses for user entry |
-| **LinkedIn Recruiter** | AI drafts context-aware replies & tracks stages | Interactive terminal CLI menu |
+| Verdict | Rating | Meaning |
+|---|---|---|
+| **Apply** | ≥ 4.0 | strong fit, no blockers |
+| **Consider** | 3.5–3.9 | fits with gaps |
+| **Research first** | 2.5–3.4 | unclear location, stack or legitimacy |
+| **Skip** | < 2.5 or a blocker | not shown in the shortlist |
+
+Blockers: remote limited to regions you can't work in, required work authorization or security
+clearance, on-site abroad without relocation, or a job you already applied to. Old, reposted or
+very vague postings lose points. Details: [scoring rules](.claude/skills/job-hunter-agent/references/scoring.md).
 
 ---
 
-## 🚀 Quick Start: Installation (Common to Both Modes)
+## Quick start
 
-### 1. Clone the Repository
+Requirements: **Python 3.10+**, **Git**, and **Node.js 18+** (for Claude Code's browser).
+
 ```bash
 git clone https://github.com/lasha-kvara/Job-Hunter.git
 cd Job-Hunter
+python init.py
 ```
 
-### 2. Create Virtual Environment & Install Dependencies
+`init.py` creates `.venv`, installs the packages and Playwright Chromium, copies the personal
+templates, asks 8 short questions (profession, name, country, cities, language, time zone, working
+hours range, relocation) to write `config.yml`, writes `.mcp.json` for Claude Code, and ends with a
+health check. It never overwrites a file you already have, so it is safe to run again.
+Non-interactive: `python init.py --yes --preset frontend`.
+
+Next, fill in your profile. Either edit the two files by hand:
+
+- `Linkedin Agent/candidate-profile.md`: facts, experience, skills, salary, contacts, CV path
+- `Job Hunter Agent/screening-playbook.md`: ready answers for application forms
+- `my-cv/CVindex.html`: your master CV ([docs/cv.md](docs/cv.md)); every application gets a copy
+  tailored to the vacancy, fact-checked against it, as a designed and an ATS PDF
+
+or open the folder in Claude Code and say **"set up my profile"**: it reads your CV, asks only what
+the CV can't tell (salary, work authorization, relocation, ...) and fills both files.
+
 ```bash
-# Create and activate virtual environment
+python doctor.py        # what is installed, what is still missing, and how to fix it
+```
+
+<details><summary>Manual setup (without init.py)</summary>
+
+```bash
 python -m venv .venv
-
-# On Windows:
-.venv\Scripts\activate
-
-# On Linux / macOS:
-source .venv/bin/activate
-
-# Install all dependencies
+.venv\Scripts\activate              # Linux / macOS: source .venv/bin/activate
 pip install -r requirements.txt
-
-# Install Playwright browser engines
-playwright install
+python -m playwright install chromium
+cp config.example.yml config.yml    # then set preset, location and candidate
 ```
-
-### 3. Initialize Your Local Profiles & Trackers
-Copy the provided templates to your local, git-ignored active files:
-
-```bash
-# Windows:
-copy "Linkedin Agent\candidate-profile.template.md" "Linkedin Agent\candidate-profile.md"
-copy "Linkedin Agent\linkedin-pipeline.template.md" "Linkedin Agent\linkedin-pipeline.md"
-copy "Job Hunter Agent\job-applications-report.template.md" "Job Hunter Agent\job-applications-report.md"
-
-# Linux / macOS:
-cp "Linkedin Agent/candidate-profile.template.md" "Linkedin Agent/candidate-profile.md"
-cp "Linkedin Agent/linkedin-pipeline.template.md" "Linkedin Agent/linkedin-pipeline.md"
-cp "Job Hunter Agent/job-applications-report.template.md" "Job Hunter Agent/job-applications-report.md"
-```
-
-Open `Linkedin Agent/candidate-profile.md` in any editor and specify:
-- **Full Name, Email, Phone, Location, Timezone**
-- **Target Roles** (e.g. `QA Automation Engineer`, `Senior SDET`, `Backend Developer`)
-- **Core Skills & Frameworks** (e.g. `Playwright`, `TypeScript`, `Python`, `C#`, `Selenium`)
-- **Years of Experience & Past Projects**
-- **Absolute Path to your CV/Resume PDF**
-- **Salary Expectations**
-
-> 🛡️ **Privacy Guarantee:** `candidate-profile.md`, `job-applications-report.md`, and `linkedin-pipeline.md` are strictly git-ignored. Your personal contact details and private application histories will never be committed or uploaded to Git.
-
-### 4. (Optional) Configure Environment Variables
-If you want to use Google Gemini for AI-assisted recruiter message drafting or customize browser ports, copy `.env.example` to `.env`:
-
-```bash
-# Windows:
-copy .env.example .env
-
-# Linux / macOS:
-cp .env.example .env
-```
-Open `.env` and configure your optional `GEMINI_API_KEY` (free from [Google AI Studio](https://aistudio.google.com/)). Without an API key, all features work 100% locally with built-in templates.
+Copy each `*.template.md` next to itself without `.template`, and create `.mcp.json` as described
+in [docs/claude-code.md](docs/claude-code.md). Optional: copy `.env.example` to `.env`.
+</details>
 
 ---
 
-## 🤖 Mode 1: Running with Google Antigravity
+## Using it with Claude Code
 
-If you use **Google Antigravity** (or an agentic workspace supporting `.agents/` skills and rules), follow these steps to unlock full autonomous capabilities:
+Open the folder in Claude Code, approve the two Playwright MCP servers once, and ask in your own
+words (any language):
 
-### Step 1: Initialize Agent Skills & Rules
-Copy the included templates into your local `.agents/` workspace directory:
+| You say | What happens |
+|---|---|
+| *"Find remote frontend jobs that fit me"* | search + rating, shortlist with numbers |
+| *"Apply to 1, 3 and 5"* | fills and submits exactly those; asks you if a form needs an unknown fact |
+| *"Check my LinkedIn messages"* | reads recruiter threads, drafts replies for your approval |
+| *"Schedule the interview with Anna"* | proposes slots in your time zone, confirms only after you agree |
+| *"Show my applications report"* | what was sent where, with answers and the CV used |
 
-```bash
-# Windows (PowerShell / CMD):
-xcopy /E /I "templates\agents" ".agents"
+The agent asks once whether to use a visible (headed) or background (headless) browser; both share
+one browser profile, so you sign in to LinkedIn and job sites only once. Setup details, prompts and
+rules: [docs/claude-code.md](docs/claude-code.md).
 
-# Linux / macOS:
-mkdir -p .agents && cp -r templates/agents/* .agents/
-```
-
-This installs:
-- **`job-hunter-agent` skill:** Autonomous vacancy discovery, location/visa filtering, dynamic form filling, and 2FA handling.
-- **`linkedin-agent` skill:** Recruiter conversation management, interview scheduling, and pipeline progression.
-- **`job-hunter-rules` & `linkedin-rules`:** Strict invariants enforcing **ZERO hallucination** (the agent only uses facts from your `candidate-profile.md`), anti-bot human pacing, and safe file uploads.
-
-### Step 2: Open Workspace in Antigravity
-Open the `Job-Hunter` directory in Google Antigravity. The AI assistant will automatically recognize the registered skills.
-
-### Step 3: Use Natural Language Prompts
-You can now speak directly to the agent in English or Georgian:
-
-- **Search & Aggregation:**
-  > *"Find all remote Senior SDET and QA Automation openings matching my profile across LinkedIn, Indeed, and Google Jobs."*
-- **Visual Application (Headed Mode):**
-  > *"Launch a visible browser and apply to the top 3 matching vacancies. Stop and ask me if an SMS 2FA code is needed."*
-- **LinkedIn Messaging:**
-  > *"Check my LinkedIn messages via Chrome CDP. Update the opportunity pipeline and draft polite replies to new recruiters."*
-- **Assessment Tests:**
-  > *"Solve the problem-solving and QA technical assessment on this BairesDev tab."*
+**What the agent never does:** type passwords or 2FA codes, solve CAPTCHAs, take online tests or
+assessments for you, invent experience, apply beyond the approved shortlist, or send a recruiter
+message you haven't approved.
 
 ---
 
-## 💻 Mode 2: Running Standalone (Without Antigravity)
+## Using it without AI (command line)
 
-You do **not** need Antigravity, Docker, or paid AI tokens to run Job-Hunter. All tools run directly from your command line:
-
-### 1. Multi-Source Vacancy Aggregator (`search_jobs.py`)
-Search across **LinkedIn, Indeed, Glassdoor, ZipRecruiter, Google Jobs**, and **Jobs.ge**; the aggregator cleans and merges results from these sources:
-
+Search, rating and the LinkedIn pipeline also work as plain Python, no AI account needed.
 
 ```bash
-# Search for remote QA Automation positions
-python search_jobs.py --query "QA Automation Engineer" --remote
-
-# Search for Senior SDET with minimum 60% candidate fit score
-python search_jobs.py --query "Senior SDET" --min-score 60
-
-# Filter specific sources
-python search_jobs.py --query "Playwright Automation" --sources indeed linkedin google
-
-# Search local/on-site positions as well
-python search_jobs.py --query "SDET" --no-remote --sources jobs_ge indeed
+python search_jobs.py --sources ats --hide-skip           # company boards only, ~30 s
+python search_jobs.py --preset devops --min-rating 3.5    # another profession for one run
+python search_jobs.py --query "Senior SDET" --no-remote --sources jobs_ge indeed
+python search_jobs.py --list-presets
 ```
 
-#### CLI Parameters Reference:
+| Option | Default | Description |
+|---|---|---|
+| `--preset NAME` | from `config.yml` | profession preset for this run |
+| `--query`, `-q` | preset's `default_query` | search keywords for job sites |
+| `--sources`, `-s` | `search.sources` in config | `ats`, `indeed`, `linkedin`, `google`, `glassdoor`, `zip_recruiter`, `jobs_ge` |
+| `--hide-skip` | off | drop Skip verdicts |
+| `--min-rating` | 0 | drop jobs rated below this (1–5) |
+| `--min-score` | 45 | drop jobs with keyword fit below this (0–100) |
+| `--remote` / `--no-remote` | remote | remote-only, or include on-site / hybrid |
+| `--location`, `-l` | `Remote` | location for job sites |
+| `--country` | `USA` | Indeed country |
+| `--limit`, `-n` | 10 | results per job site |
+| `--hours` | 72 | job sites: posted in the last N hours |
+| `--ats-days` | 0 (all) | company boards: posted in the last N days |
+| `--export-md` | `search_results.md` | Markdown report path |
 
-| Option | Short | Type / Choices | Default | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| `--query` | `-q` | `str` | `"QA Automation Engineer"` | Job title or technical search terms (e.g. `SDET`, `Playwright`) |
-| `--location` | `-l` | `str` | `None` | Target location. Defaults to `Remote` if `--remote`, or all locations if `--no-remote` |
-| `--country` | | `str` | `"USA"` | Target country for Indeed searches (default: `'USA'`) |
-| `--sources` | `-s` | `indeed`, `linkedin`, `google`, `glassdoor`, `zip_recruiter`, `jobs_ge` | All sources | One or more space-separated platforms to scrape |
-| `--limit` | `-n` | `int` | `10` | Maximum raw listings requested per platform |
-| `--hours` | | `int` | `72` | Filter listings published within the last N hours |
-| `--min-score`| | `int (0–100)` | `0` | Exclude listings with fit score below this threshold |
-| `--remote` / `--no-remote` | | `flag` | `--remote` | Toggle remote-only vs. on-site/hybrid positions |
+Output: a table in the terminal, `search_results.md`, and `Job Hunter Agent/jobs_feed.json`.
 
-**Key Features & Outputs:**
-- **URL Sanitization:** Automatically strips 40+ tracking parameters (`utm_*`, `refId`, `trackingId`, `gh_src`, etc.) to provide direct application links.
-- **Smart Deduplication:** Groups listings across platforms by normalized company + title + location signatures.
-- **Dynamic Fit Scoring:** Automatically scores jobs (0–100%) against target roles, technical skills, and job-title seniority signals.
-- **Generated Report (`search_results.md`):** Produces a ready-to-read Markdown table with fit rankings, direct sanitized links, location, salary, and source metadata.
-- **Structured JSON Feed (`Job Hunter Agent/jobs_feed.json`):** Saves complete metadata for every post that passes the configured search and fit-score filters for automation pipelines or custom post-processing.
-
----
-
-### 2. Headed Browser Visual Inspection Demo (`headed_apply.py`)
-Run an automated visual browser session to inspect vacancy listings and test human-like pacing:
-
-```bash
-python headed_apply.py
-```
-
-- Launches a visual browser with smooth action pacing (`slow_mo=300`) and natural reading scrolls.
-- Demonstrates real-time vacancy discovery and navigation across target listings.
-- *Note:* Full end-to-end form completion, custom question answering, and CV attachment across diverse ATS forms (Lever, Greenhouse, etc.) is handled autonomously by the AI Agent in Mode 1.
-
-
----
-
-### 3. LinkedIn Recruiter & Pipeline Manager (`Linkedin Agent/run.py`)
-An interactive terminal CLI for managing recruiter outreach:
+LinkedIn pipeline manager (terminal menu, optional Gemini key for AI drafts):
 
 ```bash
 python "Linkedin Agent/run.py"
 ```
 
-**Features:**
-- View active opportunities grouped by stage (`Initial Contact`, `Waiting for Reply`, `Interview Scheduled`).
-- Generate grounded replies in English and Georgian.
-- Track interview availability and propose dates in your timezone.
+---
+
+## Make it yours
+
+| What | Where |
+|---|---|
+| Profession | `preset:` in `config.yml` → [presets/](presets/README.md) |
+| Country, cities, regions you can / can't work for, time zone, language | `config.yml` → [docs/configuration.md](docs/configuration.md) |
+| Facts about you | `Linkedin Agent/candidate-profile.md` |
+| Answers to screening questions | `Job Hunter Agent/screening-playbook.md` |
+| Your CV (master, tailored copies, PDFs) | `my-cv/CVindex.html` or `cv.dir` → [docs/cv.md](docs/cv.md) |
+| Companies to scan | `Job Hunter Agent/ats-boards.json` (shared) / `ats-boards.local.json` (yours) → [docs/job-sources.md](docs/job-sources.md) |
 
 ---
 
-### 4. Connect to Your Existing Browser Session (CDP Mode)
-Avoid logging in repeatedly or triggering bot challenges by attaching to your existing Chrome profile:
-
-1. **Launch Chrome in Remote Debugging Mode:**
-   - **Windows:** Double-click `Linkedin Agent/start_browser.bat`
-   - **Linux / macOS:**
-     ```bash
-     if [ -f .env ]; then
-       CDP_PORT="$(sed -n 's/^CDP_PORT=//p' .env | tail -n 1)"
-     fi
-     export CDP_PORT="${CDP_PORT:-9222}"
-     google-chrome --remote-debugging-port="$CDP_PORT" --user-data-dir="/tmp/chrome_profile"
-     ```
-2. **Run your script or agent:**
-   ```bash
-   python "Linkedin Agent/run.py"
-   ```
-   The engine attaches to the configured port (default `9222`) and operates inside your logged-in browser session.
-
----
-
-## 📂 Repository Structure
+## Project layout
 
 ```text
-Job-Hunter/
-├── README.md                                 # Comprehensive guide & setup manual
-├── LICENSE                                   # MIT License
-├── .env.example                              # Environment configuration template
-├── requirements.txt                          # Unified Python dependencies
-├── search_jobs.py                            # Multi-source vacancy aggregator CLI
-├── test_regression.py                        # Full regression & unit test suite
-├── headed_apply.py                           # Standalone Headed Playwright job apply runner
-├── run_headed.py                             # Quick demo script for visual browsing
-├── .gitignore                                # Strict privacy boundary for local files
-│
-├── templates/                                # Ready-to-use anonymized templates
-│   └── agents/                               # Antigravity skill & rule templates
-│       ├── rules/
-│       │   ├── job-hunter-rules.md
-│       │   └── linkedin-rules.md
-│       └── skills/
-│           ├── job-hunter-agent/
-│           │   ├── SKILL.md
-│           │   └── references/
-│           │       └── platforms-guide.md
-│           └── linkedin-agent/
-│               ├── SKILL.md
-│               └── references/
-│                   ├── pacing-rules.md
-│                   └── templates.md
-│
-├── Job Hunter Agent/
-│   ├── aggregator/                           # Multi-source scraper engine
-│   │   ├── cleaner.py                        # Tracking parameter stripper & deduplicator
-│   │   ├── engine.py                         # Unified search orchestrator
-│   │   ├── models.py                         # Standardized JobPost dataclass
-│   │   ├── scorer.py                         # Candidate profile fit scoring engine
-│   │   └── sources/
-│   │       ├── jobspy_provider.py            # Indeed, LinkedIn, Glassdoor, ZipRecruiter, Google
-│   │       └── jobs_ge_provider.py           # Local Jobs.ge scraper with secure TLS
-│   └── job-applications-report.template.md  # Template for submitted application logs
-│
-└── Linkedin Agent/
-    ├── candidate-profile.template.md         # Anonymized candidate facts template
-    ├── linkedin-pipeline.template.md         # Anonymized pipeline tracker template
-    ├── config.py                             # Path resolution & environment config
-    ├── run.py                                # Interactive terminal management CLI
-    ├── start_browser.bat                     # Windows shortcut for Chrome CDP session
-    └── src/
-        ├── browser_controller.py             # Playwright engine with human-like pacing
-        ├── pipeline_manager.py               # Application stage tracker
-        ├── profile_manager.py                # Candidate profile parser
-        ├── response_generator.py             # Context-aware messaging engine
-        └── scheduler.py                      # Availability & interview slot validator
+init.py / doctor.py           setup wizard and health check
+search_jobs.py                search + rating CLI
+cv_tools.py                   tailored CV per vacancy, fact check, designed + ATS PDFs
+cv/master.example.html        master CV template (copied to my-cv/, git-ignored)
+config.example.yml            all settings, documented (copy: config.yml, git-ignored)
+presets/                      profession presets
+CLAUDE.md, .claude/skills/    Claude Code rules and the two agents (job-hunter, linkedin)
+Job Hunter Agent/
+  aggregator/                 engine, sources (ATS boards, JobSpy, jobs.ge), scorer, assessment, settings
+  ats-boards.json             company boards to scan
+  *.template.md               report and screening-playbook templates
+Linkedin Agent/               recruiter pipeline CLI, profile parser, reply drafts, templates
+docs/                         configuration, CV, Claude Code, job sources, privacy, troubleshooting
+test_regression.py            test suite
 ```
 
 ---
 
-## 🧪 Verification & Automated Tests
+## Privacy
 
-To ensure multi-source aggregation pipelines, scoring algorithms, runner scripts, and LinkedIn agent components operate reliably:
-
-```bash
-# Run the full regression test suite
-python test_regression.py
-```
-
-This automated suite verifies:
-- **LinkedIn Agent core:** Profile loading, pipeline listing/status filtering, and template response generation.
-- **Aggregator URL sanitizer:** Stripping 40+ tracking parameters (`utm_*`, `refId`, `trackingId`, `spJobID`, etc.).
-- **Candidate fit scorer:** Weighted matching, seniority adjustments, and low-fit penalties.
-- **Jobs.ge provider:** Deterministic listing HTML parsing and title matching with mocked HTTP responses.
-- **Script syntax & compilation:** Validates runner scripts before execution.
+Everything personal stays on your machine and is git-ignored: `config.yml`, `.mcp.json`, `.env`,
+your profile, playbook, applications report, LinkedIn pipeline and search results. There is no
+telemetry and no Job-Hunter server. Data leaves your computer only to the job sites you apply on,
+and to the AI you choose (Claude Code; optionally Gemini for LinkedIn drafts). Automating job sites
+may be against their terms of service; you are responsible for how you use this tool.
+More: [docs/privacy.md](docs/privacy.md).
 
 ---
 
-## 🔒 Privacy & Safety Guidelines
+## Help, tests, contributing
 
-- **Local-First & Zero Data Harvesting:** No personal tracking or telemetry databases are used. Your candidate profile, submitted application logs, and pipeline records remain strictly on your local disk.
-- **Optional Cloud AI Integration:** If you choose to configure `GEMINI_API_KEY` for LLM-powered response generation in `Linkedin Agent`, message prompts containing relevant profile context are sent directly to Google's Gemini API using your own API key. Without an API key, response generation operates 100% locally using built-in templates (vacancy search and browser sessions only contact the public job boards and sites you explicitly target).
-- **Git-Ignored Files:** Your actual `candidate-profile.md`, submitted applications report, and pipeline tracker remain on your local disk only.
-- **Honeypot Protection:** Bypasses hidden honeypot buttons on platforms like Indeed SmartApply.
-- **Safe File Uploads:** Uploads PDFs directly to `input[type="file"]` without opening operating system file dialogs.
+- Something doesn't work: `python doctor.py`, then [docs/troubleshooting.md](docs/troubleshooting.md).
+- Tests: `python test_regression.py`
+- Contributions are welcome, especially presets, company boards and job sources:
+  [CONTRIBUTING.md](CONTRIBUTING.md). Changes: [CHANGELOG.md](CHANGELOG.md).
 
----
+The 1–5 rating, verdicts and legitimacy signals were inspired by
+[career-ops](https://github.com/career-ops-hq/career-ops) (MIT).
 
-## 📄 License
+## License
 
-This project is open-source and available under the [MIT License](LICENSE).
+[MIT](LICENSE)

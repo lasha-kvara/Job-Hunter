@@ -1,151 +1,71 @@
-# 💼 LinkedIn Job-Seeker Agent
+# LinkedIn Agent
 
-სრულყოფილი **LinkedIn Job-Seeker Agent** სისტემა კანდიდატის საკანდიდატო პროფილის, აქტიური საუბრების (Pipeline) და რეკრუტერებთან კომუნიკაციის სამართავად.
+Manages recruiter conversations: reads LinkedIn messages, drafts replies grounded in your profile,
+proposes and confirms interview times, and keeps the opportunity pipeline up to date.
 
----
+Two ways to use it:
 
-## 🌟 ძირითადი შესაძლებლობები
+- **Claude Code** (recommended): the `linkedin-agent` skill in `.claude/skills/linkedin-agent/`.
+  Say *"check my LinkedIn messages"* or *"reply to Anna"*; every message and every interview
+  confirmation is shown to you and sent only after you approve it. See
+  [docs/claude-code.md](../docs/claude-code.md).
+- **Terminal CLI** (no AI needed): `run.py`, described below.
 
-1. **ორმაგი სამუშაო რეჟიმი (Dual Operating Modes):**
-   - **Antigravity IDE Mode (Native Skill):** აგენტი ინტეგრირებულია პირდაპირ Antigravity-ში (`.agents/skills/linkedin-agent/`). შეგიძლიათ ჩატში პირდაპირ დაავალოთ მესიჯების გადამოწმება, პასუხის მომზადება ან pipeline-ის განახლება.
-   - **Standalone Python Runner & CLI:** ინტერაქტიული ტერმინალი (`python run.py`) და Playwright CDP ბრაუზერის ავტომატიზაცია.
-2. **მკაცრი ფაქტობრივი სიზუსტე (Strict Grounding):**
-   - პასუხები ეფუძნება ექსკლუზიურად `candidate-profile.md`-ს (ტექნიკური უნარები, გამოცდილება, ფრეიმვორკები).
-   - არასდროს იგონებს არარსებულ უნარებს ან ფაქტებს.
-3. **უსაფრთხოების & ხელფასის პოლიტიკა:**
-   - ხელფასის მოთხოვნა: მითითებული პროფილის მიხედვით (მხოლოდ პირდაპირი კითხვის დროს).
-   - გასაუბრების დროის დადასტურება: **მხოლოდ მომხმარებლის წინასწარი თანხმობით**.
-   - ავთენტიფიკაცია: უკავშირდება თქვენს უკვე დალოგინებულ ბრაუზერს (კონფიგურირებადი CDP Port, ნაგულისხმევად 9222) — არანაირი პაროლები ან 2FA.
-4. **ადამიანური ქცევის იმიტაცია (Human-like Browsing & Pacing):**
-   - Feed-ზე შესვლა -> პაუზა 2–3 წმ -> Messaging-ზე გადასვლა.
-   - ნელი აკრეფა (Character-by-character delay).
-   - მაქსიმუმ 5 საუბრის ნახვა ერთ სესიაზე (LinkedIn-ის უსაფრთხოების დასაცავად).
-5. **სწრაფი და ლაკონიური რეპორტინგი:**
-   - ანგარიშები წარმოდგენილია მაქსიმუმ **≤ 5 ბულეტად**.
+## Files
 
----
+| File | Purpose |
+|---|---|
+| `candidate-profile.md` | your facts: the only source for replies (template: `candidate-profile.template.md`) |
+| `linkedin-pipeline.md` | opportunities and their status (template: `linkedin-pipeline.template.md`) |
+| `linkedin-agent.md` | full behaviour rules for the agent |
+| `config.py` | paths, CDP port, pacing limits, optional Gemini settings (from `.env`) |
+| `run.py` | interactive CLI and shortcuts |
+| `start_browser.bat` | Windows: start Chrome / Brave with remote debugging on `CDP_PORT` |
+| `src/` | profile parser, pipeline tracker, reply generator, scheduler, browser controller |
 
-## 📂 ფაილების სტრუქტურა
+The personal files are created by `python init.py` and are git-ignored.
 
-```text
-Agents/Linkedin And Jobs/
-├── .agents/
-│   ├── rules/
-│   │   ├── job-hunter-rules.md           # ვაკანსიების ძიებისა და უსაფრთხოების წესები
-│   │   └── linkedin-rules.md             # LinkedIn-ის ქცევისა და უსაფრთხოების წესები
-│   └── skills/
-│       ├── job-hunter-agent/             # Job Hunter Agent-ის Skill
-│       │   ├── SKILL.md
-│       │   └── references/
-│       │       ├── platforms-guide.md
-│       │       └── screening-answers.md
-│       └── linkedin-agent/               # LinkedIn Agent-ის Skill
-│           ├── SKILL.md
-│           └── references/
-│               ├── pacing-rules.md       # ბრაუზერის pacing წესები
-│               └── templates.md          # შეტყობინებების შაბლონები (GE/EN)
-├── Job Hunter Agent/
-│   └── job-applications-report.md        # გაგზავნილი ვაკანსიების სრული რეპორტი & სტატისტიკა
-├── Linkedin Agent/
-│   ├── candidate-profile.md              # კანდიდატის სრული პროფილი (Single Source of Truth)
-│   ├── linkedin-pipeline.md              # აქტიური ვაკანსიების & საუბრების ტრეკერი
-│   ├── linkedin-agent.md                 # აგენტის სრული ინსტრუქცია
-│   ├── config.py                         # პარამეტრები და კონფიგურაცია
-│   ├── requirements.txt                  # Python ბიბლიოთეკები
-│   ├── start_browser.bat                 # Chrome/Brave-ის გაშვება CDP Debug რეჟიმში (CDP Port, default 9222)
-│   ├── run.py                            # ინტერაქტიული ტერმინალის UI & CLI
-│   ├── README.md                         # დოკუმენტაცია
-│   └── src/
-│       ├── profile_manager.py            # პროფილის ფაქტების მენეჯერი
-│       ├── pipeline_manager.py           # Pipeline-ის პარსერი & რეპორტერი
-│       ├── response_generator.py         # პასუხების გენერატორი (GE/EN, Gemini/Rules)
-│       ├── browser_controller.py         # Playwright CDP კონტროლერი
-│       └── scheduler.py                  # გასაუბრების დროების დამხმარე
-├── add_jobs.py                           # დამხმარე სკრიპტი რეპორტისთვის
-├── headed_apply.py                       # Headed რეჟიმში აპლიკაციის სკრიპტი
-└── run_headed.py                         # Headed ბრაუზერის გაშვების სკრიპტი
-```
+## Terminal CLI
 
----
-
-## 🚀 როგორ გამოვიყენოთ
-
-### 1. Antigravity IDE-დან (ჩატის რეჟიმი)
-უბრალოდ მიწერეთ Antigravity-ს ნებისმიერი დავალება:
-- *"შეამოწმე რა ხდება ჩემს LinkedIn Pipeline-ში"*
-- *"მომიმზადე პასუხი რეკრუტერისთვის ინგლისურად"*
-- *"მივწეროთ რეკრუტერს, რომ ჩემი ხელფასის მოლოდინია პროფილის მიხედვით"*
-- *"რა სტატუსშია TechCorp-ის გასაუბრება?"*
-
-Antigravity ავტომატურად გაააქტიურებს `linkedin-agent` skill-ს და შეასრულებს დავალებას.
-
----
-
-### 2. Standalone Python CLI / ინტერაქტიული მენიუდან
-
-#### ნაბიჯი 1: დააყენეთ ბიბლიოთეკები (თუ საჭიროა)
 ```bash
-pip install -r requirements.txt
-```
-
-#### ნაბიჯი 2: გაუშვით ბრაუზერი დებაგ რეჟიმში
-ორჯერ დააჭირეთ `start_browser.bat`-ს (ან გაუშვით ტერმინალიდან):
-```bash
-# Windows:
-Linkedin Agent\start_browser.bat
-
-# Linux / macOS:
-if [ -f .env ]; then
-  CDP_PORT="$(sed -n 's/^CDP_PORT=//p' .env | tail -n 1)"
-fi
-export CDP_PORT="${CDP_PORT:-9222}"
-google-chrome --remote-debugging-port="$CDP_PORT" --user-data-dir="/tmp/chrome_profile"
-```
-*ეს გახსნის Chrome-ს ან Brave-ს კონფიგურირებულ (ნაგულისხმევად 9222) პორტზე, სადაც თქვენი LinkedIn პროფილი ავტორიზებულია.*
-
-#### ნაბიჯი 3: გაუშვით აგენტი
-```bash
-python "Linkedin Agent/run.py"
-```
-
-გამოჩნდება ინტერაქტიული მენიუ:
-```text
-╔══════════════════════════════════════════════════════════════════════╗
-║                    💼 LINKEDIN JOB-SEEKER AGENT                     ║
-║              Candidate: [Candidate Name] (Senior SDET)               ║
-╚══════════════════════════════════════════════════════════════════════╝
-
-📋 Pipeline-ის მოკლე ანგარიში (≤ 5 bullets)
-• 📅 TechCorp — გასაუბრება ჩანიშნულია / დადასტურებულია.
-• ⏳ GlobalTech (Jane Doe) — reply when recruiter responds with call details.
-• ⏳ Acme Solutions — reply when contact confirms a time.
-• 📊 განაცხადები: 5 LinkedIn Easy Apply და 10 Remote ATS განაცხადი აქტიურ მოლოდინშია.
-
-აირჩიეთ მოქმედება:
-1. 📥 LinkedIn შეტყობინებების შემოწმება (Browser CDP Check)
-2. ✍️ რეკრუტერისთვის პასუხის მომზადება (Draft Reply)
-3. 📅 გასაუბრების დროის შეთავაზება / დადასტურება
-4. 🔄 Pipeline-ში სტატუსის განახლება (Update Status)
-5. 👤 კანდიდატის ფაქტებისა და მონაცემების ნახვა
-6. 🌐 Chrome / Brave-ის გაშვება დებაგ რეჟიმში (Port 9222 / CDP_PORT)
-0. 🚪 გასვლა (Exit)
-```
-
-#### CLI Command Shortcuts:
-```bash
-# Pipeline მოკლე რეპორტის ნახვა:
-python "Linkedin Agent/run.py" --status
-
-# რეკრუტერის მესიჯზე პასუხის დრაფტის მომზადება:
+python "Linkedin Agent/run.py"                       # interactive menu
+python "Linkedin Agent/run.py" --status              # pipeline summary (≤ 5 bullets)
 python "Linkedin Agent/run.py" --draft "Hi, what is your salary expectation?" --name "Jane"
-
-# LinkedIn შეტყობინებების შემოწმება ბრაუზერში:
-python "Linkedin Agent/run.py" --check-browser
+python "Linkedin Agent/run.py" --check-browser       # unread LinkedIn messages via your browser
 ```
 
----
+Menu: check messages · draft a reply · propose / confirm interview times · update a pipeline
+status · show candidate facts · start the browser in debug mode.
 
-## 🔒 უსაფრთხოების წესები
-- **არასდროს შეიყვანოთ პაროლი** აგენტის მეშვეობით.
-- **Async Stop & Wait:** აგენტი მესიჯის გაგზავნის შემდეგ ჩერდება და ელოდება თქვენს შემდეგ მითითებას (არ ხდება განუწყვეტელი პოლინგი).
-- **CAPTCHA შეჩერება:** თუ LinkedIn აჩვენებს უჩვეულო აქტივობას ან CAPTCHA-ს, აგენტი მყისიერად ჩერდება და გატყობინებთ.
+### Reading messages from your own browser (CDP)
+
+`--check-browser` and menu item 1 attach to a Chrome / Brave you are already logged in to, so the
+agent never sees your password:
+
+```bash
+# Windows
+"Linkedin Agent\start_browser.bat"
+
+# Linux / macOS
+google-chrome --remote-debugging-port="${CDP_PORT:-9222}" --user-data-dir="$HOME/.linkedin-agent-profile"
+```
+
+### AI drafts (optional)
+
+Replies are built from templates and your profile. For AI-written drafts:
+
+```bash
+pip install -r requirements-optional.txt
+```
+
+and set `GEMINI_API_KEY` in `.env` (model: `LINKEDIN_AGENT_MODEL`, default `gemini-2.5-flash`).
+Drafts that mention salary or a meeting time are always marked as needing your approval.
+
+## Rules
+
+- Facts only from `candidate-profile.md`; anything missing is asked, never invented.
+- Salary is stated only when a recruiter asks; interview slots are confirmed only by you.
+- Replies are written in the recruiter's language (English and Georgian templates included).
+- Human pacing: at most 5 conversations per session, waits between steps, character-by-character
+  typing (`config.py`, `.claude/skills/linkedin-agent/references/pacing-rules.md`).
+- Passwords, 2FA codes and CAPTCHAs are always yours: the agent stops and tells you.

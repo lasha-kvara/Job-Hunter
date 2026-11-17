@@ -1,0 +1,11 @@
+# Frontend / Web UI engineer
+role:
+  default_query: "Frontend Engineer"
+  target_roles: [frontend engineer, frontend developer, front-end engineer, front-end developer, ui engineer,
+                 react developer, web developer]
+  title_keywords: [frontend, front-end, front end, react, angular, vue, ui engineer, ui developer, web developer,
+                   javascript, typescript]
+  title_exclude: [designer, product manager, sales, marketing, recruiter, support, qa, test]
+  fallback_skills: {react: 18, typescript: 15, javascript: 12, next.js: 10, vue: 10, angular: 10, redux: 8,
+                    html: 6, css: 8, tailwind: 6, graphql: 8, webpack: 6, vite: 6, jest: 6, playwright: 6,
+                    storybook: 6, accessibility: 6, "web performance": 6, figma: 4}

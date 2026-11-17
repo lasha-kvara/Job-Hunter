@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__playwright",
+      "mcp__playwright-headless",
+      "Bash(python search_jobs.py:*)",
+      "Bash(.venv/Scripts/python.exe search_jobs.py:*)"
+    ]
+  }
+}

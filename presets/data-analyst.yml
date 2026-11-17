@@ -1,0 +1,12 @@
+# Data analyst / BI analyst / Product analyst
+role:
+  default_query: "Data Analyst"
+  target_roles: [data analyst, business intelligence analyst, bi analyst, product analyst, analytics analyst,
+                 bi developer, reporting analyst]
+  title_keywords: [data analyst, business intelligence, bi analyst, bi developer, product analyst, analytics,
+                   reporting analyst, insights analyst, business analyst]
+  title_exclude: [sales, recruiter, designer, engineer, engineering manager, security analyst, soc analyst,
+                  financial analyst, credit analyst, credit analytics]
+  fallback_skills: {sql: 18, python: 10, excel: 8, tableau: 10, power bi: 10, looker: 8, metabase: 6,
+                    dbt: 6, bigquery: 6, snowflake: 6, a/b testing: 8, statistics: 8, amplitude: 6,
+                    mixpanel: 6, google analytics: 6, r: 4}

@@ -25,6 +25,8 @@ logs/
 
 # Generated search feeds & results
 jobs_feed.json
+seen_jobs.json
+ats-boards.local.json
 search_results.md
 search_*.md
 *_results.md
@@ -43,6 +45,12 @@ Desktop.ini
 $RECYCLE.BIN/
 .DS_Store
 
+# Personal search settings (config.example.yml is the tracked template)
+config.yml
+
+# Your CV folder (default cv.dir): master CV, photo, tailored copies and PDFs
+my-cv/
+
 # Personal candidate profile, reports & pipelines (keep local only)
 *candidate-profile.md
 !*candidate-profile.template.md
@@ -51,12 +59,19 @@ $RECYCLE.BIN/
 *linkedin-pipeline.md
 !*linkedin-pipeline.template.md
 
-# Antigravity local assistant configuration & scratch scripts
+# Other local assistant configs & scratch scripts
 .agents/
 add_jobs.py
+.claude/launch.json
+config.yml.bak
 
 
 
 # Agent Evolver personal knowledge base & log (contain personal data, keep local only)
 *screening-playbook.md
 evolution-log.md
+
+# Claude Code local config (machine-specific MCP paths, local settings, Playwright MCP output)
+.mcp.json
+.claude/settings.local.json
+.playwright-mcp/

@@ -1,0 +1,12 @@
+# Product manager / Product owner
+role:
+  default_query: "Product Manager"
+  target_roles: [product manager, product owner, technical product manager, senior product manager,
+                 group product manager, product lead]
+  title_keywords: [product manager, product owner, product lead, head of product, technical product manager,
+                   group product manager]
+  title_exclude: [product marketing, product designer, product design, engineer, developer, sales, recruiter,
+                  project manager, program manager]
+  fallback_skills: {product strategy: 12, roadmap: 10, discovery: 10, a/b testing: 8, analytics: 8, sql: 6,
+                    agile: 6, scrum: 4, jira: 4, stakeholder management: 8, user research: 8, okrs: 6,
+                    b2b: 4, saas: 6, api: 4, go-to-market: 6}

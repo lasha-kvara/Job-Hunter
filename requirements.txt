@@ -4,6 +4,7 @@ pandas>=2.0.0
 beautifulsoup4>=4.12.0
 requests>=2.31.0
 truststore>=0.9.0
+pyyaml>=6.0
 
 
 # Headed Browser Automation & Form Filling
@@ -14,6 +15,5 @@ rich>=13.0.0
 python-dotenv>=1.0.0
 pydantic>=2.0.0
 
-# Optional AI / LLM APIs
-google-generativeai>=0.8.0
+# Optional: AI drafts in the LinkedIn CLI (Gemini) -> pip install -r requirements-optional.txt
 

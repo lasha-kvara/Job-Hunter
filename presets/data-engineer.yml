@@ -1,0 +1,10 @@
+# Data engineer / Analytics engineer
+role:
+  default_query: "Data Engineer"
+  target_roles: [data engineer, analytics engineer, data platform engineer, big data engineer, etl developer]
+  title_keywords: [data engineer, data engineering, analytics engineer, data platform, big data, etl, data pipeline,
+                   data infrastructure]
+  title_exclude: [sales, marketing, recruiter, product manager, designer, data quality, data entry]
+  fallback_skills: {python: 14, sql: 16, spark: 12, airflow: 10, dbt: 10, kafka: 8, snowflake: 10,
+                    bigquery: 8, databricks: 8, redshift: 6, aws: 8, gcp: 6, azure: 6, postgresql: 6,
+                    scala: 6, terraform: 4, docker: 4, data modeling: 8}

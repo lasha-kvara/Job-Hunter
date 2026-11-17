@@ -4,6 +4,8 @@ import logging
 from pathlib import Path
 from typing import List, Tuple, Dict, Optional
 
+from . import settings
+from .assessment import friendly_location, is_home
 from .models import JobPost
 
 logger = logging.getLogger(__name__)
@@ -13,60 +15,21 @@ logger = logging.getLogger(__name__)
 class CandidateScorer:
     """
     Evaluates job postings against the configured candidate profile.
-    Dynamically loads target roles and technical skills from candidate-profile.md,
-    with robust fallback to standard SDET/engineering keywords.
+    Dynamically loads target roles and technical skills from candidate-profile.md; the fallback
+    skills, target roles, seniority bonuses and title penalties come from config.yml (`role`).
     """
 
-    DEFAULT_CORE_KEYWORDS = {
-        # Automation Frameworks
-        "playwright": 18,
-        "selenium": 10,
-        "cypress": 10,
-        "appium": 8,
-        "restassured": 8,
-        # Languages
-        "typescript": 12,
-        "javascript": 10,
-        "python": 12,
-        "c#": 12,
-        ".net": 10,
-        # SDET & QA Automation terms
-        "sdet": 20,
-        "qa automation": 18,
-        "automation engineer": 18,
-        "software development engineer in test": 20,
-        "test automation": 16,
-        "test architect": 15,
-        # Performance & API
-        "k6": 12,
-        "jmeter": 8,
-        "api testing": 10,
-        "postman": 8,
-        # DevOps & CI/CD
-        "ci/cd": 10,
-        "github actions": 8,
-        "gitlab": 8,
-        "docker": 8,
-        "jenkins": 6,
-    }
+    @staticmethod
+    def _role() -> dict:
+        return settings.section("role")
 
-    SENIORITY_KEYWORDS = {
-        "senior": 15,
-        "sr": 15,
-        "lead": 15,
-        "staff": 15,
-        "principal": 15,
-    }
+    @classmethod
+    def default_keywords(cls) -> Dict[str, int]:
+        return {str(k).lower(): int(v) for k, v in (cls._role().get("fallback_skills") or {}).items()}
 
-    NEGATIVE_KEYWORDS = {
-        "intern": -40,
-        "internship": -40,
-        "junior": -25,
-        "entry level": -20,
-        "manual tester": -25,
-        "manual testing only": -40,
-        "no automation": -40,
-    }
+    @classmethod
+    def default_target_roles(cls) -> List[str]:
+        return [str(r).lower() for r in cls._role().get("target_roles") or []]
 
     _cached_keywords = None
     _cached_target_roles = None
@@ -154,23 +117,11 @@ class CandidateScorer:
         # score against parsed profile criteria (falling back to defaults for any unconfigured dimension).
         # Fall back completely to default SDET qualifications if no profile file exists or parsing failed.
         if profile_path and profile_path.exists() and profile_read_success and (parsed_keywords or parsed_roles):
-            keywords = parsed_keywords if parsed_keywords else dict(cls.DEFAULT_CORE_KEYWORDS)
-            target_roles = list(set(parsed_roles)) if parsed_roles else [
-                "sdet",
-                "qa automation",
-                "automation engineer",
-                "test automation",
-                "software development engineer in test",
-            ]
+            keywords = parsed_keywords if parsed_keywords else cls.default_keywords()
+            target_roles = list(set(parsed_roles)) if parsed_roles else cls.default_target_roles()
         else:
-            keywords = dict(cls.DEFAULT_CORE_KEYWORDS)
-            target_roles = [
-                "sdet",
-                "qa automation",
-                "automation engineer",
-                "test automation",
-                "software development engineer in test",
-            ]
+            keywords = cls.default_keywords()
+            target_roles = cls.default_target_roles()
 
         cls._cached_keywords = keywords
         cls._cached_target_roles = target_roles
@@ -190,7 +141,8 @@ class CandidateScorer:
         core_keywords, target_roles = cls.load_profile_criteria()
 
         # 1. Check title seniority
-        for kw, weight in cls.SENIORITY_KEYWORDS.items():
+        for kw, weight in (cls._role().get("seniority_bonus") or {}).items():
+            kw, weight = str(kw).lower(), int(weight)
             if re.search(rf'\b{re.escape(kw)}\b', title_lower):
                 score += weight
                 reasons.append(f"Senior role: '{kw.title()}' (+{weight})")
@@ -234,24 +186,19 @@ class CandidateScorer:
             reasons.append("Remote friendly (+10)")
 
         # 5. Check negative signals
-        for neg_kw, penalty in cls.NEGATIVE_KEYWORDS.items():
+        for neg_kw, penalty in (cls._role().get("title_penalties") or {}).items():
+            neg_kw, penalty = str(neg_kw).lower(), int(penalty)
             if re.search(rf'\b{re.escape(neg_kw)}\b', title_lower):
                 score += penalty
                 reasons.append(f"Penalty for '{neg_kw}' ({penalty})")
 
-        # 6. Check foreign on-site without relocation penalty (Per strict location rule)
-        loc_lower = (job.location or "").lower()
-        is_georgia = any(geo in loc_lower for geo in ["georgia", "tbilisi", "batumi", "kutaisi"])
+        # 6. On-site outside the home country (config.yml: location.home_places) without relocation
+        loc = job.location or ""
         has_relocation = bool(re.search(r'\b(?:relocation|visa\s+sponsorship|sponsorship\s+provided)\b', text_to_search, re.IGNORECASE))
-        if loc_lower and not is_georgia and not job.is_remote and not has_relocation:
-            foreign_indicators = [
-                "spain", "madrid", "france", "paris", "rennes", "lille", "united kingdom", "uk", "london",
-                "glasgow", "japan", "tokyo", "singapore", "vietnam", "canada", "toronto", "germany", "berlin",
-                "poland", "warsaw", "india", "bangalore", "mumbai", "netherlands", "amsterdam"
-            ]
-            if any(re.search(rf'\b{re.escape(fi)}\b', loc_lower) for fi in foreign_indicators):
-                score -= 40
-                reasons.append(f"Foreign on-site without relocation: '{job.location}' (-40)")
+        looks_remote = job.is_remote or bool(re.search(r'\b(remote|home[- ]based|anywhere)\b', loc, re.IGNORECASE))
+        if loc and not looks_remote and not is_home(loc) and not friendly_location(loc) and not has_relocation:
+            score -= 40
+            reasons.append(f"On-site outside home country without relocation: '{loc}' (-40)")
 
         # Normalize score between 0 and 100
         score = max(0, min(100, score))

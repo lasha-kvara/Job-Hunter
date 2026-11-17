@@ -1,0 +1,5 @@
+# Optional extras. Not needed for searching, rating, applying with Claude Code, or the tests.
+
+# AI-drafted recruiter replies in `python "Linkedin Agent/run.py"` (set GEMINI_API_KEY in .env).
+# Without it the CLI uses its built-in reply templates.
+google-genai>=1.0.0
