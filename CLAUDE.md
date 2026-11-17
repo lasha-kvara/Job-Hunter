@@ -7,6 +7,9 @@ Job search and application assistant for one candidate. Two skills do the work:
 The browser is Playwright MCP (`.mcp.json`): `playwright` is headed, `playwright-headless` is
 headless, both share one persistent profile. Pages are analysed live from snapshots; there are no
 pre-written apply scripts.
+- Small helper scripts (find fields, fill given values, click Next) are allowed for speed, but they
+  do mechanics only: no candidate data, no answer tables, no regex-to-answer rules. Every value
+  is chosen by you per field from the profile / playbook, or asked from the user.
 
 ## First run (onboarding)
 Run `python doctor.py --json` (with the venv's Python) before the first search or application, and

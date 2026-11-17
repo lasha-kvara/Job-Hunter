@@ -129,3 +129,8 @@ Pause and ask instead of guessing when, during an approved application:
 - Take pre-employment tests or assessments for the candidate (Codility, HackerRank, BairesDev
   Test Taker, etc.); tell the user the test is waiting for them instead.
 - Apply twice to the same job.
+- Put answers into code. Browser helpers may collect fields, fill the values you pass and press
+  Next / Submit, but every value is decided per field from the profile / playbook (or asked).
+  Never keep answer tables, regex-to-answer rules or candidate data inside a script, and never
+  reuse one job's answers for another job without checking each field. A skill-specific years field
+  gets that skill's years from the playbook, never the total experience.

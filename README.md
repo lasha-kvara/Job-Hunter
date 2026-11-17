@@ -1,5 +1,8 @@
 # Job-Hunter
 
+[![tests](https://github.com/lasha-kvara/Job-Hunter/actions/workflows/tests.yml/badge.svg)](https://github.com/lasha-kvara/Job-Hunter/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 **An AI job-search assistant that finds vacancies for your profession, rates them against your
 profile and applies to the ones you approve, from your own computer.**
 

@@ -56,9 +56,11 @@ config.yml
 *linkedin-pipeline.md
 !*linkedin-pipeline.template.md
 
-# Antigravity local assistant configuration & scratch scripts
+# Other local assistant configs & scratch scripts
 .agents/
 add_jobs.py
+.claude/launch.json
+config.yml.bak
 
 
 

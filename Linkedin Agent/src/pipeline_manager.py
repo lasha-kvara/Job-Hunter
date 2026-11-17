@@ -179,24 +179,24 @@ class PipelineTracker:
 
         if scheduled:
             for s in scheduled:
-                bullets.append(f"📅 **{s.title}** — გასაუბრება ჩანიშნულია / დადასტურებულია.")
+                bullets.append(f"📅 **{s.title}** — interview scheduled / confirmed.")
 
         if pending_user:
             for p in pending_user:
-                bullets.append(f"⚠️ **{p.title}** — ელოდება მომხმარებლის გადაწყვეტილებას ({p.next_step or 'დადასტურება'})")
+                bullets.append(f"⚠️ **{p.title}** — waiting for your decision ({p.next_step or 'confirmation'})")
 
         active_opps = [o for o in self.opportunities if "active" in o.category.lower() and o.status == "waiting"]
         for o in active_opps:
-            bullets.append(f"⏳ **{o.title}** ({o.contact or 'HR'}) — {o.next_step or 'ელოდება მეორე მხარის პასუხს'}")
+            bullets.append(f"⏳ **{o.title}** ({o.contact or 'HR'}) — {o.next_step or 'waiting for their reply'}")
 
         easy_apply_count = len([o for o in self.opportunities if "easy apply" in o.category.lower()])
         remote_apply_count = len([o for o in self.opportunities if "remote-site" in o.category.lower()])
 
         if easy_apply_count or remote_apply_count:
-            bullets.append(f"📊 **განაცხადები:** {easy_apply_count} LinkedIn Easy Apply და {remote_apply_count} Remote ATS განაცხადი აქტიურ მოლოდინშია.")
+            bullets.append(f"📊 **Applications:** {easy_apply_count} LinkedIn Easy Apply and {remote_apply_count} remote ATS applications awaiting a reply.")
 
         if not bullets:
-            return ["ახალი მესიჯები არ არის — ყველა საუბარი მეორე მხარეს ელოდება."]
+            return ["No new messages: every conversation is waiting on the other side."]
 
         return bullets[:max_bullets]
 

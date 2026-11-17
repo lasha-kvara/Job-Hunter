@@ -79,14 +79,14 @@ except Exception as e:
 
 
 # -------------------------------------------------------------
-# 2. TEST EXISTING RUNNER SCRIPTS (headed_apply.py, run_headed.py)
+# 2. TEST RUNNER SCRIPTS (CLIs and setup tools compile)
 # -------------------------------------------------------------
 print("\n[TEST GROUP 2] Testing Existing Runner Scripts...")
 
 try:
     import py_compile
 
-    for script_name in ["headed_apply.py", "run_headed.py", "Linkedin Agent/run.py", "search_jobs.py"]:
+    for script_name in ["Linkedin Agent/run.py", "search_jobs.py", "init.py", "doctor.py"]:
         script_path = PROJECT_ROOT / script_name
         assert script_path.is_file(), f"Required runner script not found: {script_name}"
         py_compile.compile(str(script_path), doraise=True)
