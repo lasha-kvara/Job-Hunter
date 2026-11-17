@@ -1,0 +1,13 @@
+# Backend / API / server-side engineer
+role:
+  default_query: "Backend Engineer"
+  target_roles: [backend engineer, backend developer, back-end engineer, software engineer, api engineer,
+                 java developer, python developer, golang developer, node.js developer, .net developer]
+  title_keywords: [backend, back-end, back end, server-side, api, java, golang, go engineer, go developer,
+                   python, node.js, nodejs, ".net", "c#", kotlin, scala, rust, php, ruby, elixir]
+  title_exclude: [frontend, front-end, designer, product manager, sales, marketing, recruiter, support,
+                  data analyst, qa, test]
+  fallback_skills: {java: 14, spring: 10, python: 14, django: 8, fastapi: 8, golang: 14, node.js: 12,
+                    typescript: 8, ".net": 12, "c#": 12, postgresql: 10, mysql: 6, mongodb: 6, redis: 8,
+                    kafka: 10, rabbitmq: 6, microservices: 10, rest: 6, grpc: 8, docker: 8, kubernetes: 8,
+                    aws: 8, gcp: 6, azure: 6, ci/cd: 6}

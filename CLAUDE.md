@@ -15,7 +15,8 @@ pre-written apply scripts.
   the user.
 - What to search for and where the candidate can work (role, title keywords, home country,
   allowed and locked regions, time zone, reply language, CV file name) comes from `config.yml`
-  (defaults and documentation: `config.example.yml`).
+  (defaults and documentation: `config.example.yml`; the profession comes from
+  `presets/<preset>.yml`, see `presets/README.md`).
 - These files, `config.yml` and the reports are personal and git-ignored. Never commit them or
   copy their contents (names, phone numbers, emails, companies applied to) into tracked files.
 

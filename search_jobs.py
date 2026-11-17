@@ -5,6 +5,7 @@ Searches across LinkedIn, Indeed, Glassdoor, ZipRecruiter, Google Jobs, and Jobs
 Cleans URLs, removes duplicates, and scores fit against SDET / QA Automation criteria.
 """
 
+import os
 import sys
 import io
 import argparse
@@ -49,13 +50,32 @@ def validate_min_score(val: str) -> int:
 
 
 def main():
+    # --preset / --list-presets are read first: the preset decides the other defaults.
+    pre = argparse.ArgumentParser(add_help=False)
+    pre.add_argument("--preset")
+    pre.add_argument("--list-presets", action="store_true")
+    early, _ = pre.parse_known_args()
+    if early.list_presets:
+        print("Presets (set `preset:` in config.yml or pass --preset):")
+        for name in settings.available_presets():
+            print(f"  {name:18} {settings.example(name)['role'].get('default_query', '')}")
+        return
+    if early.preset:
+        os.environ["JOB_HUNTER_PRESET"] = early.preset
+    try:
+        settings.get()  # fail fast on an unknown preset or a broken config.yml
+    except ValueError as e:
+        print(f"❌ {e}")
+        sys.exit(2)
+
     parser = argparse.ArgumentParser(
-        description="Job-Hunter: Search vacancies across multiple platforms with automated fit scoring."
+        description="Job-Hunter: Search vacancies across multiple platforms with automated fit scoring.",
+        parents=[pre],
     )
     parser.add_argument(
         "--query", "-q",
         default=settings.section("role").get("default_query") or "",
-        help="Job title or search keywords (e.g. 'SDET', 'Senior QA Automation', 'Playwright')"
+        help="Job title or search keywords (default: role.default_query of the active preset / config.yml)"
     )
     parser.add_argument(
         "--location", "-l",

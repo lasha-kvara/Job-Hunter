@@ -404,6 +404,53 @@ try:
     CandidateScorer._cached_keywords = None
     CandidateScorer._cached_target_roles = None
     print("  [+] Settings: another profession/country in config.yml changes title filter, home country and fallback skills.")
+
+    # 3.10 Every profession preset loads and its title filter keeps the right titles
+    samples = {
+        "qa-automation": (["Senior QA Automation Engineer", "SDET II", "Test Automation Lead"],
+                          ["Data Quality Analyst", "Growth Marketer (QA Automation)", "Senior Backend Engineer"]),
+        "frontend": (["Senior Frontend Engineer", "React Developer", "Front-End Developer"],
+                     ["Product Designer", "Backend Engineer"]),
+        "backend": (["Senior Backend Engineer (Go)", "Java Developer", "Node.js Engineer"],
+                    ["Frontend Engineer", "Account Executive"]),
+        "fullstack": (["Full Stack Engineer", "Senior Full-Stack Developer"],
+                      ["Software Engineer, Infrastructure", "Analytics Lead, Full Stack"]),
+        "mobile": (["Senior iOS Engineer", "Android Developer", "React Native Engineer"],
+                   ["Account Executive, Mobile Gaming", "Mobile QA Engineer"]),
+        "devops": (["Senior DevOps Engineer", "Site Reliability Engineer", "Platform Engineer"],
+                   ["Corporate Security Infrastructure Project Manager"]),
+        "data-engineer": (["Senior Data Engineer", "Analytics Engineer"], ["Data Entry Clerk", "Data Analyst"]),
+        "data-analyst": (["Senior Data Analyst", "Product Analyst"], ["Data Engineer", "Credit Analytics AVP"]),
+        "ml-engineer": (["Machine Learning Engineer", "Senior Data Scientist", "LLM Engineer"],
+                        ["Solutions Architect - AI/ML", "HTML Developer"]),
+        "product-designer": (["Senior Product Designer", "UX Designer", "UI/UX Designer"],
+                             ["Frontend Engineer", "Interior Designer"]),
+        "product-manager": (["Senior Product Manager", "Product Owner"],
+                            ["Product Marketing Manager", "Product Designer"]),
+    }
+    assert sorted(samples) == settings.available_presets(), settings.available_presets()
+    for name, (keep, drop) in samples.items():
+        cfg_p = settings.example(name)
+        role = cfg_p["role"]
+        for key in ("default_query", "target_roles", "title_keywords", "fallback_skills"):
+            assert role.get(key), f"preset {name}: role.{key} is empty"
+        assert role["seniority_bonus"] and role["title_penalties"].get("intern"), f"{name}: shared defaults lost"
+        settings.use(cfg_p)
+        m = _title_matcher("")
+        bad = [t for t in keep if not m(t)] + [f"!{t}" for t in drop if m(t)]
+        assert not bad, f"preset {name}: {bad}"
+    settings.use(settings.example())
+    try:
+        settings.compose({}, "no-such-preset")
+        raise AssertionError("unknown preset accepted")
+    except ValueError:
+        pass
+    clr = JobPost(title="Staff SRE (TS/SCI)", company="C", job_url="https://c.com/1", source="ats",
+                  location="Remote", is_remote=True, description="Remote. " * 80)
+    clr.fit_score = 90
+    assess(clr, now=now)
+    assert clr.verdict == "Skip" and "security clearance" in clr.flags[0], clr.flags
+    print(f"  [+] Presets: {len(samples)} profession presets load and filter titles correctly; clearance jobs blocked.")
     print(f"  [+] ATS Provider (Deterministic Mock): {len(ats_jobs) + len(more)} QA jobs from Greenhouse/Ashby/Lever/SmartRecruiters/Recruitee; title, remote and age filters verified.")
 
     print("  => ALL NEW AGGREGATOR TESTS PASSED!")

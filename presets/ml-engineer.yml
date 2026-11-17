@@ -1,0 +1,12 @@
+# Machine learning / AI engineer / Data scientist
+role:
+  default_query: "Machine Learning Engineer"
+  target_roles: [machine learning engineer, ml engineer, ai engineer, data scientist, applied scientist,
+                 mlops engineer, llm engineer, research engineer]
+  title_keywords: [machine learning, ml engineer, ml, mlops, ai engineer, ai/ml, applied ai, data scientist,
+                   applied scientist, llm, nlp, computer vision, deep learning, research engineer]
+  title_exclude: [sales, marketing, recruiter, product manager, designer, account executive, solutions engineer,
+                  ai trainer, annotator, data labeling, solutions architect, partnerships]
+  fallback_skills: {python: 16, pytorch: 14, tensorflow: 8, scikit-learn: 8, llm: 12, rag: 8, langchain: 6,
+                    hugging face: 8, nlp: 8, computer vision: 8, mlops: 8, mlflow: 6, kubeflow: 4, spark: 6,
+                    sql: 6, aws: 6, gcp: 6, docker: 6, kubernetes: 4, statistics: 6}

@@ -1,0 +1,12 @@
+# Full-stack engineer (web)
+role:
+  default_query: "Full Stack Engineer"
+  target_roles: [full stack engineer, full-stack engineer, fullstack engineer, full stack developer,
+                 full-stack developer, software engineer]
+  # "software engineer" alone matches almost every engineering job; use --query to widen on purpose.
+  title_keywords: [full stack, full-stack, fullstack, web engineer, product engineer]
+  title_exclude: [designer, product manager, sales, marketing, recruiter, support, qa, test, data, machine learning,
+                  security, embedded, firmware, analytics, analyst]
+  fallback_skills: {typescript: 14, javascript: 10, react: 14, next.js: 10, node.js: 12, python: 10, django: 6,
+                    java: 8, golang: 8, postgresql: 10, mongodb: 6, redis: 6, graphql: 8, rest: 6, docker: 8,
+                    aws: 8, ci/cd: 6, tailwind: 4}

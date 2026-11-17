@@ -1,7 +1,8 @@
 """Loads the user's search settings.
 
-`config.example.yml` (tracked) holds every key with documented defaults; `config.yml` (git-ignored)
-overrides any subset of them. Set JOB_HUNTER_CONFIG to point at another file.
+Precedence: `config.example.yml` (tracked, documented defaults) < `presets/<preset>.yml` (the
+profession: role keywords, skills, title filters) < `config.yml` (git-ignored, any subset of keys).
+Set JOB_HUNTER_CONFIG to point at another user file, or JOB_HUNTER_PRESET to switch the preset.
 """
 import copy
 import os
@@ -15,6 +16,7 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 EXAMPLE_FILE = REPO_ROOT / "config.example.yml"
 USER_FILE = REPO_ROOT / "config.yml"
+PRESETS_DIR = REPO_ROOT / "presets"
 
 _override: Optional[Dict[str, Any]] = None
 
@@ -39,18 +41,37 @@ def _merge(base: Dict[str, Any], extra: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
-@lru_cache(maxsize=4)
-def _load(path_str: str) -> Dict[str, Any]:
+def available_presets() -> list:
+    return sorted(p.stem for p in PRESETS_DIR.glob("*.yml"))
+
+
+def compose(user: Optional[Dict[str, Any]] = None, preset: Optional[str] = None) -> Dict[str, Any]:
+    """defaults < preset < user. `preset` (e.g. from --preset) beats the one named in the files."""
     defaults = _read(EXAMPLE_FILE)
-    return _merge(defaults, _read(Path(path_str))) if path_str else defaults
+    user = user or {}
+    name = preset or user.get("preset") or defaults.get("preset")
+    data = _merge(defaults, {})
+    if name:
+        path = PRESETS_DIR / f"{name}.yml"
+        if not path.exists():
+            raise ValueError(f"Unknown preset '{name}'. Available: {', '.join(available_presets())}")
+        data = _merge(data, _read(path))
+    data = _merge(data, user)
+    data["preset"] = name
+    return data
+
+
+@lru_cache(maxsize=8)
+def _load(path_str: str, preset: str) -> Dict[str, Any]:
+    return compose(_read(Path(path_str)) if path_str else {}, preset or None)
 
 
 def get() -> Dict[str, Any]:
-    """The active settings (defaults merged with config.yml, or a test override)."""
+    """The active settings (defaults + preset + config.yml, or a test override)."""
     if _override is not None:
         return _override
     path = os.getenv("JOB_HUNTER_CONFIG") or (str(USER_FILE) if USER_FILE.exists() else "")
-    return _load(path)
+    return _load(path, os.getenv("JOB_HUNTER_PRESET", ""))
 
 
 def section(name: str) -> Dict[str, Any]:
@@ -64,9 +85,9 @@ def use(settings: Optional[Dict[str, Any]]) -> None:
     _load.cache_clear()
 
 
-def example() -> Dict[str, Any]:
-    """The documented defaults only, ignoring the user's config.yml (deterministic for tests)."""
-    return _read(EXAMPLE_FILE)
+def example(preset: Optional[str] = None) -> Dict[str, Any]:
+    """Defaults + preset only, ignoring the user's config.yml (deterministic for tests)."""
+    return compose({}, preset)
 
 
 def words_regex(words: Iterable[str], flags=re.I) -> Optional["re.Pattern[str]"]:

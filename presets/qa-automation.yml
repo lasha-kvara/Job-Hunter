@@ -1,0 +1,14 @@
+# QA Automation / SDET / Test Engineer
+role:
+  default_query: "QA Automation Engineer"
+  target_roles: [sdet, qa automation, automation engineer, test automation, software development engineer in test,
+                 qa engineer, test engineer, quality engineer]
+  title_keywords: [qa, quality, sdet, test, tester, testing, qe]
+  title_exclude: [data quality, search quality, product quality, sox, compliance, machine learning,
+                  product manager, clinical, laboratory, penetration, pen test, marketer, marketing,
+                  contact centre, contact center]
+  title_penalties: {manual tester: -25, manual testing only: -40, no automation: -40}
+  fallback_skills: {playwright: 18, selenium: 10, cypress: 10, appium: 8, restassured: 8, typescript: 12,
+                    javascript: 10, python: 12, "c#": 12, ".net": 10, java: 12, sdet: 20, qa automation: 18,
+                    automation engineer: 18, test automation: 16, k6: 12, jmeter: 8, api testing: 10,
+                    postman: 8, ci/cd: 10, github actions: 8, gitlab: 8, docker: 8, jenkins: 6}

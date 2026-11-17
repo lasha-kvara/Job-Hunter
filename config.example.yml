@@ -7,6 +7,13 @@
 #
 # The values below are a worked example: a senior QA Automation engineer living in Georgia who
 # wants remote work in Europe or relocation. Replace them with your own.
+#
+# Order of precedence: this file  <  presets/<preset>.yml  <  your config.yml
+
+# Your profession. One of the files in presets/ (without .yml): qa-automation, frontend, backend,
+# fullstack, mobile, devops, data-engineer, data-analyst, ml-engineer, product-designer,
+# product-manager. A preset fills the whole `role` section below; you can still override any key.
+preset: qa-automation
 
 candidate:
   reply_language: en            # language the agents use when talking to you: en, ka, de, uk, ...
@@ -15,22 +22,13 @@ candidate:
   cv_file_name: "Firstname_Lastname_CV.pdf"   # file name recruiters see on the CVs you upload
 
 role:
-  default_query: "QA Automation Engineer"     # search_jobs.py --query default
-  # Roles you target. Used to score titles and as a fallback when the profile has no "Target roles".
-  target_roles: [sdet, qa automation, automation engineer, test automation, software development engineer in test]
-  # Company-board scan: a job title must contain one of these words ...
-  title_keywords: [qa, quality, sdet, test, tester, testing, qe]
-  # ... and none of these phrases.
-  title_exclude: [data quality, search quality, product quality, sox, compliance, machine learning,
-                  product manager, clinical, laboratory, penetration, pen test]
+  # Shared by every preset. The preset adds: default_query (search_jobs.py --query default),
+  # target_roles (scored in titles; fallback when the profile has no "Target roles"),
+  # title_keywords (a scanned title must contain one), title_exclude (and none of these),
+  # fallback_skills (skill weights used only when candidate-profile.md has no "Skills" section),
+  # and role-specific title_penalties. Override any of them here or in config.yml.
   seniority_bonus: {senior: 15, sr: 15, lead: 15, staff: 15, principal: 15}
-  title_penalties: {intern: -40, internship: -40, junior: -25, entry level: -20, manual tester: -25,
-                    manual testing only: -40, no automation: -40}
-  # Skill weights used only when candidate-profile.md has no "Skills" section.
-  fallback_skills: {playwright: 18, selenium: 10, cypress: 10, appium: 8, restassured: 8, typescript: 12,
-                    javascript: 10, python: 12, "c#": 12, ".net": 10, sdet: 20, qa automation: 18,
-                    automation engineer: 18, test automation: 16, k6: 12, jmeter: 8, api testing: 10,
-                    postman: 8, ci/cd: 10, github actions: 8, gitlab: 8, docker: 8, jenkins: 6}
+  title_penalties: {intern: -40, internship: -40, junior: -25, entry level: -20, trainee: -40}
 
 location:
   home_country: Georgia
@@ -42,9 +40,12 @@ location:
   # Remote scopes you can work under.
   friendly_regions: [worldwide, anywhere, global, globally, emea, europe, european time zones, caucasus, cet, eet]
   # Remote jobs limited to these places are out of reach (you cannot live or work there).
-  locked_regions: [us, usa, u.s., u.s.a., united states, canada, north america, latam, latin america,
-                   brazil, mexico, india, apac, australia, new zealand, philippines, japan, singapore,
-                   hong kong, china, taiwan, korea]
+  # A remote job "in" one of these usually means you must live there; cities count too.
+  locked_regions: [us, usa, u.s., u.s.a., united states, canada, north america, americas, latam, latin america,
+                   brazil, mexico, argentina, chile, colombia, peru, uruguay, venezuela, costa rica,
+                   india, apac, apj, australia, new zealand, philippines, japan, singapore, hong kong, china,
+                   taiwan, korea, san francisco, bay area, new york, nyc, seattle, austin, boston, chicago,
+                   los angeles, denver, toronto, vancouver, montreal]
   # Places where a right-to-work question is likely but contracts may still work: flag, don't block.
   check_regions: [uk, united kingdom, england, london, germany, netherlands, france, spain, poland,
                   ireland, portugal, eu, european union]

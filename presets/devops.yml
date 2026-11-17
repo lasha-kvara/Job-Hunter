@@ -1,0 +1,12 @@
+# DevOps / SRE / Platform / Cloud engineer
+role:
+  default_query: "DevOps Engineer"
+  target_roles: [devops engineer, site reliability engineer, sre, platform engineer, cloud engineer,
+                 infrastructure engineer, devsecops engineer]
+  title_keywords: [devops, devsecops, sre, site reliability, platform engineer, platform engineering,
+                   infrastructure, cloud engineer, cloud infrastructure, kubernetes, reliability engineer]
+  title_exclude: [sales, marketing, recruiter, account executive, solutions engineer, customer, support,
+                  product manager, designer, project manager, program manager, corporate security, facilities]
+  fallback_skills: {kubernetes: 16, terraform: 14, aws: 12, gcp: 10, azure: 10, docker: 10, helm: 8,
+                    argocd: 8, ansible: 6, linux: 8, prometheus: 8, grafana: 6, datadog: 4, ci/cd: 10,
+                    github actions: 6, gitlab: 6, jenkins: 4, python: 6, golang: 6, bash: 6}

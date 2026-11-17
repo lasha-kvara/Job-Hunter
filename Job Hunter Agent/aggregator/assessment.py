@@ -28,6 +28,9 @@ NO_SPONSOR_RE = re.compile(
 SPONSOR_OK_RE = re.compile(r"\b(visa sponsorship (is )?(available|provided|offered)|we (will )?sponsor"
                            r"|relocation (package|support|assistance))\b", re.I)
 REMOTE_LOC_RE = re.compile(r"\b(remote|home[- ]based|work from home)\b", re.I)
+# Government clearances only citizens of that country can hold.
+CLEARANCE_RE = re.compile(r"(?<![\w])(ts/sci|top secret|security clearance|secret clearance|federal classified"
+                          r"|sc clearance|dv clearance|nv1|nv2)(?![\w])", re.I)
 
 
 def _alt(words: Iterable[str]) -> str:
@@ -123,7 +126,10 @@ def work_auth_flags(job: JobPost) -> List[str]:
     generic_loc = not re.sub(r"(?i)\b(remote|job|home[- ]based|anywhere|or)\b|[^a-z]", "", loc)
 
     m = p["work_auth"].search(text)
-    if m and not sponsor_ok:
+    c = CLEARANCE_RE.search(f"{job.title}\n{text}")
+    if c:
+        flags.append(f"BLOCK: security clearance required ('{c.group(0)}')")
+    elif m and not sponsor_ok:
         flags.append(f"BLOCK: work authorization required ('{m.group(0)[:70]}')")
     elif p["locked"].search(loc) and not friendly_location(loc):
         flags.append(f"BLOCK: region-locked ('{loc[:60]}')")

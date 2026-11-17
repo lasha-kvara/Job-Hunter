@@ -1,0 +1,11 @@
+# Product designer / UX / UI designer
+role:
+  default_query: "Product Designer"
+  target_roles: [product designer, ux designer, ui designer, ui/ux designer, interaction designer,
+                 ux researcher, visual designer]
+  title_keywords: [product designer, product design, ux, ui/ux, ui designer, interaction designer, visual designer,
+                   ux researcher, design lead, design systems]
+  title_exclude: [engineer, developer, sales, marketing manager, recruiter, interior, fashion, graphic designer intern]
+  fallback_skills: {figma: 18, prototyping: 10, user research: 12, design systems: 12, interaction design: 10,
+                    usability testing: 8, wireframing: 8, ux writing: 4, accessibility: 6, sketch: 4,
+                    adobe xd: 4, framer: 4, html: 2, css: 2}
