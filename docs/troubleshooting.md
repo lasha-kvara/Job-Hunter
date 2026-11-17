@@ -15,6 +15,7 @@ comes with the command or file that fixes it.
 | "ATS boards that did not answer: x" | The company moved or closed its board; remove the token or fix it ([job-sources.md](job-sources.md)). |
 | Search finds nothing | `--min-score 0` and no `--hide-skip` to see what is filtered and why (Flags column); check `title_keywords` of your preset. |
 | Too many "region-locked" Skips | Your `locked_regions` may include where you live; see [configuration.md](configuration.md). |
+| Windows: "running scripts is disabled on this system" when activating `.venv` | Run once in PowerShell: `Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned` (answer `Y`), or use Command Prompt with `.venv\Scripts\activate.bat`, or call `.venv\Scripts\python.exe` directly. |
 | Garbled ✓ / characters in the Windows console | Run in Windows Terminal, or `set PYTHONIOENCODING=utf-8`. |
 | LinkedIn shows Hybrid / On-site jobs under "Remote" | Known: LinkedIn ignores its own filter. The agent checks each job page; trust the verdict, not the filter. |
 | A site asks for a login, code or CAPTCHA | Do it yourself in the headed browser window, then tell the agent "done". |
